@@ -137,10 +137,11 @@ const MiPatrullaSupervisor = () => {
 
   // Procesar datos solo si están disponibles
   const alarmasAsignadas = misAlarmas?.filter(a => 
-    a.supervisor_id === user?.id || a.supervisor === user?.full_name
+    (a.supervisor_id === user?.id || a.supervisor === user?.full_name) &&
+    (a.estado === 'en_patrulla' || a.estado === 'asignada' || a.estado === 'en_proceso')
   ) || [];
 
-  const alarmasActivas = alarmasAsignadas.filter(a => a.estado === 'activa' || a.estado === 'en_proceso');
+  const alarmasActivas = alarmasAsignadas;
   
   // DEBUG: Log para verificar datos del usuario y alarmas
   console.log('🔍 Debug MiPatrullaSupervisor:', {
