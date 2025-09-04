@@ -73,26 +73,20 @@ export const useSupabaseAlarmas = () => {
     try {
       console.log('🔄 Iniciando inserción de alarma:', alarmaData);
       
-      // Usar el usuario consolidado del contexto
-      if (!user || !user.id) {
-        console.error('❌ Usuario no autenticado en contexto consolidado');
-        throw new Error('Debes estar autenticado para crear alarmas');
-      }
-      
-      console.log('👤 Usuario autenticado (consolidado):', user.id, user.email);
-      
       const alarmaToInsert: any = {
         ...alarmaData,
         estado: 'activa',
-        prioridad: alarmaData.prioridad || 'media',
-        operador_id: user.id // Usar el ID del usuario consolidado
+        prioridad: alarmaData.prioridad || 'media'
       };
       
-      // Agregar nombre del operador desde el contexto consolidado
-      if (user.full_name) {
-        alarmaToInsert.operador_nombre = user.full_name;
-      } else if (user.email) {
-        alarmaToInsert.operador_nombre = user.email.split('@')[0];
+      // Agregar datos del operador si está disponible
+      if (user?.id) {
+        alarmaToInsert.operador_id = user.id;
+        if (user.full_name) {
+          alarmaToInsert.operador_nombre = user.full_name;
+        } else if (user.email) {
+          alarmaToInsert.operador_nombre = user.email.split('@')[0];
+        }
       }
       
       console.log('📝 Datos a insertar:', alarmaToInsert);
