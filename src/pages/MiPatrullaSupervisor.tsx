@@ -136,8 +136,8 @@ const MiPatrullaSupervisor = () => {
   };
 
   // Procesar datos solo si están disponibles
+  // El hook ya filtra por supervisor_id y supervisor, así que no necesitamos filtrar aquí
   const alarmasAsignadas = misAlarmas?.filter(a => 
-    (a.supervisor_id === user?.id || a.supervisor === user?.full_name) &&
     (a.estado === 'en_patrulla' || a.estado === 'asignada' || a.estado === 'en_proceso')
   ) || [];
 
