@@ -38,74 +38,53 @@ export const MonthlyComparisons = ({ data }: MonthlyComparisonsProps) => {
   }));
 
   return (
-    <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-      {/* Gráfico de Tendencias de Alarmas */}
-      <Card className="col-span-full">
-        <CardHeader>
-          <CardTitle>Tendencia de Alarmas - Últimos 6 Meses</CardTitle>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Total de Alarmas */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Total de Alarmas</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis 
-                dataKey="month" 
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
+          <ResponsiveContainer width="100%" height={120}>
+            <LineChart data={data}>
+              <Line 
+                type="monotone" 
+                dataKey="alarmas_total" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={2}
+                dot={false}
               />
-              <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
+              <XAxis dataKey="month" hide />
+              <YAxis hide />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: 'hsl(var(--background))', 
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '6px'
                 }}
-              />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="alarmas_total" 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={2}
-                name="Total Alarmas"
-                dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="alarmas_resueltas" 
-                stroke="hsl(142 76% 36%)" 
-                strokeWidth={2}
-                name="Alarmas Resueltas"
-                dot={{ fill: 'hsl(142 76% 36%)', strokeWidth: 2, r: 4 }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="efectividad" 
-                stroke="hsl(221 83% 53%)" 
-                strokeWidth={2}
-                name="Efectividad (%)"
-                dot={{ fill: 'hsl(221 83% 53%)', strokeWidth: 2, r: 4 }}
               />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* Gráfico de Servicios Técnicos y Clientes */}
+      {/* Alarmas Resueltas */}
       <Card>
-        <CardHeader>
-          <CardTitle>Servicios Técnicos por Mes</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Alarmas Resueltas</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis 
-                dataKey="month" 
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
+          <ResponsiveContainer width="100%" height={120}>
+            <LineChart data={data}>
+              <Line 
+                type="monotone" 
+                dataKey="alarmas_resueltas" 
+                stroke="hsl(142 76% 36%)" 
+                strokeWidth={2}
+                dot={false}
               />
-              <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
+              <XAxis dataKey="month" hide />
+              <YAxis hide />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: 'hsl(var(--background))', 
@@ -113,32 +92,26 @@ export const MonthlyComparisons = ({ data }: MonthlyComparisonsProps) => {
                   borderRadius: '6px'
                 }}
               />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Servicios Técnicos */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Servicios Técnicos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={120}>
+            <BarChart data={data}>
               <Bar 
                 dataKey="servicios_tecnicos" 
-                fill="hsl(var(--primary))" 
-                name="Servicios Técnicos"
-                radius={[4, 4, 0, 0]}
+                fill="hsl(var(--chart-2))" 
+                radius={[2, 2, 0, 0]}
               />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Gráfico de Clientes Nuevos */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Clientes Nuevos por Mes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis 
-                dataKey="month" 
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
-              />
-              <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
+              <XAxis dataKey="month" hide />
+              <YAxis hide />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: 'hsl(var(--background))', 
@@ -146,51 +119,156 @@ export const MonthlyComparisons = ({ data }: MonthlyComparisonsProps) => {
                   borderRadius: '6px'
                 }}
               />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Clientes Nuevos */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Clientes Nuevos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={120}>
+            <BarChart data={data}>
               <Bar 
                 dataKey="clientes_nuevos" 
-                fill="hsl(142 76% 36%)" 
-                name="Clientes Nuevos"
-                radius={[4, 4, 0, 0]}
+                fill="hsl(var(--chart-3))" 
+                radius={[2, 2, 0, 0]}
               />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Gráfico de Ingresos Estimados */}
-      <Card className="col-span-full">
-        <CardHeader>
-          <CardTitle>Ingresos Estimados por Mes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis 
-                dataKey="month" 
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
-              />
-              <YAxis 
-                tick={{ fontSize: 12 }} 
-                className="text-muted-foreground"
-                tickFormatter={(value) => formatCurrency(value)}
-              />
+              <XAxis dataKey="month" hide />
+              <YAxis hide />
               <Tooltip 
-                formatter={formatTooltipCurrency}
                 contentStyle={{ 
                   backgroundColor: 'hsl(var(--background))', 
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '6px'
                 }}
               />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Efectividad de Resolución */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Efectividad (%)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={120}>
+            <LineChart data={trendData}>
+              <Line 
+                type="monotone" 
+                dataKey="efectividad" 
+                stroke="hsl(221 83% 53%)" 
+                strokeWidth={2}
+                dot={false}
+              />
+              <XAxis dataKey="month" hide />
+              <YAxis hide />
+              <Tooltip 
+                formatter={(value: number) => [`${value.toFixed(1)}%`, 'Efectividad']}
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--background))', 
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px'
+                }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Tendencia Total */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Tendencia Total</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={120}>
+            <LineChart data={data}>
+              <Line 
+                type="monotone" 
+                dataKey="alarmas_total" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={2}
+                dot={false}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="servicios_tecnicos" 
+                stroke="hsl(var(--chart-2))" 
+                strokeWidth={2}
+                dot={false}
+              />
+              <XAxis dataKey="month" hide />
+              <YAxis hide />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--background))', 
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px'
+                }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Comparativa Mensual */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Comparativa Mensual</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={120}>
+            <BarChart data={data.slice(-3)}>
               <Bar 
-                dataKey="ingresos_estimados" 
-                fill="hsl(var(--chart-3))" 
-                name="Ingresos Estimados"
-                radius={[4, 4, 0, 0]}
+                dataKey="alarmas_total" 
+                fill="hsl(var(--primary))" 
+                radius={[2, 2, 0, 0]}
+              />
+              <XAxis dataKey="month" hide />
+              <YAxis hide />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--background))', 
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px'
+                }}
               />
             </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Crecimiento */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Crecimiento</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={120}>
+            <LineChart data={data}>
+              <Line 
+                type="monotone" 
+                dataKey="clientes_nuevos" 
+                stroke="hsl(var(--chart-4))" 
+                strokeWidth={2}
+                dot={false}
+              />
+              <XAxis dataKey="month" hide />
+              <YAxis hide />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--background))', 
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px'
+                }}
+              />
+            </LineChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
