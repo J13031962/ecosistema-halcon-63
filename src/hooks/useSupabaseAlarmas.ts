@@ -79,16 +79,6 @@ export const useSupabaseAlarmas = () => {
         prioridad: alarmaData.prioridad || 'media'
       };
       
-      // Agregar datos del operador si está disponible
-      if (user?.id) {
-        alarmaToInsert.operador_id = user.id;
-        if (user.full_name) {
-          alarmaToInsert.operador_nombre = user.full_name;
-        } else if (user.email) {
-          alarmaToInsert.operador_nombre = user.email.split('@')[0];
-        }
-      }
-      
       console.log('📝 Datos a insertar:', alarmaToInsert);
       
       const { data, error } = await supabase
