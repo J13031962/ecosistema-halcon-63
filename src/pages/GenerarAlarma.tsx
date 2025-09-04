@@ -307,8 +307,8 @@ const GenerarAlarma = () => {
     }
   };
 
-  // Verificar autenticación
-  if (!isAuthenticated) {
+  // Solo mostrar mensaje si realmente no hay usuario (para evitar bloquear operadores legacy)
+  if (!isAuthenticated && !user) {
     return (
       <Card className="max-w-md mx-auto mt-8">
         <CardHeader>

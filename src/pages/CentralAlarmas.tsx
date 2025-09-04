@@ -8,10 +8,11 @@ import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
 import { useUserSpecificData } from "@/hooks/useUserSpecificData";
 import { format } from "date-fns";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
+import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorModal";
 
 const CentralAlarmas = () => {
   const { user } = useAuthConsolidated();
-  const { attendAlarma } = useSupabaseAlarmas();
+  const { attendAlarma, assignPatrulla } = useSupabaseAlarmas();
   
   // Usar el hook de datos específicos por usuario para alarmas
   const { data: alarmas, loading } = useUserSpecificData({
@@ -19,6 +20,8 @@ const CentralAlarmas = () => {
     enabled: !!user?.id
   });
   const [timers, setTimers] = useState<{ [key: string]: string }>({});
+  const [supervisorModalOpen, setSupervisorModalOpen] = useState(false);
+  const [selectedAlarmaForSupervisor, setSelectedAlarmaForSupervisor] = useState<any>(null);
 
   // Actualizar timers cada segundo
   useEffect(() => {
@@ -99,8 +102,29 @@ const CentralAlarmas = () => {
   const handleAttendAlarm = async (alarmaId: string) => {
     try {
       await attendAlarma(alarmaId);
+      // Después de atender la alarma, si el usuario es despachador, puede asignar supervisor
+      if (user?.role === 'despachador_patrullas') {
+        const alarmaAtendida = alarmas.find(a => a.id === alarmaId);
+        if (alarmaAtendida) {
+          setSelectedAlarmaForSupervisor(alarmaAtendida);
+          setSupervisorModalOpen(true);
+        }
+      }
     } catch (error) {
       console.error('Error attending alarm:', error);
+    }
+  };
+
+  const handleAssignSupervisor = async (alarmaId: string, supervisorData: { supervisor_id: string; supervisor_nombre: string; patrulla_asignada: string }) => {
+    try {
+      await assignPatrulla(alarmaId, {
+        patrulla_asignada: supervisorData.patrulla_asignada,
+        supervisor: supervisorData.supervisor_nombre,
+        supervisor_id: supervisorData.supervisor_id,
+      });
+    } catch (error) {
+      console.error('Error assigning supervisor:', error);
+      throw error;
     }
   };
 
@@ -297,10 +321,26 @@ const CentralAlarmas = () => {
                         </Button>
                       )}
                       
-                      {alarma.estado === 'en_proceso' && alarma.attended_at && (
-                        <div className="text-sm text-green-600 bg-green-50 px-3 py-2 rounded flex items-center gap-1">
-                          <UserCheck className="h-4 w-4" />
-                          Atendida el: {format(new Date(alarma.attended_at), 'HH:mm:ss')}
+                       {alarma.estado === 'en_proceso' && alarma.attended_at && (
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm text-green-600 bg-green-50 px-3 py-2 rounded flex items-center gap-1">
+                            <UserCheck className="h-4 w-4" />
+                            Atendida el: {format(new Date(alarma.attended_at), 'HH:mm:ss')}
+                          </div>
+                          {user?.role === 'despachador_patrullas' && (
+                            <Button 
+                              size="sm" 
+                              variant="secondary"
+                              onClick={() => {
+                                setSelectedAlarmaForSupervisor(alarma);
+                                setSupervisorModalOpen(true);
+                              }}
+                              className="flex items-center gap-1"
+                            >
+                              <Shield className="h-4 w-4" />
+                              Asignar Supervisor
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -312,6 +352,24 @@ const CentralAlarmas = () => {
           </Accordion>
         </CardContent>
       </Card>
+
+      {/* Modal de asignación de supervisor */}
+      <AsignarSupervisorModal
+        isOpen={supervisorModalOpen}
+        onClose={() => {
+          setSupervisorModalOpen(false);
+          setSelectedAlarmaForSupervisor(null);
+        }}
+        alarma={selectedAlarmaForSupervisor ? {
+          id: selectedAlarmaForSupervisor.id,
+          tipo: selectedAlarmaForSupervisor.tipo,
+          cliente: selectedAlarmaForSupervisor.clientes?.nombre,
+          direccion: selectedAlarmaForSupervisor.direccion,
+          prioridad: selectedAlarmaForSupervisor.prioridad,
+          created_at: selectedAlarmaForSupervisor.created_at
+        } : null}
+        onAssign={handleAssignSupervisor}
+      />
     </div>
   );
 };

@@ -73,26 +73,26 @@ export const useSupabaseAlarmas = () => {
     try {
       console.log('🔄 Iniciando inserción de alarma:', alarmaData);
       
-      // Obtener el usuario actual - REQUERIDO para las políticas RLS
-      const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !currentUser) {
-        console.error('❌ Error de autenticación:', authError?.message || 'Usuario no autenticado');
+      // Usar el usuario consolidado del contexto
+      if (!user || !user.id) {
+        console.error('❌ Usuario no autenticado en contexto consolidado');
         throw new Error('Debes estar autenticado para crear alarmas');
       }
       
-      console.log('👤 Usuario autenticado:', currentUser.id);
+      console.log('👤 Usuario autenticado (consolidado):', user.id, user.email);
       
       const alarmaToInsert: any = {
         ...alarmaData,
         estado: 'activa',
         prioridad: alarmaData.prioridad || 'media',
-        operador_id: currentUser.id // SIEMPRE incluir el operador_id
+        operador_id: user.id // Usar el ID del usuario consolidado
       };
       
-      // Agregar nombre del operador si está disponible
-      if (currentUser.email) {
-        alarmaToInsert.operador_nombre = currentUser.email.split('@')[0]; // Usar parte del email como nombre
+      // Agregar nombre del operador desde el contexto consolidado
+      if (user.full_name) {
+        alarmaToInsert.operador_nombre = user.full_name;
+      } else if (user.email) {
+        alarmaToInsert.operador_nombre = user.email.split('@')[0];
       }
       
       console.log('📝 Datos a insertar:', alarmaToInsert);
