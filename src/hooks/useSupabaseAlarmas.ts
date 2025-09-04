@@ -172,7 +172,7 @@ export const useSupabaseAlarmas = () => {
         .from('alarmas')
         .update({ 
           ...patrullaData,
-          estado: 'en_patrulla', // Cambiar el estado a en_patrulla cuando se asigna supervisor
+          estado: 'en_proceso', // Cambiar el estado a en_proceso cuando se asigna supervisor
           tiempo_asignacion: new Date().toISOString()
         })
         .eq('id', id)
