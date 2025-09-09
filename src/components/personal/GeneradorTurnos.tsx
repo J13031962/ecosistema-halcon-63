@@ -157,12 +157,21 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
           .map(turno => {
             const tipoTurno = TIPOS_TURNO[turno.tipo as keyof typeof TIPOS_TURNO];
             
+            if (!tipoTurno) {
+              console.error('Tipo de turno no encontrado:', turno.tipo);
+              return null;
+            }
+            
+            const [horaInicio, horaFin] = tipoTurno.horario.includes('-') 
+              ? tipoTurno.horario.split('-') 
+              : ['00:00', '00:00'];
+            
             return {
               fecha: turno.fecha,
               operador_id: operadorData.operador_id,
               operador_nombre: operadorData.operador_nombre,
-              hora_inicio: tipoTurno.horario.split('-')[0],
-              hora_fin: tipoTurno.horario.split('-')[1],
+              hora_inicio: horaInicio,
+              hora_fin: horaFin,
               tipo: tipoTurno.tipo === 'nocturno' ? 'nocturno' : 'diurno',
               horas_diurnas: tipoTurno.tipo === 'diurno' ? tipoTurno.horas : tipoTurno.tipo === 'mixto' ? 5 : 0,
               horas_nocturnas: tipoTurno.tipo === 'nocturno' ? tipoTurno.horas : tipoTurno.tipo === 'mixto' ? 3 : 0,
@@ -171,9 +180,11 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
               es_domingo: isWeekend(turno.fecha) && turno.fecha.getDay() === 0,
               es_feriado: false
             };
-          });
+          })
+          .filter(turno => turno !== null); // Filtrar turnos nulos
       });
 
+      console.log('Turnos a generar:', todosLosTurnos);
       await onGenerate({ turnos: todosLosTurnos });
       toast.success('Turnos generados exitosamente');
       
@@ -184,7 +195,7 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
       onClose();
     } catch (error) {
       console.error('Error al generar turnos:', error);
-      toast.error('Error al generar los turnos');
+      toast.error(`Error al generar los turnos: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setIsGenerating(false);
     }
