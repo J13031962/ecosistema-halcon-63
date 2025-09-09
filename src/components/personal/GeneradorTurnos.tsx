@@ -15,6 +15,13 @@ import { toast } from 'sonner';
 interface TurnoAsignado {
   fecha: Date;
   tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso' | '';
+  operador_id: string;
+}
+
+interface OperadorConTurnos {
+  operador_id: string;
+  operador_nombre: string;
+  turnos: TurnoAsignado[];
 }
 
 interface GeneradorTurnosProps {
@@ -41,6 +48,7 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
   const [periodicidad, setPeriodicidad] = useState<'semanal' | 'quincenal' | 'mensual'>('quincenal');
   const [fechaInicio, setFechaInicio] = useState<Date>();
   const [operadorSeleccionado, setOperadorSeleccionado] = useState<string>('');
+  const [operadoresConTurnos, setOperadoresConTurnos] = useState<OperadorConTurnos[]>([]);
   const [turnosAsignados, setTurnosAsignados] = useState<TurnoAsignado[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -57,10 +65,76 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
   };
 
   const getTurnoParaFecha = (fecha: Date) => {
-    return turnosAsignados.find(t => isSameDay(t.fecha, fecha));
+    return turnosAsignados.find(t => isSameDay(t.fecha, fecha) && t.operador_id === operadorSeleccionado);
   };
 
   const asignarTurno = (fecha: Date, tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso' | '') => {
+    if (!operadorSeleccionado) return;
+    
+    setTurnosAsignados(prev => {
+      const existing = prev.findIndex(t => isSameDay(t.fecha, fecha) && t.operador_id === operadorSeleccionado);
+      if (existing >= 0) {
+        if (tipo === '') {
+          // Remover turno si se selecciona vacío
+          return prev.filter((_, index) => index !== existing);
+        }
+        // Reemplazar turno existente
+        const newArray = [...prev];
+        newArray[existing] = { fecha, tipo, operador_id: operadorSeleccionado };
+        return newArray;
+      } else if (tipo !== '') {
+        // Agregar nuevo turno solo si no está vacío
+        return [...prev, { fecha, tipo, operador_id: operadorSeleccionado }];
+      }
+      return prev;
+    });
+  };
+
+  const añadirOperadorConTurnos = () => {
+    if (!operadorSeleccionado) {
+      toast.error('Debe seleccionar un operador');
+      return;
+    }
+
+    const operador = operadores.find(op => op.id === operadorSeleccionado);
+    if (!operador) return;
+
+    const turnosDelOperador = turnosAsignados.filter(t => t.operador_id === operadorSeleccionado);
+    
+    if (turnosDelOperador.length === 0) {
+      toast.error('Debe asignar al menos un turno al operador');
+      return;
+    }
+
+    const nuevoOperadorConTurnos: OperadorConTurnos = {
+      operador_id: operadorSeleccionado,
+      operador_nombre: `${operador.nombres} ${operador.apellidos}`,
+      turnos: turnosDelOperador
+    };
+
+    setOperadoresConTurnos(prev => {
+      const existing = prev.findIndex(op => op.operador_id === operadorSeleccionado);
+      if (existing >= 0) {
+        // Actualizar operador existente
+        const newArray = [...prev];
+        newArray[existing] = nuevoOperadorConTurnos;
+        return newArray;
+      } else {
+        // Agregar nuevo operador
+        return [...prev, nuevoOperadorConTurnos];
+      }
+    });
+
+    // Limpiar selección actual
+    setOperadorSeleccionado('');
+    setTurnosAsignados(prev => prev.filter(t => t.operador_id !== operadorSeleccionado));
+    toast.success(`Turnos asignados para ${operador.nombres} ${operador.apellidos}`);
+  };
+
+  const removerOperador = (operadorId: string) => {
+    setOperadoresConTurnos(prev => prev.filter(op => op.operador_id !== operadorId));
+    setTurnosAsignados(prev => prev.filter(t => t.operador_id !== operadorId));
+  };
     setTurnosAsignados(prev => {
       const existing = prev.findIndex(t => isSameDay(t.fecha, fecha));
       if (existing >= 0) {
@@ -76,46 +150,49 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
   };
 
   const handleGenerate = async () => {
-    if (!operadorSeleccionado || !fechaInicio) {
-      toast.error('Debe seleccionar operador y fecha de inicio');
+    if (!fechaInicio) {
+      toast.error('Debe seleccionar fecha de inicio');
       return;
     }
     
-    const turnosValidos = turnosAsignados.filter(t => t.tipo !== 'descanso' && t.tipo !== '');
-    if (turnosValidos.length === 0) {
-      toast.error('Debe asignar al menos un turno de trabajo');
+    if (operadoresConTurnos.length === 0) {
+      toast.error('Debe agregar al menos un operador con turnos asignados');
       return;
     }
 
     try {
       setIsGenerating(true);
       
-      // Convertir turnos asignados al formato esperado
-      const turnosParaGenerar = turnosValidos.map(turno => {
-        const tipoTurno = TIPOS_TURNO[turno.tipo];
-        const operador = operadores.find(op => op.id === operadorSeleccionado);
-        
-        return {
-          fecha: turno.fecha,
-          operador_id: operadorSeleccionado,
-          operador_nombre: `${operador?.nombres} ${operador?.apellidos}`,
-          hora_inicio: tipoTurno.horario.split('-')[0],
-          hora_fin: tipoTurno.horario.split('-')[1],
-          tipo: tipoTurno.tipo === 'nocturno' ? 'nocturno' : 'diurno',
-          horas_diurnas: tipoTurno.tipo === 'diurno' ? tipoTurno.horas : tipoTurno.tipo === 'mixto' ? 5 : 0,
-          horas_nocturnas: tipoTurno.tipo === 'nocturno' ? tipoTurno.horas : tipoTurno.tipo === 'mixto' ? 3 : 0,
-          horas_domingo: isWeekend(turno.fecha) && turno.fecha.getDay() === 0 ? tipoTurno.horas : 0,
-          horas_feriado: 0, // Se puede mejorar con lógica de feriados
-          es_domingo: isWeekend(turno.fecha) && turno.fecha.getDay() === 0,
-          es_feriado: false
-        };
+      // Convertir todos los turnos de todos los operadores al formato esperado
+      const todosLosTurnos = operadoresConTurnos.flatMap(operadorData => {
+        return operadorData.turnos
+          .filter(t => t.tipo !== 'descanso' && t.tipo !== '')
+          .map(turno => {
+            const tipoTurno = TIPOS_TURNO[turno.tipo as keyof typeof TIPOS_TURNO];
+            
+            return {
+              fecha: turno.fecha,
+              operador_id: operadorData.operador_id,
+              operador_nombre: operadorData.operador_nombre,
+              hora_inicio: tipoTurno.horario.split('-')[0],
+              hora_fin: tipoTurno.horario.split('-')[1],
+              tipo: tipoTurno.tipo === 'nocturno' ? 'nocturno' : 'diurno',
+              horas_diurnas: tipoTurno.tipo === 'diurno' ? tipoTurno.horas : tipoTurno.tipo === 'mixto' ? 5 : 0,
+              horas_nocturnas: tipoTurno.tipo === 'nocturno' ? tipoTurno.horas : tipoTurno.tipo === 'mixto' ? 3 : 0,
+              horas_domingo: isWeekend(turno.fecha) && turno.fecha.getDay() === 0 ? tipoTurno.horas : 0,
+              horas_feriado: 0,
+              es_domingo: isWeekend(turno.fecha) && turno.fecha.getDay() === 0,
+              es_feriado: false
+            };
+          });
       });
 
-      await onGenerate({ turnos: turnosParaGenerar });
+      await onGenerate({ turnos: todosLosTurnos });
       toast.success('Turnos generados exitosamente');
       
       // Limpiar formulario
       setOperadorSeleccionado('');
+      setOperadoresConTurnos([]);
       setTurnosAsignados([]);
       onClose();
     } catch (error) {
@@ -185,12 +262,14 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
             <div className="space-y-2">
               <Label>Operador</Label>
               <Select value={operadorSeleccionado} onValueChange={setOperadorSeleccionado}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Seleccionar operador" />
                 </SelectTrigger>
-                <SelectContent>
-                  {operadores.map((operador) => (
-                    <SelectItem key={operador.id} value={operador.id}>
+                <SelectContent className="bg-background border z-50">
+                  {operadores
+                    .filter(op => !operadoresConTurnos.find(oct => oct.operador_id === op.id))
+                    .map((operador) => (
+                    <SelectItem key={operador.id} value={operador.id} className="bg-background hover:bg-muted">
                       {operador.nombres} {operador.apellidos}
                     </SelectItem>
                   ))}
@@ -199,13 +278,44 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
             </div>
           </div>
 
+          {/* Operadores ya agregados */}
+          {operadoresConTurnos.length > 0 && (
+            <div className="space-y-3">
+              <Label>Operadores con turnos asignados:</Label>
+              <div className="space-y-2">
+                {operadoresConTurnos.map((operadorData) => (
+                  <div key={operadorData.operador_id} className="flex items-center justify-between bg-green-50 dark:bg-green-950/20 p-3 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-green-600" />
+                      <span className="font-medium text-green-800 dark:text-green-200">
+                        {operadorData.operador_nombre}
+                      </span>
+                      <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">
+                        {operadorData.turnos.filter(t => t.tipo !== 'descanso').length} turnos
+                      </Badge>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removerOperador(operadorData.operador_id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Operador Seleccionado */}
-          {operadorSeleccionadoData && (
+          {operadorSeleccionado && (
             <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
               <div className="flex items-center gap-2">
                 <User className="h-5 w-5 text-blue-600" />
                 <h3 className="font-semibold text-blue-800 dark:text-blue-200">
-                  Asignando turnos para: {operadorSeleccionadoData.nombres} {operadorSeleccionadoData.apellidos}
+                  Asignando turnos para: {operadores.find(op => op.id === operadorSeleccionado)?.nombres} {operadores.find(op => op.id === operadorSeleccionado)?.apellidos}
                 </h3>
               </div>
             </div>
@@ -283,13 +393,13 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
                                 <SelectTrigger className="h-8 text-xs">
                                   <SelectValue placeholder="Turno" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="">Sin asignar</SelectItem>
-                                  <SelectItem value="descanso">Descanso</SelectItem>
-                                  <SelectItem value="dia">Día (06:00-18:00)</SelectItem>
-                                  <SelectItem value="mañana">Mañana (06:00-14:00)</SelectItem>
-                                  <SelectItem value="tarde">Tarde (14:00-22:00)</SelectItem>
-                                  <SelectItem value="noche">Noche (18:00-06:00)</SelectItem>
+                                <SelectContent className="bg-background border z-50">
+                                  <SelectItem value="" className="bg-background hover:bg-muted">Sin asignar</SelectItem>
+                                  <SelectItem value="descanso" className="bg-background hover:bg-muted">Descanso</SelectItem>
+                                  <SelectItem value="dia" className="bg-background hover:bg-muted">Día (06:00-18:00)</SelectItem>
+                                  <SelectItem value="mañana" className="bg-background hover:bg-muted">Mañana (06:00-14:00)</SelectItem>
+                                  <SelectItem value="tarde" className="bg-background hover:bg-muted">Tarde (14:00-22:00)</SelectItem>
+                                  <SelectItem value="noche" className="bg-background hover:bg-muted">Noche (18:00-06:00)</SelectItem>
                                 </SelectContent>
                               </Select>
                               
@@ -312,13 +422,27 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
             </div>
           )}
 
+          {/* Botón para añadir operador */}
+          {operadorSeleccionado && turnosAsignados.filter(t => t.operador_id === operadorSeleccionado && t.tipo !== 'descanso').length > 0 && (
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                onClick={añadirOperadorConTurnos}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <User className="h-4 w-4 mr-2" />
+                Añadir Operador
+              </Button>
+            </div>
+          )}
+
           {/* Resumen */}
-          {turnosAsignados.length > 0 && (
+          {operadorSeleccionado && turnosAsignados.filter(t => t.operador_id === operadorSeleccionado).length > 0 && (
             <div className="bg-muted/50 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">Resumen de Turnos Asignados:</h4>
+              <h4 className="font-medium mb-2">Resumen de Turnos del Operador Actual:</h4>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
                 {Object.entries(TIPOS_TURNO).map(([key, turno]) => {
-                  const count = turnosAsignados.filter(t => t.tipo === key).length;
+                  const count = turnosAsignados.filter(t => t.tipo === key && t.operador_id === operadorSeleccionado).length;
                   return (
                     <div key={key} className="flex justify-between">
                       <span>{turno.nombre}:</span>
@@ -341,7 +465,7 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
             </Button>
             <Button 
               onClick={handleGenerate} 
-              disabled={isGenerating || !operadorSeleccionado || !fechaInicio || turnosAsignados.filter(t => t.tipo !== 'descanso').length === 0}
+              disabled={isGenerating || !fechaInicio || operadoresConTurnos.length === 0}
             >
               {isGenerating ? 'Generando...' : 'Generar Turnos'}
             </Button>
