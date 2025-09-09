@@ -99,26 +99,40 @@ export function CalendarioTurnosQuincenal() {
     return date.toLocaleDateString('es-ES', { weekday: 'short' });
   };
 
-  // Obtener empleados y turnos del turno seleccionado
-  const empleadosDisponibles = turnoSeleccionado?.configuracion?.empleadosSeleccionados || [];
-  const turnosData = turnoSeleccionado?.turnos || [];
-  const periodoGenerado = turnoSeleccionado?.configuracion?.duracion || 7; // días, quincena o mes
-  const tipoGeneracion = turnoSeleccionado?.configuracion?.tipoGeneracion || 'semanal';
-  
-  const empleadosFiltrados = empleadoSeleccionado === "todos" 
-    ? empleadosDisponibles 
-    : empleadosDisponibles.filter(emp => emp.nombre.toLowerCase() === empleadoSeleccionado);
+  // Obtener datos y normalizar estructura desde los turnos guardados
+  const turnosFlat = turnoSeleccionado?.turnos || [];
 
-  // Determinar cuántos días mostrar según el tipo de generación
-  let diasAMostrar = turnosData.length;
-  if (tipoGeneracion === 'semanal') {
-    diasAMostrar = Math.min(7, turnosData.length);
-  } else if (tipoGeneracion === 'quincenal') {
-    diasAMostrar = Math.min(15, turnosData.length);
-  } else if (tipoGeneracion === 'mensual') {
-    diasAMostrar = turnosData.length; // Mostrar todo el mes
+  // Fechas únicas ordenadas
+  const fechas = Array.from(new Set(turnosFlat.map((t: any) => t.fecha))).sort();
+
+  // Período generado (usa la configuración real del generador)
+  const periodo = turnoSeleccionado?.configuracion?.periodo || 'semanal';
+
+  // Determinar cuántos días mostrar según el período
+  let diasAMostrar = fechas.length;
+  if (periodo === 'semanal') {
+    diasAMostrar = Math.min(7, fechas.length);
+  } else if (periodo === 'quincenal') {
+    diasAMostrar = Math.min(15, fechas.length);
+  } else if (periodo === 'mensual') {
+    diasAMostrar = Math.min(30, fechas.length);
   }
 
+  const fechasVisibles = fechas.slice(0, diasAMostrar);
+
+  // Empleados disponibles a partir de los turnos guardados
+  const empleadosDisponibles = Array.from(
+    new Map(
+      turnosFlat.map((t: any) => [t.empleadoId, { id: t.empleadoId, nombre: t.empleadoNombre, rol: t.cargo || 'Operativo' }])
+    ).values()
+  );
+
+  const empleadosFiltrados = empleadoSeleccionado === "todos" 
+    ? empleadosDisponibles 
+    : empleadosDisponibles.filter((emp: any) => emp.nombre.toLowerCase() === empleadoSeleccionado);
+
+  // Etiqueta legible del período
+  const labelPeriodo = ({ semanal: 'Semanal', quincenal: 'Quincenal', mensual: 'Mensual' } as Record<string, string>)[periodo] || 'Personalizado';
   // Si no hay turnos guardados, mostrar mensaje
   if (turnosGuardados.length === 0) {
     return (
@@ -146,7 +160,7 @@ export function CalendarioTurnosQuincenal() {
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
                 <CardTitle>
-                  Calendario de Turnos - {turnoSeleccionado?.configuracion?.tipoGeneracion || 'Personalizado'}
+                  Calendario de Turnos - {labelPeriodo}
                 </CardTitle>
               </div>
               <Badge variant="outline" className="text-sm">
@@ -239,10 +253,10 @@ export function CalendarioTurnosQuincenal() {
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="text-left p-3 font-medium">Jornada / Empleado</th>
-                  {turnosData.slice(0, diasAMostrar).map((dia, i) => (
-                    <th key={i} className="text-center p-2 font-medium min-w-[60px]">
-                      <div className="text-xs text-muted-foreground">{dia.dia}</div>
-                      <div className="text-sm">{dia.fecha}</div>
+                  {fechasVisibles.map((fecha) => (
+                    <th key={fecha} className="text-center p-2 font-medium min-w-[60px]">
+                      <div className="text-xs text-muted-foreground">{new Date(fecha).toLocaleDateString('es-ES', { weekday: 'short' })}</div>
+                      <div className="text-sm">{new Date(fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}</div>
                     </th>
                   ))}
                 </tr>
@@ -256,13 +270,13 @@ export function CalendarioTurnosQuincenal() {
                         <span className="text-xs text-muted-foreground">{empleado.rol}</span>
                       </div>
                     </td>
-                    {turnosData.slice(0, diasAMostrar).map((dia, diaIndex) => {
-                      const asignacion = dia.asignaciones?.find(a => a.empleadoId === empleado.id);
-                      const turnoTipo = asignacion?.turnoId;
-                      const tipoInfo = turnoTipo ? tiposTurno[turnoTipo] : null;
+                    {fechasVisibles.map((fecha) => {
+                      const registro = turnosFlat.find((t: any) => t.fecha === fecha && t.empleadoId === empleado.id);
+                      const turnoTipo = registro?.turno as keyof typeof tiposTurno | undefined;
+                      const tipoInfo = turnoTipo ? (tiposTurno as any)[turnoTipo] : null;
                       
                       return (
-                        <td key={diaIndex} className="text-center p-1">
+                        <td key={fecha} className="text-center p-1">
                           {tipoInfo ? (
                             <Badge 
                               variant="outline" 
@@ -289,9 +303,12 @@ export function CalendarioTurnosQuincenal() {
       {turnoSeleccionado && (
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           {Object.entries(tiposTurno).slice(1).map(([key, turno]) => {
-            const total = turnosData.reduce((sum, dia) => {
-              return sum + (dia.asignaciones?.filter(a => a.turnoId === key).length || 0);
-            }, 0);
+            const turnosVisibles = turnosFlat.filter((t: any) => 
+              fechasVisibles.includes(t.fecha) && (empleadoSeleccionado === 'todos' 
+                ? true 
+                : t.empleadoNombre.toLowerCase() === empleadoSeleccionado)
+            );
+            const total = turnosVisibles.filter((t: any) => t.turno === key).length;
             
             return (
               <Card key={key}>
