@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CalendarTurnos } from "@/components/turnos/CalendarTurnos";
+import { CalendarioTurnosQuincenal } from "@/components/personal/CalendarioTurnosQuincenal";
 import { Plus, Calendar, Users, Clock } from "lucide-react";
 
 const TurnosOperador = () => {
@@ -59,165 +60,190 @@ const TurnosOperador = () => {
         </Card>
       </div>
 
-      {/* Calendario Semanal */}
+      {/* Calendario Quincenal */}
       <Card>
         <CardHeader>
-          <CardTitle>Calendario de Turnos - Semana Actual</CardTitle>
+          <CardTitle>Calendario de Turnos - 15 días</CardTitle>
           <CardDescription>
-            Vista general de los turnos asignados para la semana
+            Vista completa de los turnos asignados para los próximos 15 días
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CalendarioTurnosQuincenal />
+        </CardContent>
+      </Card>
+
+      {/* Resumen de horas por operador */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Resumen de Horas por Operador</CardTitle>
+          <CardDescription>
+            Total de horas trabajadas por cada operador en el período actual
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Leyenda de turnos */}
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-blue-500 rounded"></div>
-                    <span>Mañana (06:00-14:00)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-500 rounded"></div>
-                    <span>Tarde (14:00-22:00)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-purple-500 rounded"></div>
-                    <span>Noche (18:00-06:00)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-                    <span>Día Completo (06:00-18:00)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-red-500 rounded"></div>
-                    <span>Descanso</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Juan Pérez</h4>
+                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
+                    JP
                   </div>
                 </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Horas esta semana:</span>
+                    <span className="font-medium">48h</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Horas extra:</span>
+                    <span className="font-medium text-orange-600">8h</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Eficiencia:</span>
+                    <span className="font-medium text-green-600">95%</span>
+                  </div>
+                </div>
+              </div>
 
-            {/* Tabla de empleados y turnos */}
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 font-medium">Empleado</th>
-                    <th className="text-center p-3 font-medium">Lun<br/><span className="text-xs text-muted-foreground">1</span></th>
-                    <th className="text-center p-3 font-medium">Mar<br/><span className="text-xs text-muted-foreground">2</span></th>
-                    <th className="text-center p-3 font-medium">Mié<br/><span className="text-xs text-muted-foreground">3</span></th>
-                    <th className="text-center p-3 font-medium">Jue<br/><span className="text-xs text-muted-foreground">4</span></th>
-                    <th className="text-center p-3 font-medium">Vie<br/><span className="text-xs text-muted-foreground">5</span></th>
-                    <th className="text-center p-3 font-medium">Sáb<br/><span className="text-xs text-muted-foreground">6</span></th>
-                    <th className="text-center p-3 font-medium">Dom<br/><span className="text-xs text-muted-foreground">7</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* Juan Pérez - Operador */}
-                  <tr className="border-b hover:bg-muted/30">
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
-                          JP
-                        </div>
-                        <div>
-                          <p className="font-medium">Juan Pérez</p>
-                          <p className="text-xs text-muted-foreground">Operador</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-purple-500 text-white text-xs p-2 rounded">Noche</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-purple-500 text-white text-xs p-2 rounded">Noche</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-red-500 text-white text-xs p-2 rounded">Descanso</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-red-500 text-white text-xs p-2 rounded">Descanso</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-yellow-500 text-white text-xs p-2 rounded">Día</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-yellow-500 text-white text-xs p-2 rounded">Día</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-purple-500 text-white text-xs p-2 rounded">Noche</div>
-                    </td>
-                  </tr>
+              <div className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">María García</h4>
+                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
+                    MG
+                  </div>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Horas esta semana:</span>
+                    <span className="font-medium">40h</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Horas extra:</span>
+                    <span className="font-medium">0h</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Eficiencia:</span>
+                    <span className="font-medium text-green-600">98%</span>
+                  </div>
+                </div>
+              </div>
 
-                  {/* María García - Operador */}
-                  <tr className="border-b hover:bg-muted/30">
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
-                          MG
-                        </div>
-                        <div>
-                          <p className="font-medium">María García</p>
-                          <p className="text-xs text-muted-foreground">Operador</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-yellow-500 text-white text-xs p-2 rounded">Día</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-yellow-500 text-white text-xs p-2 rounded">Día</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-purple-500 text-white text-xs p-2 rounded">Noche</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-purple-500 text-white text-xs p-2 rounded">Noche</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-red-500 text-white text-xs p-2 rounded">Descanso</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-red-500 text-white text-xs p-2 rounded">Descanso</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-yellow-500 text-white text-xs p-2 rounded">Día</div>
-                    </td>
-                  </tr>
+              <div className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Carlos López</h4>
+                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
+                    CL
+                  </div>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Horas esta semana:</span>
+                    <span className="font-medium">42h</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Horas extra:</span>
+                    <span className="font-medium text-orange-600">2h</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Eficiencia:</span>
+                    <span className="font-medium text-green-600">92%</span>
+                  </div>
+                </div>
+              </div>
 
-                  {/* Carlos López - Operador */}
-                  <tr className="border-b hover:bg-muted/30">
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
-                          CL
-                        </div>
-                        <div>
-                          <p className="font-medium">Carlos López</p>
-                          <p className="text-xs text-muted-foreground">Operador</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-red-500 text-white text-xs p-2 rounded">Descanso</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-red-500 text-white text-xs p-2 rounded">Descanso</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-yellow-500 text-white text-xs p-2 rounded">Día</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-yellow-500 text-white text-xs p-2 rounded">Día</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-purple-500 text-white text-xs p-2 rounded">Noche</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-purple-500 text-white text-xs p-2 rounded">Noche</div>
-                    </td>
-                    <td className="p-2 text-center">
-                      <div className="bg-red-500 text-white text-xs p-2 rounded">Descanso</div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Ana Martínez</h4>
+                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
+                    AM
+                  </div>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Horas esta semana:</span>
+                    <span className="font-medium">40h</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Horas extra:</span>
+                    <span className="font-medium">0h</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Eficiencia:</span>
+                    <span className="font-medium text-green-600">97%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Diego Rodríguez</h4>
+                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
+                    DR
+                  </div>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Horas esta semana:</span>
+                    <span className="font-medium">38h</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Horas extra:</span>
+                    <span className="font-medium">0h</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Eficiencia:</span>
+                    <span className="font-medium text-green-600">94%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Elena Torres</h4>
+                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
+                    ET
+                  </div>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Horas esta semana:</span>
+                    <span className="font-medium">44h</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Horas extra:</span>
+                    <span className="font-medium text-orange-600">4h</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Eficiencia:</span>
+                    <span className="font-medium text-green-600">96%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Resumen total */}
+            <div className="mt-6 p-4 bg-muted/30 rounded-lg">
+              <h4 className="font-medium mb-3">Resumen Total</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground block">Total Horas:</span>
+                  <span className="font-medium text-lg">252h</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block">Horas Extra:</span>
+                  <span className="font-medium text-lg text-orange-600">14h</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block">Eficiencia Promedio:</span>
+                  <span className="font-medium text-lg text-green-600">95%</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block">Operadores Activos:</span>
+                  <span className="font-medium text-lg">6</span>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>

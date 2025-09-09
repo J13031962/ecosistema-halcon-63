@@ -244,14 +244,14 @@ const CentralAlarmasOperador = () => {
         </CardContent>
       </Card>
 
-      {/* Información del turno */}
+      {/* Alarmas canceladas */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Mi Turno de Hoy</CardTitle>
+              <CardTitle>Alarmas Canceladas</CardTitle>
               <CardDescription>
-                Información sobre tu horario asignado
+                Alarmas que fueron canceladas en el sistema
               </CardDescription>
             </div>
             <Button 
@@ -265,37 +265,42 @@ const CentralAlarmasOperador = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {turnosLoading ? (
-            <div className="animate-pulse">
-              <div className="h-16 bg-muted rounded"></div>
-            </div>
-          ) : turnosHoy.length > 0 ? (
-            <div className="p-4 border rounded-lg bg-blue-50 border-blue-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    {user?.full_name}
-                  </h4>
-                  <p className="text-sm text-muted-foreground">
-                    Turno: {turnosHoy[0].turno}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium">
-                    {turnosHoy[0].horario_inicio} - {turnosHoy[0].horario_fin}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {format(new Date(turnosHoy[0].fecha), 'dd/MM/yyyy')}
-                  </p>
-                </div>
-              </div>
+          {loadingAlarmasVista ? (
+            <div className="animate-pulse space-y-4">
+              {[1, 2].map(i => (
+                <div key={i} className="h-12 bg-muted rounded"></div>
+              ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-              <p>No tienes turnos programados para hoy</p>
-              <p className="text-sm">Consulta con tu supervisor</p>
+            <div className="space-y-3">
+              {fuenteAlarmas
+                .filter(a => a.estado === 'cancelada')
+                .slice(0, 5)
+                .map((alarma) => (
+                <div key={alarma.id} className="p-3 border rounded-lg bg-red-50 border-red-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h5 className="font-medium">{alarma.tipo}</h5>
+                      <p className="text-sm text-muted-foreground">
+                        {alarma.direccion}, {alarma.municipio}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant="outline" className="text-red-600 mb-1">
+                        Cancelada
+                      </Badge>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(alarma.created_at), 'HH:mm dd/MM/yyyy')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )) || (
+                <div className="text-center py-4 text-muted-foreground">
+                  <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                  <p>No hay alarmas canceladas</p>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
