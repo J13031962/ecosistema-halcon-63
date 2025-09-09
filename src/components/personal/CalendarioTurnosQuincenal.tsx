@@ -72,10 +72,18 @@ export function CalendarioTurnosQuincenal() {
     const turnos = cargarTurnosGuardados();
     setTurnosGuardados(turnos);
     if (turnos.length > 0) {
-      setTurnoSeleccionado(turnos[0]);
+      const ultimo = turnos[turnos.length - 1];
+      setTurnoSeleccionado(ultimo);
+      if (ultimo?.configuracion?.fechaInicio) {
+        const f = new Date(ultimo.configuracion.fechaInicio);
+        if (!isNaN(f.getTime())) {
+          setFechaActual(f);
+          const dia = f.getDate();
+          setQuincenaActual(dia <= 15 ? 1 : 2);
+        }
+      }
     }
   }, []);
-
   const year = fechaActual.getFullYear();
   const month = fechaActual.getMonth();
 
