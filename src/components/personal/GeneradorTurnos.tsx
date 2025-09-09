@@ -135,19 +135,6 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
     setOperadoresConTurnos(prev => prev.filter(op => op.operador_id !== operadorId));
     setTurnosAsignados(prev => prev.filter(t => t.operador_id !== operadorId));
   };
-    setTurnosAsignados(prev => {
-      const existing = prev.findIndex(t => isSameDay(t.fecha, fecha));
-      if (existing >= 0) {
-        // Reemplazar turno existente
-        const newArray = [...prev];
-        newArray[existing] = { fecha, tipo };
-        return newArray;
-      } else {
-        // Agregar nuevo turno
-        return [...prev, { fecha, tipo }];
-      }
-    });
-  };
 
   const handleGenerate = async () => {
     if (!fechaInicio) {
