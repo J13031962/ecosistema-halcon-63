@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users, Plus, Clock, Calendar, Download, Edit2 } from 'lucide-react';
 import { FormularioNuevoPersonal } from '@/components/personal/FormularioNuevoPersonal';
@@ -99,7 +99,8 @@ const Personal = () => {
   };
 
   const handleChangeTurno = (fecha: Date, turnosDelDia: any[]) => {
-    setSelectedDateTurnos({fecha, turnos: turnosDelDia});
+    const ordenados = [...turnosDelDia].sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
+    setSelectedDateTurnos({fecha, turnos: ordenados});
     setIsEditDialogOpen(true);
   };
 
@@ -283,6 +284,9 @@ const Personal = () => {
               <Edit2 className="h-5 w-5" />
               Editar Turnos - {selectedDateTurnos.fecha.toLocaleDateString()}
             </DialogTitle>
+            <DialogDescription>
+              Cambia el operador o el tipo de cada turno. Debajo verás las horas diurnas, nocturnas y el total por turno.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {selectedDateTurnos.turnos.map((turno) => (
@@ -324,6 +328,20 @@ const Personal = () => {
                         <SelectItem value="nocturno">Nocturno</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div className="rounded-md border p-2">
+                    <div className="text-muted-foreground">H. Diurnas</div>
+                    <div className="font-semibold">{Number(turno.horas_diurnas).toFixed(2)}h</div>
+                  </div>
+                  <div className="rounded-md border p-2">
+                    <div className="text-muted-foreground">H. Nocturnas</div>
+                    <div className="font-semibold">{Number(turno.horas_nocturnas).toFixed(2)}h</div>
+                  </div>
+                  <div className="rounded-md border p-2">
+                    <div className="text-muted-foreground">Total</div>
+                    <div className="font-semibold">{(Number(turno.horas_diurnas) + Number(turno.horas_nocturnas)).toFixed(2)}h</div>
                   </div>
                 </div>
               </div>

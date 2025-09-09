@@ -179,7 +179,7 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
           
           return (
             <Card 
-              key={index} 
+              key={format(day, 'yyyy-MM-dd')}
               className={cn("min-h-[180px] cursor-pointer hover:shadow-md transition-shadow", esDomingo && "bg-blue-50 dark:bg-blue-950/20")}
               onClick={() => onChangeTurno && onChangeTurno(day, turnosDelDia)}
             >
