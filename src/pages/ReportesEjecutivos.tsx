@@ -61,22 +61,60 @@ const ReportesEjecutivos = () => {
     { tipo: "SmartUrban", cantidad: 324, porcentaje: 26.6 }
   ];
 
-  // Clientes con más llamadas
-  const clientesTopLlamadas = [
-    { cliente: "Banco Central", celular: 45, smarturban: 23, total: 68 },
-    { cliente: "Centro Comercial Plaza", celular: 38, smarturban: 19, total: 57 },
-    { cliente: "Residencial Los Pinos", celular: 29, smarturban: 15, total: 44 },
-    { cliente: "Hospital Regional", celular: 24, smarturban: 12, total: 36 },
-    { cliente: "Universidad Nacional", celular: 19, smarturban: 9, total: 28 }
+  // Clientes con más llamadas celulares
+  const clientesTopLlamadasCelular = [
+    { cliente: "Banco Central", cantidad: 45 },
+    { cliente: "Centro Comercial Plaza", cantidad: 38 },
+    { cliente: "Residencial Los Pinos", cantidad: 29 },
+    { cliente: "Hospital Regional", cantidad: 24 },
+    { cliente: "Universidad Nacional", cantidad: 19 },
+    { cliente: "Clínica Santa María", cantidad: 16 },
+    { cliente: "Empresa Textil Norte", cantidad: 14 },
+    { cliente: "Supermercado Central", cantidad: 12 },
+    { cliente: "Farmacia del Pueblo", cantidad: 11 },
+    { cliente: "Hotel Plaza Real", cantidad: 9 }
   ];
 
-  // Clientes con más servicios
-  const clientesTopServicios = [
-    { cliente: "Banco Central", alarmas: 89, revistas: 156, total: 245 },
-    { cliente: "Centro Comercial Plaza", alarmas: 67, revistas: 134, total: 201 },
-    { cliente: "Residencial Los Pinos", alarmas: 45, revistas: 98, total: 143 },
-    { cliente: "Hospital Regional", alarmas: 34, revistas: 87, total: 121 },
-    { cliente: "Universidad Nacional", alarmas: 28, revistas: 76, total: 104 }
+  // Clientes con más llamadas SmartUrban
+  const clientesTopLlamadasSmartUrban = [
+    { cliente: "Banco Central", cantidad: 23 },
+    { cliente: "Centro Comercial Plaza", cantidad: 19 },
+    { cliente: "Residencial Los Pinos", cantidad: 15 },
+    { cliente: "Hospital Regional", cantidad: 12 },
+    { cliente: "Universidad Nacional", cantidad: 9 },
+    { cliente: "Torre Ejecutiva", cantidad: 8 },
+    { cliente: "Centro Médico", cantidad: 7 },
+    { cliente: "Edificio Corporativo", cantidad: 6 },
+    { cliente: "Complejo Industrial", cantidad: 5 },
+    { cliente: "Centro Comercial Norte", cantidad: 4 }
+  ];
+
+  // Clientes con más servicios de alarmas
+  const clientesTopAlarmas = [
+    { cliente: "Banco Central", cantidad: 89 },
+    { cliente: "Centro Comercial Plaza", cantidad: 67 },
+    { cliente: "Residencial Los Pinos", cantidad: 45 },
+    { cliente: "Hospital Regional", cantidad: 34 },
+    { cliente: "Universidad Nacional", cantidad: 28 },
+    { cliente: "Torre Ejecutiva", cantidad: 24 },
+    { cliente: "Centro Médico", cantidad: 21 },
+    { cliente: "Edificio Corporativo", cantidad: 18 },
+    { cliente: "Complejo Industrial", cantidad: 16 },
+    { cliente: "Centro Comercial Norte", cantidad: 13 }
+  ];
+
+  // Clientes con más servicios de revistas
+  const clientesTopRevistas = [
+    { cliente: "Banco Central", cantidad: 156 },
+    { cliente: "Centro Comercial Plaza", cantidad: 134 },
+    { cliente: "Residencial Los Pinos", cantidad: 98 },
+    { cliente: "Hospital Regional", cantidad: 87 },
+    { cliente: "Universidad Nacional", cantidad: 76 },
+    { cliente: "Torre Ejecutiva", cantidad: 65 },
+    { cliente: "Centro Médico", cantidad: 54 },
+    { cliente: "Edificio Corporativo", cantidad: 43 },
+    { cliente: "Complejo Industrial", cantidad: 38 },
+    { cliente: "Centro Comercial Norte", cantidad: 32 }
   ];
 
   // Rendimiento por días de la semana
@@ -290,33 +328,59 @@ const ReportesEjecutivos = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Clientes por Servicios */}
+        {/* Top Clientes por Servicios de Alarmas */}
         <Card>
           <CardHeader>
-            <CardTitle>Clientes con Más Servicios</CardTitle>
-            <CardDescription>Top 5 clientes por cantidad de servicios recibidos</CardDescription>
+            <CardTitle>Top 10 Clientes - Servicios de Alarmas</CardTitle>
+            <CardDescription>Clientes con mayor cantidad de servicios de alarmas</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {clientesTopServicios.map((cliente, index) => (
-                <div key={cliente.cliente} className="flex items-center justify-between">
+            <div className="space-y-3">
+              {clientesTopAlarmas.map((cliente, index) => (
+                <div key={cliente.cliente} className="flex items-center justify-between p-2 border rounded-lg">
                   <div className="flex items-center space-x-2">
-                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-600 text-xs font-medium">
                       {index + 1}
                     </div>
-                    <span className="font-medium">{cliente.cliente}</span>
+                    <span className="font-medium text-sm">{cliente.cliente}</span>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold">{cliente.total} servicios</div>
-                    <div className="text-xs text-muted-foreground">
-                      {cliente.alarmas} alarmas • {cliente.revistas} revistas
-                    </div>
+                    <div className="font-bold text-red-600">{cliente.cantidad} alarmas</div>
                   </div>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
+
+        {/* Top Clientes por Servicios de Revistas */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Top 10 Clientes - Servicios de Revistas</CardTitle>
+            <CardDescription>Clientes con mayor cantidad de servicios de revistas</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {clientesTopRevistas.map((cliente, index) => (
+                <div key={cliente.cliente} className="flex items-center justify-between p-2 border rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs font-medium">
+                      {index + 1}
+                    </div>
+                    <span className="font-medium text-sm">{cliente.cliente}</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-blue-600">{cliente.cantidad} revistas</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Sección de Llamadas */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Análisis de Tiempos de Respuesta */}
         <Card>
@@ -446,29 +510,55 @@ const ReportesEjecutivos = () => {
           </CardContent>
         </Card>
 
-        {/* Clientes con Más Llamadas */}
+        {/* Top Clientes por Llamadas Celulares */}
         <Card>
           <CardHeader>
-            <CardTitle>Clientes con Más Llamadas</CardTitle>
-            <CardDescription>Top 5 clientes por cantidad de llamadas</CardDescription>
+            <CardTitle>Top 10 Clientes - Llamadas Celulares</CardTitle>
+            <CardDescription>Clientes con mayor cantidad de llamadas celulares</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {clientesTopLlamadas.map((cliente, index) => (
+              {clientesTopLlamadasCelular.map((cliente, index) => (
                 <div key={cliente.cliente} className="flex items-center justify-between p-2 border rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-600 rounded-full text-sm font-medium">
+                    <div className="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 rounded-full text-xs font-medium">
                       {index + 1}
                     </div>
-                    <div>
-                      <p className="font-medium text-sm">{cliente.cliente}</p>
-                      <p className="text-xs text-muted-foreground">
-                        📱 {cliente.celular} | 📞 {cliente.smarturban}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="h-4 w-4 text-blue-600" />
+                      <span className="font-medium text-sm">{cliente.cliente}</span>
                     </div>
                   </div>
-                  <Badge variant="outline" className="font-medium">
-                    {cliente.total} llamadas
+                  <Badge variant="outline" className="font-medium text-blue-600">
+                    {cliente.cantidad} llamadas
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Clientes por Llamadas SmartUrban */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Top 10 Clientes - Llamadas SmartUrban</CardTitle>
+            <CardDescription>Clientes con mayor cantidad de llamadas SmartUrban</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {clientesTopLlamadasSmartUrban.map((cliente, index) => (
+                <div key={cliente.cliente} className="flex items-center justify-between p-2 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full text-xs font-medium">
+                      {index + 1}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-indigo-600" />
+                      <span className="font-medium text-sm">{cliente.cliente}</span>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="font-medium text-indigo-600">
+                    {cliente.cantidad} llamadas
                   </Badge>
                 </div>
               ))}
