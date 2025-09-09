@@ -284,13 +284,23 @@ const CentralAlarmasOperador = () => {
                       <p className="text-sm text-muted-foreground">
                         {alarma.direccion}, {alarma.municipio}
                       </p>
+                      <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-green-600">Generada:</span>
+                          <span>{format(new Date(alarma.created_at), 'dd/MM/yyyy HH:mm')}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-red-600">Cancelada:</span>
+                          <span>{format(new Date(alarma.updated_at), 'dd/MM/yyyy HH:mm')}</span>
+                        </div>
+                      </div>
                     </div>
                     <div className="text-right">
                       <Badge variant="outline" className="text-red-600 mb-1">
                         Cancelada
                       </Badge>
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(alarma.created_at), 'HH:mm dd/MM/yyyy')}
+                        Duración: {Math.round((new Date(alarma.updated_at).getTime() - new Date(alarma.created_at).getTime()) / (1000 * 60))} min
                       </p>
                     </div>
                   </div>
