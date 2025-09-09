@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -25,15 +25,47 @@ const Personal = () => {
   const [selectedDate, setSelectedDate] = useState('');
 
   // Hook para manejar turnos en Supabase
-  const { addTurnoOperador, addTurnoSupervisor } = useSupabaseTurnos();
+  const { turnosOperador, addTurnoOperador, addTurnoSupervisor, refetch } = useSupabaseTurnos();
   
-  // Datos de ejemplo del personal con UUIDs válidos
+  // Adaptador: convierte turnos de BD al formato del calendario local
+  const adaptarTurnosBD = (turnosBD: any[]) => {
+    return (turnosBD || []).map((t) => ({
+      id: t.id,
+      fecha: new Date(t.fecha),
+      operador_id: t.operador_id || '',
+      operador_nombre: t.operador_nombre || 'Operador',
+      hora_inicio: t.horario_inicio || (t.turno?.includes('18:00') ? '18:00' : '06:00'),
+      hora_fin: t.horario_fin || (t.turno?.includes('06:00') ? '06:00' : '18:00'),
+      tipo: (t.turno?.includes('18:00-06:00') || (t.horario_inicio === '18:00')) ? 'nocturno' : 'diurno',
+      // Horas base si no vienen calculadas (el calendario requiere estos campos)
+      horas_diurnas: ((t.horario_inicio || '').startsWith('06') ? 12 : 1),
+      horas_nocturnas: ((t.horario_inicio || '').startsWith('18') ? 11 : 0),
+      horas_domingo: 0,
+      horas_feriado: 0,
+      es_domingo: false,
+      es_feriado: false,
+      horas_diurnas_ordinarias: 0,
+      horas_nocturnas_ordinarias: 0,
+      horas_diurnas_dominicales: 0,
+      horas_nocturnas_dominicales: 0,
+      horas_extras: 0,
+      total_horas: 12,
+    }));
+  };
   const [personal] = useState([
     { id: '550e8400-e29b-41d4-a716-446655440001', nombres: 'Juan Carlos', apellidos: 'Pérez García', cargo: 'operador' },
     { id: '550e8400-e29b-41d4-a716-446655440002', nombres: 'María Elena', apellidos: 'Rodríguez López', cargo: 'operador' },
     { id: '550e8400-e29b-41d4-a716-446655440003', nombres: 'Carlos Alberto', apellidos: 'González Ruiz', cargo: 'operador' },
     { id: '550e8400-e29b-41d4-a716-446655440004', nombres: 'Ana Sofia', apellidos: 'Martínez Vega', cargo: 'supervisor' },
   ]);
+
+  // Cargar turnos desde la BD para que el calendario persista
+  useEffect(() => {
+    if (turnosOperador && turnosOperador.length > 0) {
+      const adaptados = adaptarTurnosBD(turnosOperador);
+      setTurnosGenerados(prev => prev.length > 0 ? prev : adaptados);
+    }
+  }, [turnosOperador]);
 
   const handleSubmitPersonal = async (data: any) => {
     console.log('Datos del personal:', data);
@@ -216,46 +248,60 @@ const Personal = () => {
 
   // Función para guardar turnos en la base de datos
   const guardarTurnosEnBD = async (turnos: any[]) => {
-    try {
-      console.log('Guardando turnos en BD:', turnos);
-      
-      for (const turno of turnos) {
+    console.log('Guardando turnos en BD:', turnos);
+    let ok = 0, fail = 0;
+    for (const turno of turnos) {
+      try {
         const operador = personal.find(p => p.id === turno.operador_id);
         console.log('Operador encontrado:', operador, 'para ID:', turno.operador_id);
-        
-        if (operador && operador.cargo === 'operador') {
+        if (!operador) { fail++; continue; }
+
+        if (operador.cargo === 'operador') {
           const turnoData = {
-            fecha: turno.fecha.toISOString().split('T')[0], // Formato YYYY-MM-DD
+            fecha: turno.fecha.toISOString().split('T')[0], // YYYY-MM-DD
             turno: `${turno.hora_inicio}-${turno.hora_fin}`,
-            operador_id: turno.operador_id, // Ya es UUID válido
+            operador_id: turno.operador_id,
             operador_nombre: turno.operador_nombre,
             horario_inicio: turno.hora_inicio,
-            horario_fin: turno.hora_fin
+            horario_fin: turno.hora_fin,
           };
           console.log('Datos del turno operador:', turnoData);
-          
           await addTurnoOperador(turnoData);
-          toast.success(`Turno guardado para ${operador.nombres}`);
-          
-        } else if (operador && operador.cargo === 'supervisor') {
+          ok++;
+        } else if (operador.cargo === 'supervisor') {
           const turnoData = {
             fecha: turno.fecha.toISOString().split('T')[0],
             turno: `${turno.hora_inicio}-${turno.hora_fin}`,
-            supervisor_id: turno.operador_id, // Ya es UUID válido
+            supervisor_id: turno.operador_id,
             supervisor_nombre: turno.operador_nombre,
             horario_inicio: turno.hora_inicio,
-            horario_fin: turno.hora_fin
+            horario_fin: turno.hora_fin,
           };
           console.log('Datos del turno supervisor:', turnoData);
-          
           await addTurnoSupervisor(turnoData);
-          toast.success(`Turno guardado para supervisor ${operador.nombres}`);
+          ok++;
         }
+      } catch (e: any) {
+        console.error('Fallo guardando turno:', e?.message || e);
+        fail++;
       }
+    }
+
+    // Refrescar desde BD para que el calendario persista y se sincronice
+    try {
+      await refetch();
+    } catch (e) {
+      console.warn('No se pudo refetch turnos después de guardar');
+    }
+    // Si hay datos en BD, preferir mostrarlos
+    setTurnosGenerados(prev => prev.length > 0 ? prev : adaptarTurnosBD(turnosOperador));
+
+    if (ok > 0 && fail === 0) {
       toast.success('Todos los turnos guardados exitosamente');
-    } catch (error) {
-      console.error('Error guardando turnos:', error);
-      toast.error(`Error al guardar turnos: ${error.message}`);
+    } else if (ok > 0 && fail > 0) {
+      toast.info(`Se guardaron ${ok} turnos; ${fail} fallaron (ver consola)`);
+    } else {
+      toast.error('No se pudieron guardar los turnos. Asegúrate de estar autenticado.');
     }
   };
 
@@ -269,7 +315,7 @@ const Personal = () => {
         const turnoData = {
           fecha: turno.fecha.toISOString().split('T')[0],
           turno: `${turno.hora_inicio}-${turno.hora_fin}`,
-          operador_id: turno.operador_id, // Ya es UUID válido
+          operador_id: turno.operador_id,
           operador_nombre: turno.operador_nombre,
           horario_inicio: turno.hora_inicio,
           horario_fin: turno.hora_fin
@@ -277,11 +323,14 @@ const Personal = () => {
         console.log('Guardando turno individual con datos:', turnoData);
         
         await addTurnoOperador(turnoData);
+        // Refrescar y sincronizar
+        await refetch();
+        setTurnosGenerados(prev => prev.length > 0 ? prev : adaptarTurnosBD(turnosOperador));
         toast.success(`Turno guardado para ${operador.nombres}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error guardando turno individual:', error);
-      toast.error(`Error al guardar el turno: ${error.message}`);
+      toast.error(`Error al guardar el turno: ${error.message || error}`);
     }
   };
 
