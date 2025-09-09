@@ -102,10 +102,22 @@ export function CalendarioTurnosQuincenal() {
   // Obtener empleados y turnos del turno seleccionado
   const empleadosDisponibles = turnoSeleccionado?.configuracion?.empleadosSeleccionados || [];
   const turnosData = turnoSeleccionado?.turnos || [];
+  const periodoGenerado = turnoSeleccionado?.configuracion?.duracion || 7; // días, quincena o mes
+  const tipoGeneracion = turnoSeleccionado?.configuracion?.tipoGeneracion || 'semanal';
   
   const empleadosFiltrados = empleadoSeleccionado === "todos" 
     ? empleadosDisponibles 
     : empleadosDisponibles.filter(emp => emp.nombre.toLowerCase() === empleadoSeleccionado);
+
+  // Determinar cuántos días mostrar según el tipo de generación
+  let diasAMostrar = turnosData.length;
+  if (tipoGeneracion === 'semanal') {
+    diasAMostrar = Math.min(7, turnosData.length);
+  } else if (tipoGeneracion === 'quincenal') {
+    diasAMostrar = Math.min(15, turnosData.length);
+  } else if (tipoGeneracion === 'mensual') {
+    diasAMostrar = turnosData.length; // Mostrar todo el mes
+  }
 
   // Si no hay turnos guardados, mostrar mensaje
   if (turnosGuardados.length === 0) {
@@ -134,11 +146,11 @@ export function CalendarioTurnosQuincenal() {
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
                 <CardTitle>
-                  Calendario de Turnos - {nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1)}
+                  Calendario de Turnos - {turnoSeleccionado?.configuracion?.tipoGeneracion || 'Personalizado'}
                 </CardTitle>
               </div>
               <Badge variant="outline" className="text-sm">
-                {quincenaActual}ª Quincena ({startDay}-{endDay})
+                {turnoSeleccionado ? `${diasAMostrar} días generados` : 'Sin turnos'}
               </Badge>
             </div>
             
@@ -227,7 +239,7 @@ export function CalendarioTurnosQuincenal() {
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="text-left p-3 font-medium">Jornada / Empleado</th>
-                  {turnosData.slice(0, 7).map((dia, i) => (
+                  {turnosData.slice(0, diasAMostrar).map((dia, i) => (
                     <th key={i} className="text-center p-2 font-medium min-w-[60px]">
                       <div className="text-xs text-muted-foreground">{dia.dia}</div>
                       <div className="text-sm">{dia.fecha}</div>
@@ -244,7 +256,7 @@ export function CalendarioTurnosQuincenal() {
                         <span className="text-xs text-muted-foreground">{empleado.rol}</span>
                       </div>
                     </td>
-                    {turnosData.slice(0, 7).map((dia, diaIndex) => {
+                    {turnosData.slice(0, diasAMostrar).map((dia, diaIndex) => {
                       const asignacion = dia.asignaciones?.find(a => a.empleadoId === empleado.id);
                       const turnoTipo = asignacion?.turnoId;
                       const tipoInfo = turnoTipo ? tiposTurno[turnoTipo] : null;
