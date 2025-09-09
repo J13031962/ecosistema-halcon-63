@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 
 interface TurnoAsignado {
   fecha: Date;
-  tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso';
+  tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso' | '';
 }
 
 interface GeneradorTurnosProps {
@@ -60,7 +60,7 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
     return turnosAsignados.find(t => isSameDay(t.fecha, fecha));
   };
 
-  const asignarTurno = (fecha: Date, tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso') => {
+  const asignarTurno = (fecha: Date, tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso' | '') => {
     setTurnosAsignados(prev => {
       const existing = prev.findIndex(t => isSameDay(t.fecha, fecha));
       if (existing >= 0) {
@@ -76,8 +76,14 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
   };
 
   const handleGenerate = async () => {
-    if (!operadorSeleccionado || !fechaInicio || turnosAsignados.length === 0) {
-      toast.error('Debe seleccionar operador, fecha de inicio y asignar al menos un turno');
+    if (!operadorSeleccionado || !fechaInicio) {
+      toast.error('Debe seleccionar operador y fecha de inicio');
+      return;
+    }
+    
+    const turnosValidos = turnosAsignados.filter(t => t.tipo !== 'descanso' && t.tipo !== '');
+    if (turnosValidos.length === 0) {
+      toast.error('Debe asignar al menos un turno de trabajo');
       return;
     }
 
@@ -85,7 +91,7 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
       setIsGenerating(true);
       
       // Convertir turnos asignados al formato esperado
-      const turnosParaGenerar = turnosAsignados.filter(t => t.tipo !== 'descanso').map(turno => {
+      const turnosParaGenerar = turnosValidos.map(turno => {
         const tipoTurno = TIPOS_TURNO[turno.tipo];
         const operador = operadores.find(op => op.id === operadorSeleccionado);
         
@@ -223,57 +229,82 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
               <div className="flex items-center gap-2">
                 <CalendarIcon className="h-5 w-5" />
                 <h3 className="text-lg font-semibold">
-                  Haga clic en los días para asignar turnos
+                  Haga clic en los días para asignar turnos - Período: {periodicidad === 'semanal' ? '7 días' : periodicidad === 'quincenal' ? '15 días' : '30 días'}
                 </h3>
               </div>
               
-              <div className="grid grid-cols-7 gap-2">
-                {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(dia => (
-                  <div key={dia} className="text-center font-semibold p-2 text-sm">
-                    {dia}
-                  </div>
-                ))}
-                
-                {getDiasDelPeriodo().map((fecha) => {
-                  const turnoAsignado = getTurnoParaFecha(fecha);
-                  const esDomingo = fecha.getDay() === 0;
+              {/* Mostrar todos los días del período seleccionado */}
+              <div className="space-y-4">
+                {Array.from({ length: Math.ceil(getDiasDelPeriodo().length / 7) }, (_, weekIndex) => {
+                  const weekStart = weekIndex * 7;
+                  const weekEnd = Math.min(weekStart + 7, getDiasDelPeriodo().length);
+                  const weekDays = getDiasDelPeriodo().slice(weekStart, weekEnd);
                   
                   return (
-                    <div key={fecha.toISOString()} className="space-y-1">
-                      <div className={cn(
-                        "text-center p-2 border rounded font-medium text-sm",
-                        esDomingo && "bg-blue-50 dark:bg-blue-950/20 border-blue-300"
-                      )}>
-                        {format(fecha, 'dd')}
-                        {esDomingo && <div className="text-xs text-blue-600">Dom</div>}
+                    <div key={weekIndex} className="border rounded-lg p-4">
+                      <h4 className="font-medium mb-2 text-sm text-muted-foreground">
+                        Semana {weekIndex + 1} - {format(weekDays[0], 'dd/MM')} al {format(weekDays[weekDays.length - 1], 'dd/MM')}
+                      </h4>
+                      
+                      <div className="grid grid-cols-7 gap-2">
+                        {/* Headers de días */}
+                        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(dia => (
+                          <div key={dia} className="text-center font-semibold p-2 text-sm">
+                            {dia}
+                          </div>
+                        ))}
+                        
+                        {/* Días de la semana */}
+                        {Array.from({ length: 7 }, (_, dayIndex) => {
+                          const fecha = weekDays[dayIndex];
+                          if (!fecha) {
+                            return <div key={`empty-${dayIndex}`} className="h-20"></div>;
+                          }
+                          
+                          const turnoAsignado = getTurnoParaFecha(fecha);
+                          const esDomingo = fecha.getDay() === 0;
+                          
+                          return (
+                            <div key={fecha.toISOString()} className="space-y-1">
+                              <div className={cn(
+                                "text-center p-2 border rounded font-medium text-sm",
+                                esDomingo && "bg-blue-50 dark:bg-blue-950/20 border-blue-300"
+                              )}>
+                                {format(fecha, 'dd/MM')}
+                                {esDomingo && <div className="text-xs text-blue-600">Dom</div>}
+                              </div>
+                              
+                              <Select
+                                value={turnoAsignado?.tipo || ''}
+                                onValueChange={(tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso' | '') => 
+                                  asignarTurno(fecha, tipo)
+                                }
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue placeholder="Turno" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="">Sin asignar</SelectItem>
+                                  <SelectItem value="descanso">Descanso</SelectItem>
+                                  <SelectItem value="dia">Día (06:00-18:00)</SelectItem>
+                                  <SelectItem value="mañana">Mañana (06:00-14:00)</SelectItem>
+                                  <SelectItem value="tarde">Tarde (14:00-22:00)</SelectItem>
+                                  <SelectItem value="noche">Noche (18:00-06:00)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              
+                              {turnoAsignado && turnoAsignado.tipo !== 'descanso' && (
+                                <div className={cn(
+                                  "text-xs p-1 rounded text-center border",
+                                  TIPOS_TURNO[turnoAsignado.tipo].color
+                                )}>
+                                  {TIPOS_TURNO[turnoAsignado.tipo].horario}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      
-                      <Select
-                        value={turnoAsignado?.tipo || ''}
-                        onValueChange={(tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso') => 
-                          asignarTurno(fecha, tipo)
-                        }
-                      >
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue placeholder="Turno" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="descanso">Descanso</SelectItem>
-                          <SelectItem value="dia">Día</SelectItem>
-                          <SelectItem value="mañana">Mañana</SelectItem>
-                          <SelectItem value="tarde">Tarde</SelectItem>
-                          <SelectItem value="noche">Noche</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      
-                      {turnoAsignado && turnoAsignado.tipo !== 'descanso' && (
-                        <div className={cn(
-                          "text-xs p-1 rounded text-center border",
-                          TIPOS_TURNO[turnoAsignado.tipo].color
-                        )}>
-                          {TIPOS_TURNO[turnoAsignado.tipo].horario}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -310,7 +341,7 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
             </Button>
             <Button 
               onClick={handleGenerate} 
-              disabled={isGenerating || !operadorSeleccionado || !fechaInicio || turnosAsignados.length === 0}
+              disabled={isGenerating || !operadorSeleccionado || !fechaInicio || turnosAsignados.filter(t => t.tipo !== 'descanso').length === 0}
             >
               {isGenerating ? 'Generando...' : 'Generar Turnos'}
             </Button>
