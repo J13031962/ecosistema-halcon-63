@@ -82,43 +82,40 @@ export const calcularHorasTurno = (turno: TurnoCompleto): CalculoHoras => {
   let horas_diurnas = 0;
   let horas_nocturnas = 0;
   
-  // Calcular intersección con horario diurno
-  const inicioTurnoEnDiurno = isBefore(fechaInicio, inicioDiurno) ? inicioDiurno : fechaInicio;
-  const finTurnoEnDiurno = isAfter(fechaFin, finDiurno) ? finDiurno : fechaFin;
+  // Calcular horas diurnas y nocturnas
+  horas_diurnas = 0;
+  horas_nocturnas = 0;
   
-  if (isBefore(inicioTurnoEnDiurno, finTurnoEnDiurno)) {
-    horas_diurnas = differenceInMinutes(finTurnoEnDiurno, inicioTurnoEnDiurno) / 60;
-  }
-  
-  horas_nocturnas = duracionTotalHoras - horas_diurnas;
-  
-  // Manejar turnos que cruzan días
   if (fechaFin.getDate() !== fechaInicio.getDate()) {
-    // Si el turno cruza medianoche, calcular por separado cada parte
+    // Turno cruza medianoche - calcular por partes
     const medianoche = new Date(fecha);
     medianoche.setHours(24, 0, 0, 0);
     
-    // Parte del primer día
-    const horasAntesMedianoche = differenceInMinutes(medianoche, fechaInicio) / 60;
-    const horasDespuesMedianoche = differenceInMinutes(fechaFin, medianoche) / 60;
-    
-    // Recalcular horas diurnas y nocturnas
-    horas_diurnas = 0;
-    horas_nocturnas = 0;
-    
-    // Primer día
+    // Parte del primer día (hasta medianoche)
+    // Verificar si hay overlap con horario diurno del primer día
     if (isBefore(fechaInicio, finDiurno)) {
-      const finDiurnoLimitado = isBefore(medianoche, finDiurno) ? medianoche : finDiurno;
-      horas_diurnas += Math.max(0, differenceInMinutes(finDiurnoLimitado, fechaInicio) / 60);
+      const finPrimerDia = isBefore(medianoche, finDiurno) ? medianoche : finDiurno;
+      horas_diurnas += Math.max(0, differenceInMinutes(finPrimerDia, fechaInicio) / 60);
     }
     
-    // Segundo día (desde medianoche hasta HORA_INICIO_DIURNO)
+    // Parte del segundo día (desde medianoche)
     const siguienteDia = new Date(fechaFin);
     const inicioDiurnoSiguiente = new Date(siguienteDia);
     inicioDiurnoSiguiente.setHours(HORA_INICIO_DIURNO, 0, 0, 0);
     
+    // Verificar si el turno termina después del inicio del horario diurno del segundo día
     if (isAfter(fechaFin, inicioDiurnoSiguiente)) {
       horas_diurnas += differenceInMinutes(fechaFin, inicioDiurnoSiguiente) / 60;
+    }
+    
+    horas_nocturnas = duracionTotalHoras - horas_diurnas;
+  } else {
+    // Turno no cruza medianoche - calcular normalmente
+    const inicioTurnoEnDiurno = isBefore(fechaInicio, inicioDiurno) ? inicioDiurno : fechaInicio;
+    const finTurnoEnDiurno = isAfter(fechaFin, finDiurno) ? finDiurno : fechaFin;
+    
+    if (isBefore(inicioTurnoEnDiurno, finTurnoEnDiurno)) {
+      horas_diurnas = differenceInMinutes(finTurnoEnDiurno, inicioTurnoEnDiurno) / 60;
     }
     
     horas_nocturnas = duracionTotalHoras - horas_diurnas;
