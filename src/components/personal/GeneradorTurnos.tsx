@@ -136,6 +136,23 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
     setTurnosAsignados(prev => prev.filter(t => t.operador_id !== operadorId));
   };
 
+  const editarOperador = (operadorId: string) => {
+    const operadorData = operadoresConTurnos.find(op => op.operador_id === operadorId);
+    if (!operadorData) return;
+
+    // Cargar los turnos del operador en el estado de edición
+    setOperadorSeleccionado(operadorId);
+    setTurnosAsignados(prev => [
+      ...prev.filter(t => t.operador_id !== operadorId), // Remover turnos existentes del operador
+      ...operadorData.turnos // Agregar los turnos del operador a editar
+    ]);
+
+    // Remover el operador de la lista de operadores con turnos asignados temporalmente
+    setOperadoresConTurnos(prev => prev.filter(op => op.operador_id !== operadorId));
+    
+    toast.info(`Editando turnos de ${operadorData.operador_nombre}`);
+  };
+
   const handleGenerate = async () => {
     if (!fechaInicio) {
       toast.error('Debe seleccionar fecha de inicio');
@@ -298,15 +315,26 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
                         {operadorData.turnos.filter(t => t.tipo !== 'descanso').length} turnos
                       </Badge>
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removerOperador(operadorData.operador_id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      Remover
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => editarOperador(operadorData.operador_id)}
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removerOperador(operadorData.operador_id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        Remover
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
