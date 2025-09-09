@@ -104,6 +104,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
             { title: "Patrullas Activas", url: "/patrullas-activas", icon: Car },
             { title: "Todas las Patrullas", url: "/patrullas", icon: Car },
             { title: "Asignaciones", url: "/asignaciones", icon: MapPin },
+            { title: "Gestión Personal Supervisores", url: "/personal-supervisores", icon: UserCheck },
             { title: "Mi Patrulla", url: "/mi-patrulla", icon: Car },
           ]
         },
@@ -179,7 +180,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
         { 
           category: "👥 Gestión Personal", 
           items: [
-            { title: "Personal", url: "/personal", icon: Users },
+            { title: "Gestión Personal Operadores", url: "/personal", icon: Users },
             { title: "Turnos Operador", url: "/turnos-operador", icon: Clock },
             { title: "Turnos Supervisor", url: "/turnos-supervisor", icon: Clock },
           ]

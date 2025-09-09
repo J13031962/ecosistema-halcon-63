@@ -84,7 +84,7 @@ const adminMenuItems: MenuCategory[] = [
       { title: "Reportes Ejecutivos", url: "/reportes-ejecutivos", icon: BarChart3 },
       { title: "Análisis Avanzado", url: "/analisis", icon: FileText },
       { title: "Estado General", url: "/estado-general", icon: Shield },
-      { title: "Gestión Personal", url: "/personal", icon: Users },
+      { title: "Gestión Personal Operadores", url: "/personal", icon: Users },
       { title: "Turnos Operador", url: "/turnos-operador", icon: Clock },
       { title: "Turnos Supervisor", url: "/turnos-supervisor", icon: Clock },
       { title: "Ingresar Clientes", url: "/ingresar-clientes", icon: UserPlus },

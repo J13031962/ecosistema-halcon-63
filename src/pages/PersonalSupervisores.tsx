@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Plus, Clock, Calendar, Download, Edit2 } from 'lucide-react';
+import { Users, Plus, Clock, Calendar, Download, Edit2, UserCheck } from 'lucide-react';
 import { FormularioNuevoPersonal } from '@/components/personal/FormularioNuevoPersonal';
 import { GeneradorTurnos } from '@/components/personal/GeneradorTurnos';
 import { CalendarioTurnos } from '@/components/personal/CalendarioTurnos';
@@ -14,7 +14,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-const Personal = () => {
+const PersonalSupervisores = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isTurnosOpen, setIsTurnosOpen] = useState(false);
   const [turnosGenerados, setTurnosGenerados] = useState<any[]>([]);
@@ -25,20 +25,20 @@ const Personal = () => {
   const [selectedDate, setSelectedDate] = useState('');
 
   // Hook para manejar turnos en Supabase
-  const { addTurnoOperador, addTurnoSupervisor } = useSupabaseTurnos();
+  const { addTurnoSupervisor } = useSupabaseTurnos();
   
-  // Datos de ejemplo del personal
+  // Datos de ejemplo del personal supervisor
   const [personal] = useState([
-    { id: '1', nombres: 'Juan Carlos', apellidos: 'Pérez García', cargo: 'operador' },
-    { id: '2', nombres: 'María Elena', apellidos: 'Rodríguez López', cargo: 'operador' },
-    { id: '3', nombres: 'Carlos Alberto', apellidos: 'González Ruiz', cargo: 'operador' },
-    { id: '4', nombres: 'Ana Sofia', apellidos: 'Martínez Vega', cargo: 'supervisor' },
+    { id: '1', nombres: 'Carlos Alberto', apellidos: 'Ramírez López', cargo: 'supervisor' },
+    { id: '2', nombres: 'María José', apellidos: 'González Martínez', cargo: 'supervisor' },
+    { id: '3', nombres: 'José Luis', apellidos: 'Fernández Silva', cargo: 'supervisor' },
+    { id: '4', nombres: 'Ana Carolina', apellidos: 'Torres Ruiz', cargo: 'supervisor' },
   ]);
 
   const handleSubmitPersonal = async (data: any) => {
-    console.log('Datos del personal:', data);
+    console.log('Datos del supervisor:', data);
     // Aquí se implementará la lógica para guardar en la base de datos
-    toast.success('Personal registrado exitosamente');
+    toast.success('Supervisor registrado exitosamente');
   };
 
   const handleGenerarTurnos = async (data: any) => {
@@ -92,12 +92,12 @@ const Personal = () => {
         return;
       }
 
-      // Obtener nombres de operadores
-      const operadoresConNombres = data.personal_asignado.map((id: string) => {
-        const operador = personal.find(p => p.id === id);
+      // Obtener nombres de supervisores
+      const supervisoresConNombres = data.personal_asignado.map((id: string) => {
+        const supervisor = personal.find(p => p.id === id);
         return {
           id,
-          nombre: operador ? `${operador.nombres} ${operador.apellidos}` : 'Operador'
+          nombre: supervisor ? `${supervisor.nombres} ${supervisor.apellidos}` : 'Supervisor'
         };
       });
       
@@ -117,7 +117,7 @@ const Personal = () => {
       // Agregar nombres a los turnos
       const turnosConNombres = turnosNuevos.map(turno => ({
         ...turno,
-        operador_nombre: operadoresConNombres.find(op => op.id === turno.operador_id)?.nombre || 'Operador'
+        operador_nombre: supervisoresConNombres.find(op => op.id === turno.operador_id)?.nombre || 'Supervisor'
       }));
       
       setTurnosGenerados(turnosConNombres);
@@ -156,15 +156,15 @@ const Personal = () => {
 
   const handleGuardarTurno = () => {
     if (!newTurno.operador_id || !newTurno.tipo) {
-      toast.error('Por favor selecciona operador y tipo de turno');
+      toast.error('Por favor selecciona supervisor y tipo de turno');
       return;
     }
 
-    const operador = personal.find(p => p.id === newTurno.operador_id);
+    const supervisor = personal.find(p => p.id === newTurno.operador_id);
     const tipoTurno = tiposTurnos.find(t => t.value === newTurno.tipo);
     
-    if (!operador || !tipoTurno) {
-      toast.error('Operador o tipo de turno no válido');
+    if (!supervisor || !tipoTurno) {
+      toast.error('Supervisor o tipo de turno no válido');
       return;
     }
 
@@ -186,7 +186,7 @@ const Personal = () => {
       id: `turno_${Date.now()}`,
       fecha: fechaTurno,
       operador_id: newTurno.operador_id,
-      operador_nombre: `${operador.nombres} ${operador.apellidos}`,
+      operador_nombre: `${supervisor.nombres} ${supervisor.apellidos}`,
       hora_inicio: horaInicio,
       hora_fin: horaFin,
       tipo: tipoTurno.tipo,
@@ -218,19 +218,10 @@ const Personal = () => {
   const guardarTurnosEnBD = async (turnos: any[]) => {
     try {
       for (const turno of turnos) {
-        const operador = personal.find(p => p.id === turno.operador_id);
-        if (operador && operador.cargo === 'operador') {
-          await addTurnoOperador({
-            fecha: turno.fecha.toISOString().split('T')[0], // Formato YYYY-MM-DD
-            turno: `${turno.hora_inicio}-${turno.hora_fin}`,
-            operador_id: turno.operador_id,
-            operador_nombre: turno.operador_nombre,
-            horario_inicio: turno.hora_inicio,
-            horario_fin: turno.hora_fin
-          });
-        } else if (operador && operador.cargo === 'supervisor') {
+        const supervisor = personal.find(p => p.id === turno.operador_id);
+        if (supervisor && supervisor.cargo === 'supervisor') {
           await addTurnoSupervisor({
-            fecha: turno.fecha.toISOString().split('T')[0],
+            fecha: turno.fecha.toISOString().split('T')[0], // Formato YYYY-MM-DD
             turno: `${turno.hora_inicio}-${turno.hora_fin}`,
             supervisor_id: turno.operador_id,
             supervisor_nombre: turno.operador_nombre,
@@ -248,13 +239,13 @@ const Personal = () => {
   // Función para guardar un turno individual
   const guardarTurnoIndividual = async (turno: any) => {
     try {
-      const operador = personal.find(p => p.id === turno.operador_id);
-      if (operador && operador.cargo === 'operador') {
-        await addTurnoOperador({
+      const supervisor = personal.find(p => p.id === turno.operador_id);
+      if (supervisor && supervisor.cargo === 'supervisor') {
+        await addTurnoSupervisor({
           fecha: turno.fecha.toISOString().split('T')[0],
           turno: `${turno.hora_inicio}-${turno.hora_fin}`,
-          operador_id: turno.operador_id,
-          operador_nombre: turno.operador_nombre,
+          supervisor_id: turno.operador_id,
+          supervisor_nombre: turno.operador_nombre,
           horario_inicio: turno.hora_inicio,
           horario_fin: turno.hora_fin
         });
@@ -268,7 +259,7 @@ const Personal = () => {
   const downloadExcel = () => {
     const dataForExcel = turnosGenerados.map(turno => ({
       'Fecha': turno.fecha.toLocaleDateString(),
-      'Operador': turno.operador_nombre,
+      'Supervisor': turno.operador_nombre,
       'Hora Inicio': turno.hora_inicio,
       'Hora Fin': turno.hora_fin,
       'Tipo': turno.tipo,
@@ -280,15 +271,15 @@ const Personal = () => {
 
     const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Turnos');
-    XLSX.writeFile(workbook, 'turnos-personal.xlsx');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Turnos Supervisores');
+    XLSX.writeFile(workbook, 'turnos-supervisores.xlsx');
     toast.success('Archivo Excel descargado');
   };
 
   const downloadPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text('Reporte de Turnos de Personal', 20, 20);
+    doc.text('Reporte de Turnos de Supervisores', 20, 20);
     
     const tableData = turnosGenerados.map(turno => [
       turno.fecha.toLocaleDateString(),
@@ -300,13 +291,13 @@ const Personal = () => {
     ]);
 
     (doc as any).autoTable({
-      head: [['Fecha', 'Operador', 'Horario', 'Tipo', 'H. Diurnas', 'H. Nocturnas']],
+      head: [['Fecha', 'Supervisor', 'Horario', 'Tipo', 'H. Diurnas', 'H. Nocturnas']],
       body: tableData,
       startY: 30,
       styles: { fontSize: 8 }
     });
 
-    doc.save('turnos-personal.pdf');
+    doc.save('turnos-supervisores.pdf');
     toast.success('Archivo PDF descargado');
   };
 
@@ -315,11 +306,11 @@ const Personal = () => {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Users className="h-8 w-8 text-primary" />
-            GESTIÓN DE PERSONAL OPERADORES
+            <UserCheck className="h-8 w-8 text-primary" />
+            GESTIÓN DE PERSONAL SUPERVISORES
           </h1>
           <p className="text-muted-foreground">
-            Gestión de operadores y recursos humanos
+            Gestión de supervisores motorizados y recursos humanos
           </p>
         </div>
         <div className="flex gap-2">
@@ -341,7 +332,7 @@ const Personal = () => {
           </Button>
           <Button onClick={() => setIsFormOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Ingresar Personal
+            Ingresar Supervisor
           </Button>
         </div>
       </div>
@@ -360,19 +351,19 @@ const Personal = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Gestión de Personal
+                <UserCheck className="h-5 w-5" />
+                Gestión de Supervisores
               </CardTitle>
             </CardHeader>
             <CardContent className="text-center py-8">
-              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Registrar Nuevo Personal</h3>
+              <UserCheck className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Registrar Nuevo Supervisor</h3>
               <p className="text-muted-foreground mb-4">
-                Comienza registrando el personal de la empresa
+                Comienza registrando supervisores motorizados
               </p>
               <Button onClick={() => setIsFormOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Ingresar Personal
+                Ingresar Supervisor
               </Button>
             </CardContent>
           </Card>
@@ -403,7 +394,7 @@ const Personal = () => {
       {personal.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Personal Registrado</CardTitle>
+            <CardTitle>Supervisores Registrados</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -424,24 +415,24 @@ const Personal = () => {
           <DialogHeader>
             <DialogTitle>Asignar Turno - {selectedDate}</DialogTitle>
             <DialogDescription>
-              Selecciona el operador y el tipo de turno para este día.
+              Selecciona el supervisor y el tipo de turno para este día.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Operador:</label>
+                <label className="text-sm font-medium">Supervisor:</label>
                 <Select
                   value={newTurno.operador_id}
                   onValueChange={(value) => setNewTurno({ ...newTurno, operador_id: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar operador" />
+                    <SelectValue placeholder="Seleccionar supervisor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {personal.filter(p => p.cargo === 'operador').map((operador) => (
-                      <SelectItem key={operador.id} value={operador.id}>
-                        {operador.nombres} {operador.apellidos}
+                    {personal.filter(p => p.cargo === 'supervisor').map((supervisor) => (
+                      <SelectItem key={supervisor.id} value={supervisor.id}>
+                        {supervisor.nombres} {supervisor.apellidos}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -494,4 +485,4 @@ const Personal = () => {
   );
 };
 
-export default Personal;
+export default PersonalSupervisores;

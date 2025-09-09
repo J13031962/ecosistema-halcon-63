@@ -31,6 +31,7 @@ import ReportesEjecutivos from "./pages/ReportesEjecutivos";
 import Analisis from "./pages/Analisis";
 import EstadoGeneral from "./pages/EstadoGeneral";
 import Personal from "./pages/Personal";
+import PersonalSupervisores from "./pages/PersonalSupervisores";
 import CentralAlarmas from "./pages/CentralAlarmas";
 import CentralAlarmasOperador from "./pages/CentralAlarmasOperador";
 
@@ -278,6 +279,14 @@ const AppContent = () => {
         <ProtectedRoute>
           <MainLayout>
             <Personal />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/personal-supervisores" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <PersonalSupervisores />
           </MainLayout>
         </ProtectedRoute>
       } />
