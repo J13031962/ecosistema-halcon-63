@@ -137,7 +137,9 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
       {/* Cronómetros */}
       <div className="grid grid-cols-5 gap-4">
         <div className="text-center">
-          <div className="text-sm text-muted-foreground mb-1">Aceptación Despachador</div>
+          <div className="text-sm text-muted-foreground mb-1 h-8 flex items-center justify-center">
+            <span className="text-center leading-tight">Aceptación<br />Despachador</span>
+          </div>
           <div className="flex items-center justify-center">
             <Clock className="h-4 w-4 mr-1 text-blue-500" />
             <span className={`text-lg font-bold ${alarma.tiempo_toma_despachador ? 'text-green-600' : 'text-blue-600'}`}>
@@ -147,7 +149,9 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
         </div>
 
         <div className="text-center">
-          <div className="text-sm text-muted-foreground mb-1">Despachador envío</div>
+          <div className="text-sm text-muted-foreground mb-1 h-8 flex items-center justify-center">
+            <span className="text-center leading-tight">Despachador<br />envío</span>
+          </div>
           <div className="flex items-center justify-center">
             <Clock className="h-4 w-4 mr-1 text-purple-500" />
             <span className={`text-lg font-bold ${alarma.tiempo_asignacion_supervisor ? 'text-green-600' : 'text-purple-600'}`}>
@@ -157,7 +161,9 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
         </div>
 
         <div className="text-center">
-          <div className="text-sm text-muted-foreground mb-1">Supervisor aceptación</div>
+          <div className="text-sm text-muted-foreground mb-1 h-8 flex items-center justify-center">
+            <span className="text-center leading-tight">Supervisor<br />aceptación</span>
+          </div>
           <div className="flex items-center justify-center">
             <Clock className="h-4 w-4 mr-1 text-orange-500" />
             <span className={`text-lg font-bold ${alarma.tiempo_aceptacion_supervisor ? 'text-green-600' : 'text-orange-600'}`}>
@@ -167,7 +173,9 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
         </div>
 
         <div className="text-center">
-          <div className="text-sm text-muted-foreground mb-1">Supervisor llegada</div>
+          <div className="text-sm text-muted-foreground mb-1 h-8 flex items-center justify-center">
+            <span className="text-center leading-tight">Supervisor<br />llegada</span>
+          </div>
           <div className="flex items-center justify-center">
             <Clock className="h-4 w-4 mr-1 text-teal-500" />
             <span className={`text-lg font-bold ${alarma.tiempo_primera_lectura_qr ? 'text-green-600' : 'text-teal-600'}`}>
@@ -177,7 +185,9 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
         </div>
 
         <div className="text-center">
-          <div className="text-sm text-muted-foreground mb-1">Supervisor salida</div>
+          <div className="text-sm text-muted-foreground mb-1 h-8 flex items-center justify-center">
+            <span className="text-center leading-tight">Supervisor<br />salida</span>
+          </div>
           <div className="flex items-center justify-center">
             <Clock className="h-4 w-4 mr-1 text-cyan-500" />
             <span className={`text-lg font-bold ${alarma.tiempo_segunda_lectura_qr ? 'text-green-600' : 'text-cyan-600'}`}>
