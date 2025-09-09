@@ -2,9 +2,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GeneradorTurnosAvanzado } from "@/components/turnos/GeneradorTurnosAvanzado";
+import { VisualizadorTurnosOperador } from "@/components/turnos/VisualizadorTurnosOperador";
 import { CalendarTurnos } from "@/components/turnos/CalendarTurnos";
 import { CalendarioTurnosQuincenal } from "@/components/personal/CalendarioTurnosQuincenal";
-import { Plus, Calendar, Users, Clock } from "lucide-react";
+import { Plus, Calendar, Users, Clock, Settings, Eye } from "lucide-react";
 
 const TurnosOperador = () => {
   const [showCalendar, setShowCalendar] = useState(false);
@@ -13,16 +16,39 @@ const TurnosOperador = () => {
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-bold">Turnos Operador - Vista General</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Gestión de Turnos - Operadores</h1>
           <p className="text-sm text-muted-foreground">
-            Visualización de turnos programados para operadores (Solo consulta)
+            Sistema completo de generación, visualización y gestión de turnos para operadores
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground bg-muted px-3 py-2 rounded-md w-fit">
-          <Clock className="h-4 w-4 flex-shrink-0" />
-          <span className="whitespace-nowrap">Solo visualización</span>
-        </div>
       </div>
+
+      <Tabs defaultValue="visualizar" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="visualizar" className="flex items-center gap-2">
+            <Eye className="h-4 w-4" />
+            Mis Turnos
+          </TabsTrigger>
+          <TabsTrigger value="generar" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Generar Turnos
+          </TabsTrigger>
+          <TabsTrigger value="legacy" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Vista Legacy
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="visualizar" className="mt-6">
+          <VisualizadorTurnosOperador />
+        </TabsContent>
+        
+        <TabsContent value="generar" className="mt-6">
+          <GeneradorTurnosAvanzado />
+        </TabsContent>
+        
+        <TabsContent value="legacy" className="mt-6">
+          <div className="space-y-4">
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -248,6 +274,9 @@ const TurnosOperador = () => {
           </div>
         </CardContent>
       </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
