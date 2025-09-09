@@ -22,12 +22,11 @@ const turnosSchema = z.object({
   fecha_inicio: z.date({
     required_error: 'La fecha de inicio es requerida'
   }),
-  duracion_dias: z.number().min(7).max(31),
-  turno_diurno_inicio: z.string(),
-  turno_diurno_fin: z.string(),
-  turno_nocturno_inicio: z.string(),
-  turno_nocturno_fin: z.string(),
-  personal_asignado: z.array(z.string()).min(1, 'Debe asignar al menos un miembro del personal')
+  operador_id: z.string().min(1, 'Debe seleccionar un operador'),
+  tipo_turno: z.enum(['dia', 'manana', 'tarde', 'noche'], {
+    required_error: 'Debe seleccionar el tipo de turno'
+  }),
+  dias_descanso: z.array(z.string()).min(1, 'Debe seleccionar al menos un día de descanso')
 });
 
 type TurnosFormData = z.infer<typeof turnosSchema>;
@@ -51,25 +50,23 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
     resolver: zodResolver(turnosSchema),
     defaultValues: {
       periodicidad: 'quincenal',
-      duracion_dias: 15,
-      turno_diurno_inicio: '06:00',
-      turno_diurno_fin: '18:00',
-      turno_nocturno_inicio: '18:00',
-      turno_nocturno_fin: '06:00',
-      personal_asignado: []
+      operador_id: '',
+      tipo_turno: 'dia',
+      dias_descanso: []
     }
   });
 
-  const periodicidad = form.watch('periodicidad');
-
-  React.useEffect(() => {
-    const duracionMap = {
-      semanal: 7,
-      quincenal: 15,
-      mensual: 30
+  const tipoTurno = form.watch('tipo_turno');
+  
+  const getHorarioTurno = (tipo: string) => {
+    const horarios = {
+      dia: { inicio: '06:00', fin: '18:00' },
+      manana: { inicio: '06:00', fin: '14:00' },
+      tarde: { inicio: '14:00', fin: '22:00' },
+      noche: { inicio: '18:00', fin: '06:00' }
     };
-    form.setValue('duracion_dias', duracionMap[periodicidad]);
-  }, [periodicidad, form]);
+    return horarios[tipo as keyof typeof horarios] || horarios.dia;
+  };
 
   const handleGenerate = async (data: TurnosFormData) => {
     try {
@@ -100,10 +97,10 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleGenerate)} className="space-y-6">
-            {/* Configuración de Periodicidad */}
+            {/* Configuración Básica */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Configuración de Periodicidad</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <h3 className="text-lg font-semibold">Configuración Básica</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="periodicidad"
@@ -167,121 +164,110 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
                     </FormItem>
                   )}
                 />
-
-                <FormField
-                  control={form.control}
-                  name="duracion_dias"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Duración (días)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="7"
-                          max="31"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
             </div>
 
-            {/* Configuración de Horarios */}
+            {/* Selección de Operador */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Configuración de Horarios</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <FormField
-                  control={form.control}
-                  name="turno_diurno_inicio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Turno Diurno - Inicio</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="turno_diurno_fin"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Turno Diurno - Fin</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="turno_nocturno_inicio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Turno Nocturno - Inicio</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="turno_nocturno_fin"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Turno Nocturno - Fin</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Asignación de Personal */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Personal Disponible</h3>
+              <h3 className="text-lg font-semibold">Operador</h3>
               <FormField
                 control={form.control}
-                name="personal_asignado"
+                name="operador_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Operadores a Incluir</FormLabel>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-3">
-                      {operadores.map((operador) => (
+                    <FormLabel>Seleccionar Operador</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Elegir operador" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {operadores.map((operador) => (
+                          <SelectItem key={operador.id} value={operador.id}>
+                            {operador.nombres} {operador.apellidos}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Tipo de Turno */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Tipo de Turno</h3>
+              <FormField
+                control={form.control}
+                name="tipo_turno"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Horario de Trabajo</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Elegir tipo de turno" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="dia">Día (06:00 - 18:00)</SelectItem>
+                        <SelectItem value="manana">Mañana (06:00 - 14:00)</SelectItem>
+                        <SelectItem value="tarde">Tarde (14:00 - 22:00)</SelectItem>
+                        <SelectItem value="noche">Noche (18:00 - 06:00)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {tipoTurno && (
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <p className="text-sm">
+                    <strong>Horario seleccionado:</strong> {getHorarioTurno(tipoTurno).inicio} - {getHorarioTurno(tipoTurno).fin}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Días de Descanso */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Días de Descanso</h3>
+              <FormField
+                control={form.control}
+                name="dias_descanso"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Seleccionar días de descanso en la semana</FormLabel>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {[
+                        { value: 'lunes', label: 'Lunes' },
+                        { value: 'martes', label: 'Martes' },
+                        { value: 'miercoles', label: 'Miércoles' },
+                        { value: 'jueves', label: 'Jueves' },
+                        { value: 'viernes', label: 'Viernes' },
+                        { value: 'sabado', label: 'Sábado' },
+                        { value: 'domingo', label: 'Domingo' }
+                      ].map((dia) => (
                         <label
-                          key={operador.id}
+                          key={dia.value}
                           className="flex items-center space-x-2 cursor-pointer hover:bg-accent rounded p-2"
                         >
                           <input
                             type="checkbox"
-                            checked={field.value.includes(operador.id)}
+                            checked={field.value.includes(dia.value)}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                field.onChange([...field.value, operador.id]);
+                                field.onChange([...field.value, dia.value]);
                               } else {
-                                field.onChange(field.value.filter(id => id !== operador.id));
+                                field.onChange(field.value.filter(d => d !== dia.value));
                               }
                             }}
                             className="rounded"
                           />
-                          <span className="text-sm">
-                            {operador.nombres} {operador.apellidos}
-                          </span>
+                          <span className="text-sm">{dia.label}</span>
                         </label>
                       ))}
                     </div>

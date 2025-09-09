@@ -128,19 +128,19 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
         </div>
       </div>
 
-      {/* Vista semanal */}
-      <div className="grid grid-cols-7 gap-2">
+      {/* Vista semanal - más ancha y menos alta */}
+      <div className="grid grid-cols-7 gap-3">
         {weekDays.map((day, index) => {
           const turnosDelDia = getTurnosForDay(day);
           const esDomingo = isWeekend(day) && day.getDay() === 0;
           
           return (
-            <Card key={index} className={cn("min-h-[250px]", esDomingo && "bg-blue-50 dark:bg-blue-950/20")}>
-              <CardHeader className="p-3">
+            <Card key={index} className={cn("min-h-[180px]", esDomingo && "bg-blue-50 dark:bg-blue-950/20")}>
+              <CardHeader className="p-2">
                 <CardTitle className="text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold">{format(day, 'EEE', { locale: es })}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="font-semibold text-base">{format(day, 'EEE', { locale: es })}</span>
+                    <span className="text-sm text-muted-foreground font-bold">
                       {format(day, 'dd')}
                     </span>
                   </div>
@@ -151,7 +151,7 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-3 pt-0 space-y-3">
+              <CardContent className="p-2 space-y-2">
                 {turnosDelDia.map((turno) => {
                   const operadorColor = getOperadorColor(turno.operador_id);
                   return (
@@ -165,36 +165,38 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
                       onClick={() => onEditTurno(turno)}
                     >
                       <div className="space-y-2">
-                        {/* Operador - Más visible */}
-                        <div className={cn("font-bold text-sm", operadorColor.text)}>
+                        {/* Operador - Más visible y más ancho */}
+                        <div className={cn("font-bold text-base truncate", operadorColor.text)}>
                           {turno.operador_nombre}
                         </div>
                         
-                        {/* Tipo de turno y horario */}
-                        <div className="flex items-center gap-2">
-                          {getTipoIcon(turno.tipo)}
-                          <span className={cn("font-semibold text-xs", operadorColor.text)}>
-                            {turno.hora_inicio} - {turno.hora_fin}
-                          </span>
+                        {/* Tipo de turno y horario en línea horizontal */}
+                        <div className="flex items-center justify-between gap-1">
+                          <div className="flex items-center gap-1">
+                            {getTipoIcon(turno.tipo)}
+                            <span className={cn("font-semibold text-xs", operadorColor.text)}>
+                              {turno.hora_inicio}-{turno.hora_fin}
+                            </span>
+                          </div>
                           <Badge 
                             variant={turno.tipo === 'diurno' ? 'default' : 'secondary'} 
-                            className="text-xs"
+                            className="text-xs px-2"
                           >
-                            {turno.tipo === 'diurno' ? 'Día' : 'Noche'}
+                            {turno.tipo === 'diurno' ? 'D' : 'N'}
                           </Badge>
                         </div>
                         
                         {/* Horas totales */}
-                        <div className={cn("text-xs font-medium", operadorColor.text)}>
-                          Total: {(turno.horas_diurnas + turno.horas_nocturnas).toFixed(1)}h
+                        <div className={cn("text-xs font-medium text-center", operadorColor.text)}>
+                          {(turno.horas_diurnas + turno.horas_nocturnas).toFixed(1)}h
                         </div>
                       </div>
                     </div>
                   );
                 })}
                 {turnosDelDia.length === 0 && (
-                  <div className="text-xs text-muted-foreground text-center py-8">
-                    Sin turnos asignados
+                  <div className="text-xs text-muted-foreground text-center py-4">
+                    Sin turnos
                   </div>
                 )}
               </CardContent>
