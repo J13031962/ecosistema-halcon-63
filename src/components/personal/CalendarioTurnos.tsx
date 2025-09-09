@@ -40,13 +40,15 @@ interface CalendarioTurnosProps {
   onEditTurno: (turno: Turno) => void;
   selectedWeek: Date;
   onWeekChange: (date: Date) => void;
+  onChangeTurno?: (fecha: Date, turnosDelDia: Turno[]) => void;
 }
 
 export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
   turnos,
   onEditTurno,
   selectedWeek,
-  onWeekChange
+  onWeekChange,
+  onChangeTurno
 }) => {
   const [viewMode, setViewMode] = useState<'semanal' | 'mensual'>('semanal');
 
@@ -76,12 +78,70 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
 
   const getTotalHorasOperador = (operadorId: string) => {
     const turnosOperador = turnos.filter(t => t.operador_id === operadorId);
+    
+    // Calcular horas diurnas ordinarias (lunes a sábado, 06:00-19:00)
+    const horasDiurnasOrdinarias = turnosOperador.reduce((sum, t) => {
+      if (!t.es_domingo && !t.es_feriado) {
+        return sum + t.horas_diurnas;
+      }
+      return sum;
+    }, 0);
+    
+    // Calcular horas extras diurnas (cuando las ordinarias superan 88 horas)
+    const horasExtrasDiurnas = Math.max(0, horasDiurnasOrdinarias - 88);
+    const horasDiurnasOrdinariasLimitadas = Math.min(horasDiurnasOrdinarias, 88);
+    
+    // Horas nocturnas ordinarias (lunes a sábado, 19:00-06:00)
+    const horasNocturnasOrdinarias = turnosOperador.reduce((sum, t) => {
+      if (!t.es_domingo && !t.es_feriado) {
+        return sum + t.horas_nocturnas;
+      }
+      return sum;
+    }, 0);
+    
+    // Horas dominicales diurnas
+    const horasDominicalesDiurnas = turnosOperador.reduce((sum, t) => {
+      if (t.es_domingo) {
+        return sum + t.horas_diurnas;
+      }
+      return sum;
+    }, 0);
+    
+    // Horas dominicales nocturnas
+    const horasDominicalesNocturnas = turnosOperador.reduce((sum, t) => {
+      if (t.es_domingo) {
+        return sum + t.horas_nocturnas;
+      }
+      return sum;
+    }, 0);
+    
+    // Horas festivas diurnas
+    const horasFestivasDiurnas = turnosOperador.reduce((sum, t) => {
+      if (t.es_feriado) {
+        return sum + t.horas_diurnas;
+      }
+      return sum;
+    }, 0);
+    
+    // Horas festivas nocturnas
+    const horasFestivasNocturnas = turnosOperador.reduce((sum, t) => {
+      if (t.es_feriado) {
+        return sum + t.horas_nocturnas;
+      }
+      return sum;
+    }, 0);
+    
+    const total = turnosOperador.reduce((sum, t) => sum + t.horas_diurnas + t.horas_nocturnas, 0);
+    
     return {
-      diurnas: turnosOperador.reduce((sum, t) => sum + t.horas_diurnas, 0),
-      nocturnas: turnosOperador.reduce((sum, t) => sum + t.horas_nocturnas, 0),
-      domingo: turnosOperador.reduce((sum, t) => sum + t.horas_domingo, 0),
-      feriado: turnosOperador.reduce((sum, t) => sum + t.horas_feriado, 0),
-      total: turnosOperador.reduce((sum, t) => sum + t.horas_diurnas + t.horas_nocturnas, 0)
+      diurnasOrdinarias: horasDiurnasOrdinariasLimitadas,
+      diurnasExtras: horasExtrasDiurnas,
+      nocturnasOrdinarias: horasNocturnasOrdinarias,
+      dominicalesDiurnas: horasDominicalesDiurnas,
+      dominicalesNocturnas: horasDominicalesNocturnas,
+      festivasDiurnas: horasFestivasDiurnas,
+      festivasNocturnas: horasFestivasNocturnas,
+      total
     };
   };
 
@@ -118,7 +178,11 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
           const esDomingo = isWeekend(day) && day.getDay() === 0;
           
           return (
-            <Card key={index} className={cn("min-h-[180px]", esDomingo && "bg-blue-50 dark:bg-blue-950/20")}>
+            <Card 
+              key={index} 
+              className={cn("min-h-[180px] cursor-pointer hover:shadow-md transition-shadow", esDomingo && "bg-blue-50 dark:bg-blue-950/20")}
+              onClick={() => onChangeTurno && onChangeTurno(day, turnosDelDia)}
+            >
               <CardHeader className="p-2">
                 <CardTitle className="text-sm">
                   <div className="flex items-center justify-between">
@@ -132,6 +196,10 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
                       Domingo
                     </Badge>
                   )}
+                  <div className="flex items-center gap-1 mt-1">
+                    <Edit className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Click para editar</span>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-2 space-y-2">
@@ -206,23 +274,41 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
                   <h4 className={cn("font-bold mb-3 text-base", operadorColor.text)}>{operador.nombre}</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span>Horas Diurnas:</span>
-                      <span className="font-medium">{horas.diurnas.toFixed(1)}h</span>
+                      <span>Horas Diurnas Ordinarias:</span>
+                      <span className="font-medium">{horas.diurnasOrdinarias.toFixed(1)}h</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Horas Nocturnas:</span>
-                      <span className="font-medium">{horas.nocturnas.toFixed(1)}h</span>
-                    </div>
-                    {horas.domingo > 0 && (
-                      <div className="flex justify-between text-blue-600 dark:text-blue-400">
-                        <span>Horas Domingo:</span>
-                        <span className="font-medium">{horas.domingo.toFixed(1)}h</span>
+                    {horas.diurnasExtras > 0 && (
+                      <div className="flex justify-between text-orange-600 dark:text-orange-400">
+                        <span>Horas Extras Diurnas:</span>
+                        <span className="font-medium">{horas.diurnasExtras.toFixed(1)}h</span>
                       </div>
                     )}
-                    {horas.feriado > 0 && (
+                    <div className="flex justify-between">
+                      <span>Horas Nocturnas:</span>
+                      <span className="font-medium">{horas.nocturnasOrdinarias.toFixed(1)}h</span>
+                    </div>
+                    {horas.dominicalesDiurnas > 0 && (
+                      <div className="flex justify-between text-blue-600 dark:text-blue-400">
+                        <span>Horas Dominicales Diurnas:</span>
+                        <span className="font-medium">{horas.dominicalesDiurnas.toFixed(1)}h</span>
+                      </div>
+                    )}
+                    {horas.dominicalesNocturnas > 0 && (
+                      <div className="flex justify-between text-blue-700 dark:text-blue-300">
+                        <span>Horas Dominicales Nocturnas:</span>
+                        <span className="font-medium">{horas.dominicalesNocturnas.toFixed(1)}h</span>
+                      </div>
+                    )}
+                    {horas.festivasDiurnas > 0 && (
                       <div className="flex justify-between text-purple-600 dark:text-purple-400">
-                        <span>Horas Feriado:</span>
-                        <span className="font-medium">{horas.feriado.toFixed(1)}h</span>
+                        <span>Horas Festivas Diurnas:</span>
+                        <span className="font-medium">{horas.festivasDiurnas.toFixed(1)}h</span>
+                      </div>
+                    )}
+                    {horas.festivasNocturnas > 0 && (
+                      <div className="flex justify-between text-purple-700 dark:text-purple-300">
+                        <span>Horas Festivas Nocturnas:</span>
+                        <span className="font-medium">{horas.festivasNocturnas.toFixed(1)}h</span>
                       </div>
                     )}
                     <div className="border-t pt-2 flex justify-between font-semibold">
