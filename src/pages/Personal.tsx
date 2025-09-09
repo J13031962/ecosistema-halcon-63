@@ -341,15 +341,18 @@ const Personal = () => {
                   <div>
                     <label className="text-sm font-medium">Operador:</label>
                     <Select
-                      value={turno.operador_id}
+                      value={turno.operador_id || 'none'}
                       onValueChange={(value) => {
+                        const isNone = value === 'none';
                         const operadorSeleccionado = personal.find(p => p.id === value);
                         const nuevosTurnos = selectedDateTurnos.turnos.map(t => 
                           t === turno 
                             ? { 
                                 ...t, 
-                                operador_id: value, 
-                                operador_nombre: operadorSeleccionado ? `${operadorSeleccionado.nombres} ${operadorSeleccionado.apellidos}` : 'Sin asignar'
+                                operador_id: isNone ? '' : value, 
+                                operador_nombre: isNone
+                                  ? 'Sin asignar'
+                                  : `${operadorSeleccionado?.nombres ?? ''} ${operadorSeleccionado?.apellidos ?? ''}`.trim()
                               }
                             : t
                         );
@@ -360,7 +363,7 @@ const Personal = () => {
                         <SelectValue placeholder="Seleccionar operador" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sin asignar</SelectItem>
+                        <SelectItem value="none">Sin asignar</SelectItem>
                         {personal.filter(p => p.cargo === 'operador').map((operador) => (
                           <SelectItem key={operador.id} value={operador.id}>
                             {operador.nombres} {operador.apellidos}
