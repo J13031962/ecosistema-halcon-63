@@ -16,11 +16,8 @@ const CentralAlarmas = () => {
   const { user } = useAuthConsolidated();
   const { attendAlarma, assignPatrulla } = useSupabaseAlarmas();
   
-  // Usar el hook de datos específicos por usuario para alarmas
-  const { data: alarmas, loading } = useUserSpecificData({
-    table: 'alarmas',
-    enabled: !!user?.id
-  });
+  // Cargar todas las alarmas para la central
+  const { alarmas, loading } = useSupabaseAlarmas();
   
   // Estado para almacenar tiempos de alarmas
   const [alarmaTiempos, setAlarmaTiempos] = useState<{ [key: string]: any[] }>({});
@@ -443,174 +440,216 @@ const CentralAlarmas = () => {
         </Card>
       </div>
 
-      {/* Lista de alarmas activas */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Alarmas Activas</CardTitle>
-          <CardDescription>Gestiona las alarmas que requieren atención inmediata</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Accordion type="single" collapsible className="w-full">
-          {alarmasActivas.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Siren className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-              <p>No hay alarmas activas en este momento</p>
-              <p className="text-sm">Las nuevas alarmas aparecerán aquí automáticamente</p>
-            </div>
-          ) : (
-            alarmasActivas.map((alarma) => (
-              <AccordionItem key={alarma.id} value={`alarm-${alarma.id}`} className={`border-2 rounded-lg mb-4 ${getAlarmTypeColor(alarma.tipo)}`}>
-                <AccordionTrigger className="px-4 py-2 hover:no-underline">
-                  <div className="flex items-center justify-between w-full mr-4">
-                    <div className="flex items-center space-x-4">
-                      <div className={`p-2 rounded-full ${alarma.prioridad === 'alta' ? 'bg-red-100' : 'bg-orange-100'}`}>
-                        {getAlarmTypeIcon(alarma.tipo)}
-                      </div>
-                      <div className="text-left">
-                        <h4 className="font-semibold">{alarma.clientes?.nombre || 'Cliente no especificado'}</h4>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="outline" className="font-medium">
-                            {alarma.tipo}
+      {/* Servicios Activos */}
+      <div>
+        <h2 className="text-xl font-semibold mb-2">Servicios Activos</h2>
+        <p className="text-muted-foreground mb-4">Servicios que requieren asignación o están en proceso</p>
+        
+        {alarmasActivas.length === 0 ? (
+          <Card>
+            <CardContent className="py-8">
+              <div className="text-center text-muted-foreground">
+                <Siren className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No hay alarmas activas en este momento</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {alarmasActivas.map((alarma) => {
+              const tiempoDesdeCreacion = calcularDuracion(alarma.created_at);
+              const tiempoTomaDespachador = alarma.tiempo_toma_despachador ? 
+                calcularDuracion(alarma.created_at, alarma.tiempo_toma_despachador) : null;
+              const tiempoAsignacionSupervisor = alarma.tiempo_asignacion_supervisor && alarma.tiempo_toma_despachador ? 
+                calcularDuracion(alarma.tiempo_toma_despachador, alarma.tiempo_asignacion_supervisor) : null;
+              const tiempoAceptacionSupervisor = alarma.tiempo_aceptacion_supervisor && alarma.tiempo_asignacion_supervisor ? 
+                calcularDuracion(alarma.tiempo_asignacion_supervisor, alarma.tiempo_aceptacion_supervisor) : null;
+              const tiempoPrimeraLecturaQR = alarma.tiempo_primera_lectura_qr && alarma.tiempo_aceptacion_supervisor ? 
+                calcularDuracion(alarma.tiempo_aceptacion_supervisor, alarma.tiempo_primera_lectura_qr) : null;
+              const tiempoSegundaLecturaQR = alarma.tiempo_segunda_lectura_qr && alarma.tiempo_primera_lectura_qr ? 
+                calcularDuracion(alarma.tiempo_primera_lectura_qr, alarma.tiempo_segunda_lectura_qr) : null;
+
+              return (
+                <Card key={alarma.id} className={`border-l-4 ${getAlarmTypeColor(alarma.tipo)}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="flex flex-col items-center gap-1">
+                          {getAlarmTypeIcon(alarma.tipo)}
+                          <Badge variant="destructive" className="text-xs">
+                            alta
                           </Badge>
-                          <span className="text-sm text-muted-foreground">📍 {alarma.municipio}</span>
+                        </div>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-lg">{alarma.tipo}</h3>
+                          </div>
+                          
+                          <p className="text-sm font-medium text-muted-foreground mb-1">
+                            {alarma.clientes?.nombre || 'TELEGUARDIA LTDA'}
+                          </p>
+                          
+                          <div className="flex flex-wrap gap-4 mb-3">
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium">Estado:</span> {
+                                !alarma.tiempo_toma_despachador ? 'Esperando atención' :
+                                !alarma.tiempo_asignacion_supervisor ? 'Esperando asignación' :
+                                !alarma.tiempo_aceptacion_supervisor ? 'Esperando supervisor' :
+                                !alarma.tiempo_primera_lectura_qr ? 'En ruta' :
+                                !alarma.tiempo_segunda_lectura_qr ? 'En sitio' : 'Completado'
+                              }
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium">Dirección:</span> {alarma.direccion || 'No especificada'}
+                            </p>
+                          </div>
+
+                          {/* Botones de acción según el rol y estado */}
+                          <div className="flex flex-wrap gap-2">
+                            {user?.role === 'operador_alarmas' && !alarma.tiempo_toma_despachador && (
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                onClick={() => handleAttendAlarm(alarma.id)}
+                              >
+                                Tomar Alarma
+                              </Button>
+                            )}
+                            
+                            {user?.role === 'despachador_patrullas' && alarma.tiempo_toma_despachador && !alarma.tiempo_asignacion_supervisor && (
+                              <Button 
+                                size="sm" 
+                                variant="secondary"
+                                onClick={() => {
+                                  setSelectedAlarmaForSupervisor(alarma);
+                                  setSupervisorModalOpen(true);
+                                }}
+                              >
+                                Asignar Supervisor
+                              </Button>
+                            )}
+                            
+                            {user?.role === 'supervisor_motorizado' && alarma.tiempo_asignacion_supervisor && !alarma.tiempo_aceptacion_supervisor && (
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                onClick={() => handleSupervisorAccept(alarma.id)}
+                              >
+                                Aceptar Asignación
+                              </Button>
+                            )}
+                            
+                            {user?.role === 'supervisor_motorizado' && alarma.tiempo_aceptacion_supervisor && !alarma.tiempo_primera_lectura_qr && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleQRScan(alarma.id, 'primera')}
+                              >
+                                <QrCode className="h-4 w-4 mr-2" />
+                                Escanear QR Llegada
+                              </Button>
+                            )}
+                            
+                            {user?.role === 'supervisor_motorizado' && alarma.tiempo_primera_lectura_qr && !alarma.tiempo_segunda_lectura_qr && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleQRScan(alarma.id, 'segunda')}
+                              >
+                                <QrCode className="h-4 w-4 mr-2" />
+                                Escanear QR Salida
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-4">
-                      <Badge variant={getStatusColor(alarma.estado)}>{alarma.estado.toUpperCase()}</Badge>
-                      <Badge variant="outline" className={getPriorityColor(alarma.prioridad)}>
-                        {alarma.prioridad.toUpperCase()}
-                      </Badge>
-                      <span className={`font-mono text-lg font-bold ${getTimerColor(alarma.created_at)}`}>
-                        <Clock className="h-4 w-4 inline mr-1" />
-                        {timers[alarma.id] || '00:00'}
-                      </span>
-                    </div>
-                  </div>
-                </AccordionTrigger>
-                
-                <AccordionContent className="px-4 pb-4">
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p><strong>Dirección:</strong> {alarma.direccion || 'No especificada'}</p>
-                        <p><strong>Municipio:</strong> {alarma.municipio || 'No especificado'}</p>
-                        <p><strong>Hora de inicio:</strong> {format(new Date(alarma.created_at), 'HH:mm:ss')}</p>
-                        {alarma.despachador_nombre && (
-                          <p><strong>Despachador:</strong> {alarma.despachador_nombre}</p>
-                        )}
-                      </div>
-                      <div>
-                        <p><strong>Estado:</strong> {alarma.estado.toUpperCase()}</p>
-                        <p><strong>Prioridad:</strong> {alarma.prioridad.toUpperCase()}</p>
-                        {alarma.supervisor && <p><strong>Supervisor:</strong> {alarma.supervisor}</p>}
-                        {alarma.patrulla_asignada && <p><strong>Patrulla:</strong> {alarma.patrulla_asignada}</p>}
-                      </div>
-                    </div>
-                    {alarma.descripcion && (
-                      <div>
-                        <p><strong>Descripción:</strong> {alarma.descripcion}</p>
-                      </div>
-                    )}
-
-                    {/* Seguimiento de tiempos */}
-                    {renderProcesoAlarma(alarma)}
-
-                    <div className="flex flex-wrap gap-2 pt-4 border-t">
-                      {canDeleteAlarm(alarma.created_at) ? (
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          onClick={() => handleDeleteAlarm(alarma.id)}
-                          className="flex items-center gap-1"
-                        >
-                          <AlertTriangle className="h-4 w-4" />
-                          Eliminar Alarma
-                        </Button>
-                      ) : (
-                        <div className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded">
-                          ⏰ Solo se puede eliminar durante los primeros 5 minutos
-                        </div>
-                      )}
                       
-                      {/* Botón para que despachador tome la alarma */}
-                      {alarma.estado === 'activa' && (
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleAttendAlarm(alarma.id)}
-                          className="flex items-center gap-1"
-                        >
-                          <UserCheck className="h-4 w-4" />
-                          Tomar Alarma
-                        </Button>
-                      )}
-                      
-                      {/* Botón para asignar supervisor */}
-                      {alarma.estado === 'en_proceso' && alarma.tiempo_toma_despachador && user?.role === 'despachador_patrullas' && (
-                        <Button 
-                          size="sm" 
-                          variant="secondary"
-                          onClick={() => {
-                            setSelectedAlarmaForSupervisor(alarma);
-                            setSupervisorModalOpen(true);
-                          }}
-                          className="flex items-center gap-1"
-                        >
-                          <Shield className="h-4 w-4" />
-                          Asignar Supervisor
-                        </Button>
-                      )}
-
-                      {/* Botón para que supervisor acepte */}
-                      {alarma.estado === 'asignada' && alarma.supervisor_id && user?.id === alarma.supervisor_id && !alarma.tiempo_aceptacion_supervisor && (
-                        <Button 
-                          size="sm" 
-                          variant="default"
-                          onClick={() => handleSupervisorAccept(alarma.id)}
-                          className="flex items-center gap-1"
-                        >
-                          <Shield className="h-4 w-4" />
-                          Aceptar Servicio
-                        </Button>
-                      )}
-
-                      {/* Botones para lecturas QR */}
-                      {alarma.tiempo_aceptacion_supervisor && user?.id === alarma.supervisor_id && (
-                        <div className="flex gap-2">
-                          {!alarma.tiempo_primera_lectura_qr && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleQRScan(alarma.id, 'primera')}
-                              className="flex items-center gap-1"
-                            >
-                              <QrCode className="h-4 w-4" />
-                              Llegada (QR)
-                            </Button>
-                          )}
-                          {alarma.tiempo_primera_lectura_qr && !alarma.tiempo_segunda_lectura_qr && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleQRScan(alarma.id, 'segunda')}
-                              className="flex items-center gap-1"
-                            >
-                              <QrCode className="h-4 w-4" />
-                              Finalización (QR)
-                            </Button>
-                          )}
+                      {/* Tiempos de proceso */}
+                      <div className="flex flex-col items-end gap-1 min-w-[200px]">
+                        <div className="grid grid-cols-3 gap-2 text-right">
+                          {/* Tiempo total */}
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-muted-foreground" />
+                            <span className={`text-xl font-bold ${getTimerColor(alarma.created_at)}`}>
+                              {tiempoDesdeCreacion}
+                            </span>
+                          </div>
+                          
+                          {/* Tiempo toma despachador */}
+                          <div className="flex items-center gap-1">
+                            <UserCheck className="h-3 w-3 text-blue-500" />
+                            <span className={`text-lg font-semibold ${tiempoTomaDespachador ? 'text-green-600' : 'text-gray-400'}`}>
+                              {tiempoTomaDespachador || '0:00'}
+                            </span>
+                          </div>
+                          
+                          {/* Tiempo asignación supervisor */}
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3 text-purple-500" />
+                            <span className={`text-lg font-semibold ${tiempoAsignacionSupervisor ? 'text-orange-600' : 'text-gray-400'}`}>
+                              {tiempoAsignacionSupervisor || '0:00'}
+                            </span>
+                          </div>
                         </div>
-                      )}
+                        
+                        <div className="grid grid-cols-3 gap-2 text-right mt-1">
+                          {/* Tiempo aceptación supervisor */}
+                          <div className="flex items-center gap-1">
+                            <Shield className="h-3 w-3 text-green-500" />
+                            <span className={`text-sm font-medium ${tiempoAceptacionSupervisor ? 'text-green-600' : 'text-gray-400'}`}>
+                              {tiempoAceptacionSupervisor || '0:00'}
+                            </span>
+                          </div>
+                          
+                          {/* Tiempo primera lectura QR */}
+                          <div className="flex items-center gap-1">
+                            <QrCode className="h-3 w-3 text-orange-500" />
+                            <span className={`text-sm font-medium ${tiempoPrimeraLecturaQR ? 'text-blue-600' : 'text-gray-400'}`}>
+                              {tiempoPrimeraLecturaQR || '0:00'}
+                            </span>
+                          </div>
+                          
+                          {/* Tiempo segunda lectura QR */}
+                          <div className="flex items-center gap-1">
+                            <QrCode className="h-3 w-3 text-teal-500" />
+                            <span className={`text-sm font-medium ${tiempoSegundaLecturaQR ? 'text-teal-600' : 'text-gray-400'}`}>
+                              {tiempoSegundaLecturaQR || '0:00'}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Etiquetas de tiempos */}
+                        <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground mt-1">
+                          <span>Tiempo Total</span>
+                          <span>Despachador</span>
+                          <span>Asignación</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                          <span>Aceptación</span>
+                          <span>Llegada</span>
+                          <span>Finalización</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))
-          )}
-          </Accordion>
-        </CardContent>
-      </Card>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Modal para asignar supervisor */}
+      <AsignarSupervisorModal
+        isOpen={supervisorModalOpen}
+        onClose={() => {
+          setSupervisorModalOpen(false);
+          setSelectedAlarmaForSupervisor(null);
+        }}
+        alarma={selectedAlarmaForSupervisor}
+        onAssign={handleAssignSupervisor}
+      />
 
       {/* Modal de asignación de supervisor */}
       <AsignarSupervisorModal
