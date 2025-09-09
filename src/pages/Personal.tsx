@@ -20,6 +20,8 @@ const Personal = () => {
   const [selectedWeek, setSelectedWeek] = useState(new Date());
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedDateTurnos, setSelectedDateTurnos] = useState<{fecha: Date, turnos: any[]}>({fecha: new Date(), turnos: []});
+  const [newTurno, setNewTurno] = useState({ operador_id: '', tipo: '' });
+  const [selectedDate, setSelectedDate] = useState('');
   
   // Datos de ejemplo del personal
   const [personal] = useState([
@@ -110,57 +112,46 @@ const Personal = () => {
   ];
 
   const handleChangeTurno = (fecha: Date, turnosDelDia: any[]) => {
-    // Crear una entrada para cada tipo de turno posible
-    const turnosCompletos = tiposTurnos.map(tipoTurno => {
-      const turnoExistente = turnosDelDia.find(t => 
-        t.hora_inicio === tipoTurno.horas.split('-')[0] && 
-        t.hora_fin === tipoTurno.horas.split('-')[1]
-      );
-      
-      if (turnoExistente) {
-        return turnoExistente;
-      } else {
-        // Crear un turno vacío para este tipo
-        return {
-          id: `new_${tipoTurno.value}`,
-          fecha: fecha,
-          operador_id: '',
-          operador_nombre: 'Sin asignar',
-          hora_inicio: tipoTurno.horas.split('-')[0],
-          hora_fin: tipoTurno.horas.split('-')[1],
-          tipo: tipoTurno.tipo,
-          horas_diurnas: tipoTurno.tipo === 'diurno' ? (tipoTurno.value === 'dia_completo' ? 12 : 8) : 0,
-          horas_nocturnas: tipoTurno.tipo === 'nocturno' ? (tipoTurno.value === 'noche' ? 12 : 8) : 0,
-          horas_domingo: 0,
-          horas_feriado: 0,
-          es_domingo: fecha.getDay() === 0,
-          es_feriado: false,
-          tipo_turno_label: tipoTurno.label
-        };
-      }
-    });
-    
-    setSelectedDateTurnos({fecha, turnos: turnosCompletos});
+    setSelectedDate(fecha.toLocaleDateString());
+    setNewTurno({ operador_id: '', tipo: '' });
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdateTurno = (turnoId: string, nuevoOperadorId: string, nuevoTipo: string) => {
-    const nuevoOperador = personal.find(p => p.id === nuevoOperadorId);
+  const handleGuardarTurno = () => {
+    if (!newTurno.operador_id || !newTurno.tipo) {
+      toast.error('Por favor selecciona operador y tipo de turno');
+      return;
+    }
+
+    const operador = personal.find(p => p.id === newTurno.operador_id);
+    const tipoTurno = tiposTurnos.find(t => t.value === newTurno.tipo);
     
-    setTurnosGenerados(prev => prev.map(turno => {
-      if (turno.id === turnoId) {
-        return {
-          ...turno,
-          operador_id: nuevoOperadorId,
-          operador_nombre: nuevoOperador ? `${nuevoOperador.nombres} ${nuevoOperador.apellidos}` : 'Operador',
-          tipo: nuevoTipo
-        };
-      }
-      return turno;
-    }));
-    
+    if (!operador || !tipoTurno) {
+      toast.error('Operador o tipo de turno no válido');
+      return;
+    }
+
+    // Crear nuevo turno
+    const nuevoTurno = {
+      id: `turno_${Date.now()}`,
+      fecha: new Date(selectedDate),
+      operador_id: newTurno.operador_id,
+      operador_nombre: `${operador.nombres} ${operador.apellidos}`,
+      hora_inicio: tipoTurno.horas.split('-')[0],
+      hora_fin: tipoTurno.horas.split('-')[1],
+      tipo: tipoTurno.tipo,
+      horas_diurnas: tipoTurno.tipo === 'diurno' ? (tipoTurno.value === 'dia_completo' ? 12 : 8) : 0,
+      horas_nocturnas: tipoTurno.tipo === 'nocturno' ? (tipoTurno.value === 'noche' ? 12 : 8) : 0,
+      horas_domingo: 0,
+      horas_feriado: 0,
+      es_domingo: new Date(selectedDate).getDay() === 0,
+      es_feriado: false
+    };
+
+    setTurnosGenerados(prev => [...prev, nuevoTurno]);
     setIsEditDialogOpen(false);
-    toast.success('Turno actualizado exitosamente');
+    setNewTurno({ operador_id: '', tipo: '' });
+    toast.success('Turno asignado exitosamente');
   };
 
   const downloadExcel = () => {
@@ -318,77 +309,60 @@ const Personal = () => {
 
       {/* Modal de edición */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Edit2 className="h-5 w-5" />
-              Editar Turnos - {selectedDateTurnos.fecha.toLocaleDateString()}
-            </DialogTitle>
+            <DialogTitle>Asignar Turno - {selectedDate}</DialogTitle>
             <DialogDescription>
-              Cambia el operador o el tipo de cada turno. Debajo verás las horas diurnas, nocturnas y el total por turno.
+              Selecciona el operador y el tipo de turno para este día.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {selectedDateTurnos.turnos.map((turno, index) => (
-              <div key={`${turno.hora_inicio}-${turno.hora_fin}-${index}`} className="p-4 border rounded-lg space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">
-                    {turno.tipo_turno_label || `${turno.hora_inicio} - ${turno.hora_fin}`}
-                  </span>
-                  <span className="text-sm text-muted-foreground">{turno.tipo}</span>
-                </div>
-                <div className="grid grid-cols-1 gap-3">
-                  <div>
-                    <label className="text-sm font-medium">Operador:</label>
-                    <Select
-                      value={turno.operador_id || 'none'}
-                      onValueChange={(value) => {
-                        const isNone = value === 'none';
-                        const operadorSeleccionado = personal.find(p => p.id === value);
-                        const nuevosTurnos = selectedDateTurnos.turnos.map(t => 
-                          t === turno 
-                            ? { 
-                                ...t, 
-                                operador_id: isNone ? '' : value, 
-                                operador_nombre: isNone
-                                  ? 'Sin asignar'
-                                  : `${operadorSeleccionado?.nombres ?? ''} ${operadorSeleccionado?.apellidos ?? ''}`.trim()
-                              }
-                            : t
-                        );
-                        setSelectedDateTurnos(prev => ({...prev, turnos: nuevosTurnos}));
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar operador" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Sin asignar</SelectItem>
-                        {personal.filter(p => p.cargo === 'operador').map((operador) => (
-                          <SelectItem key={operador.id} value={operador.id}>
-                            {operador.nombres} {operador.apellidos}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3 text-sm">
-                  <div className="rounded-md border p-2">
-                    <div className="text-muted-foreground">H. Diurnas</div>
-                    <div className="font-semibold">{Number(turno.horas_diurnas || 0).toFixed(2)}h</div>
-                  </div>
-                  <div className="rounded-md border p-2">
-                    <div className="text-muted-foreground">H. Nocturnas</div>
-                    <div className="font-semibold">{Number(turno.horas_nocturnas || 0).toFixed(2)}h</div>
-                  </div>
-                  <div className="rounded-md border p-2">
-                    <div className="text-muted-foreground">Total</div>
-                    <div className="font-semibold">{(Number(turno.horas_diurnas || 0) + Number(turno.horas_nocturnas || 0)).toFixed(2)}h</div>
-                  </div>
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Operador:</label>
+                <Select
+                  value={newTurno.operador_id}
+                  onValueChange={(value) => setNewTurno({ ...newTurno, operador_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar operador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {personal.filter(p => p.cargo === 'operador').map((operador) => (
+                      <SelectItem key={operador.id} value={operador.id}>
+                        {operador.nombres} {operador.apellidos}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            ))}
+              <div>
+                <label className="text-sm font-medium">Turno:</label>
+                <Select
+                  value={newTurno.tipo}
+                  onValueChange={(value) => setNewTurno({ ...newTurno, tipo: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar turno" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tiposTurnos.filter(t => t.value !== 'sin_asignar').map((tipo) => (
+                      <SelectItem key={tipo.value} value={tipo.value}>
+                        {tipo.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleGuardarTurno}>
+                Guardar Cambios
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
