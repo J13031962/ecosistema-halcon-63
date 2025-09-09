@@ -1,209 +1,193 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Calendar, Clock, Edit, User, Sun, Moon } from 'lucide-react';
+import { format, addDays, startOfWeek, isSameDay, isWeekend } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
-// Datos de ejemplo de operadores
-const operadores = [
-  { id: 1, nombre: "Ana García", cargo: "Operador de Alarmas" },
-  { id: 2, nombre: "Luis Martín", cargo: "Despachador de Patrullas" },
-  { id: 3, nombre: "María López", cargo: "Supervisor Motorizado" },
-  { id: 4, nombre: "Carlos Ruiz", cargo: "Técnico" },
-  { id: 5, nombre: "Sandra Morales", cargo: "Operador de Alarmas" }
-];
+interface Turno {
+  id: string;
+  fecha: Date;
+  operador_id: string;
+  operador_nombre: string;
+  hora_inicio: string;
+  hora_fin: string;
+  tipo: 'diurno' | 'nocturno';
+  horas_diurnas: number;
+  horas_nocturnas: number;
+  horas_domingo: number;
+  horas_feriado: number;
+  es_domingo: boolean;
+  es_feriado: boolean;
+}
 
-// Tipos de turno con colores
-const tiposTurno = {
-  w: { label: "Trabajo", color: "bg-blue-500 text-white" },
-  o: { label: "Oficina", color: "bg-yellow-500 text-white" },
-  h: { label: "Casa", color: "bg-purple-500 text-white" },
-  a: { label: "Ausente", color: "bg-red-500 text-white" },
-  v: { label: "Vacaciones", color: "bg-green-500 text-white" }
-};
+interface CalendarioTurnosProps {
+  turnos: Turno[];
+  onEditTurno: (turno: Turno) => void;
+  selectedWeek: Date;
+  onWeekChange: (date: Date) => void;
+}
 
-// Generar turnos aleatorios para cada operador
-const generarTurnosDelMes = (year: number, month: number) => {
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const turnos: { [key: string]: { [key: number]: string } } = {};
-  
-  operadores.forEach(operador => {
-    turnos[operador.id] = {};
-    for (let day = 1; day <= daysInMonth; day++) {
-      // Generar turnos aleatorios pero con cierta lógica
-      const rand = Math.random();
-      if (rand < 0.6) turnos[operador.id][day] = 'w';
-      else if (rand < 0.8) turnos[operador.id][day] = 'o';
-      else if (rand < 0.9) turnos[operador.id][day] = 'h';
-      else if (rand < 0.95) turnos[operador.id][day] = 'v';
-      else turnos[operador.id][day] = 'a';
-    }
-  });
-  
-  return turnos;
-};
+export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
+  turnos,
+  onEditTurno,
+  selectedWeek,
+  onWeekChange
+}) => {
+  const [viewMode, setViewMode] = useState<'semanal' | 'mensual'>('semanal');
 
-export function CalendarioTurnos() {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedOperador, setSelectedOperador] = useState<string>("todos");
-  
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-  const monthName = currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-  
-  const turnos = generarTurnosDelMes(year, month);
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDayOfWeek = new Date(year, month, 1).getDay();
-  const adjustedFirstDay = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1; // Lunes = 0
-  
-  // Días de la semana
-  const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-  
-  // Obtener días del mes
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  
-  const navegarMes = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentDate);
-    if (direction === 'prev') {
-      newDate.setMonth(month - 1);
-    } else {
-      newDate.setMonth(month + 1);
-    }
-    setCurrentDate(newDate);
+  const startWeek = startOfWeek(selectedWeek, { weekStartsOn: 1 });
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startWeek, i));
+
+  const getTurnosForDay = (fecha: Date) => {
+    return turnos.filter(turno => isSameDay(turno.fecha, fecha));
   };
-  
-  const operadoresFiltrados = selectedOperador === "todos" 
-    ? operadores 
-    : operadores.filter(op => op.id.toString() === selectedOperador);
+
+  const getTipoIcon = (tipo: 'diurno' | 'nocturno') => {
+    return tipo === 'diurno' ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />;
+  };
+
+  const getTotalHorasOperador = (operadorId: string) => {
+    const turnosOperador = turnos.filter(t => t.operador_id === operadorId);
+    return {
+      diurnas: turnosOperador.reduce((sum, t) => sum + t.horas_diurnas, 0),
+      nocturnas: turnosOperador.reduce((sum, t) => sum + t.horas_nocturnas, 0),
+      domingo: turnosOperador.reduce((sum, t) => sum + t.horas_domingo, 0),
+      feriado: turnosOperador.reduce((sum, t) => sum + t.horas_feriado, 0),
+      total: turnosOperador.reduce((sum, t) => sum + t.horas_diurnas + t.horas_nocturnas, 0)
+    };
+  };
+
+  const operadoresUnicos = [...new Set(turnos.map(t => ({ id: t.operador_id, nombre: t.operador_nombre })))];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Controles de navegación */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            onClick={() => onWeekChange(addDays(selectedWeek, -7))}
+          >
+            ← Semana Anterior
+          </Button>
+          <h3 className="text-lg font-semibold">
+            Semana del {format(startWeek, 'dd MMM', { locale: es })} - {format(addDays(startWeek, 6), 'dd MMM yyyy', { locale: es })}
+          </h3>
+          <Button
+            variant="outline"
+            onClick={() => onWeekChange(addDays(selectedWeek, 7))}
+          >
+            Siguiente Semana →
+          </Button>
+        </div>
+      </div>
+
+      {/* Vista semanal */}
+      <div className="grid grid-cols-7 gap-2">
+        {weekDays.map((day, index) => {
+          const turnosDelDia = getTurnosForDay(day);
+          const esDomingo = isWeekend(day) && day.getDay() === 0;
+          
+          return (
+            <Card key={index} className={cn("min-h-[200px]", esDomingo && "bg-blue-50 dark:bg-blue-950/20")}>
+              <CardHeader className="p-3">
+                <CardTitle className="text-sm">
+                  <div className="flex items-center justify-between">
+                    <span>{format(day, 'EEE', { locale: es })}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {format(day, 'dd')}
+                    </span>
+                  </div>
+                  {esDomingo && (
+                    <Badge variant="secondary" className="text-xs mt-1">
+                      Domingo
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0 space-y-2">
+                {turnosDelDia.map((turno) => (
+                  <div
+                    key={turno.id}
+                    className={cn(
+                      "p-2 rounded-lg border text-xs cursor-pointer hover:bg-accent",
+                      turno.tipo === 'diurno' ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20' : 'bg-blue-50 border-blue-200 dark:bg-blue-950/20'
+                    )}
+                    onClick={() => onEditTurno(turno)}
+                  >
+                    <div className="flex items-center gap-1 mb-1">
+                      {getTipoIcon(turno.tipo)}
+                      <span className="font-medium">
+                        {turno.hora_inicio} - {turno.hora_fin}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <User className="h-3 w-3" />
+                      <span className="truncate">{turno.operador_nombre}</span>
+                    </div>
+                    <div className="mt-1 text-xs">
+                      <span className="font-medium">
+                        {turno.horas_diurnas + turno.horas_nocturnas}h total
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {turnosDelDia.length === 0 && (
+                  <div className="text-xs text-muted-foreground text-center py-4">
+                    Sin turnos
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Resumen de horas por operador */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl capitalize">
-                Calendario de Turnos - {monthName}
-              </CardTitle>
-              <CardDescription>
-                Gestión de turnos del personal operativo
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-4">
-              <Select value={selectedOperador} onValueChange={setSelectedOperador}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filtrar operador" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos los operadores</SelectItem>
-                  {operadores.map(operador => (
-                    <SelectItem key={operador.id} value={operador.id.toString()}>
-                      {operador.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => navegarMes('prev')}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => navegarMes('next')}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Resumen de Horas por Operador
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Leyenda de colores */}
-          <div className="mb-6 flex flex-wrap gap-4">
-            {Object.entries(tiposTurno).map(([key, tipo]) => (
-              <div key={key} className="flex items-center gap-2">
-                <div className={`w-4 h-4 rounded ${tipo.color} flex items-center justify-center text-xs font-bold`}>
-                  {key}
-                </div>
-                <span className="text-sm">{tipo.label}</span>
-              </div>
-            ))}
-          </div>
-          
-          {/* Tabla de turnos */}
-          <div className="overflow-x-auto">
-            <div className="min-w-full">
-              {/* Encabezado con días */}
-              <div className="grid grid-cols-32 gap-1 mb-2">
-                <div className="col-span-1 font-medium text-sm p-2">Empleado</div>
-                {diasSemana.map(dia => (
-                  <div key={dia} className="text-center text-xs font-medium p-1 text-muted-foreground">
-                    {dia}
-                  </div>
-                ))}
-                {days.map(day => (
-                  <div key={day} className="text-center text-xs font-medium p-1">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              
-              {/* Filas de empleados */}
-              {operadoresFiltrados.map(operador => (
-                <div key={operador.id} className="grid grid-cols-32 gap-1 mb-1 items-center">
-                  {/* Nombre del empleado */}
-                  <div className="col-span-1 p-2 bg-slate-600 text-white text-sm font-medium rounded">
-                    <div className="truncate">{operador.nombre}</div>
-                    <div className="text-xs opacity-75 truncate">{operador.cargo}</div>
-                  </div>
-                  
-                  {/* Espacios para alinear con días de la semana */}
-                  {Array.from({ length: 7 }, (_, i) => (
-                    <div key={`spacer-${i}`} className="p-1"></div>
-                  ))}
-                  
-                  {/* Días del mes */}
-                  {days.map(day => {
-                    const turno = turnos[operador.id]?.[day] || 'w';
-                    const tipoTurno = tiposTurno[turno as keyof typeof tiposTurno];
-                    const isWeekend = new Date(year, month, day).getDay() === 0 || new Date(year, month, day).getDay() === 6;
-                    
-                    return (
-                      <div 
-                        key={day} 
-                        className={`
-                          text-center p-1 rounded text-xs font-bold cursor-pointer
-                          ${tipoTurno.color}
-                          ${isWeekend ? 'ring-2 ring-orange-300' : ''}
-                          hover:opacity-80 transition-opacity
-                        `}
-                        title={`${operador.nombre} - ${tipoTurno.label}`}
-                      >
-                        {turno}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Resumen estadístico */}
-          <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-4">
-            {Object.entries(tiposTurno).map(([key, tipo]) => {
-              const total = operadoresFiltrados.reduce((sum, operador) => {
-                return sum + days.filter(day => turnos[operador.id]?.[day] === key).length;
-              }, 0);
-              
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {operadoresUnicos.map((operador) => {
+              const horas = getTotalHorasOperador(operador.id);
               return (
-                <Card key={key}>
-                  <CardContent className="p-3">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded ${tipo.color}`}></div>
-                      <div>
-                        <div className="text-2xl font-bold">{total}</div>
-                        <div className="text-xs text-muted-foreground">{tipo.label}</div>
-                      </div>
+                <div key={operador.id} className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-3">{operador.nombre}</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Horas Diurnas:</span>
+                      <span className="font-medium">{horas.diurnas}h</span>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="flex justify-between">
+                      <span>Horas Nocturnas:</span>
+                      <span className="font-medium">{horas.nocturnas}h</span>
+                    </div>
+                    {horas.domingo > 0 && (
+                      <div className="flex justify-between text-blue-600">
+                        <span>Horas Domingo:</span>
+                        <span className="font-medium">{horas.domingo}h</span>
+                      </div>
+                    )}
+                    {horas.feriado > 0 && (
+                      <div className="flex justify-between text-purple-600">
+                        <span>Horas Feriado:</span>
+                        <span className="font-medium">{horas.feriado}h</span>
+                      </div>
+                    )}
+                    <div className="border-t pt-2 flex justify-between font-semibold">
+                      <span>Total:</span>
+                      <span>{horas.total}h</span>
+                    </div>
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -211,4 +195,4 @@ export function CalendarioTurnos() {
       </Card>
     </div>
   );
-}
+};
