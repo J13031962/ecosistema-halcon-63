@@ -1,18 +1,25 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Plus, Clock, Calendar } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Users, Plus, Clock, Calendar, Download, Edit2 } from 'lucide-react';
 import { FormularioNuevoPersonal } from '@/components/personal/FormularioNuevoPersonal';
 import { GeneradorTurnos } from '@/components/personal/GeneradorTurnos';
 import { CalendarioTurnos } from '@/components/personal/CalendarioTurnos';
 import { generarTurnosAutomaticos } from '@/components/personal/TurnosCalculadorHoras';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const Personal = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isTurnosOpen, setIsTurnosOpen] = useState(false);
   const [turnosGenerados, setTurnosGenerados] = useState<any[]>([]);
   const [selectedWeek, setSelectedWeek] = useState(new Date());
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedDateTurnos, setSelectedDateTurnos] = useState<{fecha: Date, turnos: any[]}>({fecha: new Date(), turnos: []});
   
   // Datos de ejemplo del personal
   const [personal] = useState([
@@ -91,6 +98,75 @@ const Personal = () => {
     toast.info('Función de edición en desarrollo');
   };
 
+  const handleChangeTurno = (fecha: Date, turnosDelDia: any[]) => {
+    setSelectedDateTurnos({fecha, turnos: turnosDelDia});
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateTurno = (turnoId: string, nuevoOperadorId: string, nuevoTipo: string) => {
+    const nuevoOperador = personal.find(p => p.id === nuevoOperadorId);
+    
+    setTurnosGenerados(prev => prev.map(turno => {
+      if (turno.id === turnoId) {
+        return {
+          ...turno,
+          operador_id: nuevoOperadorId,
+          operador_nombre: nuevoOperador ? `${nuevoOperador.nombres} ${nuevoOperador.apellidos}` : 'Operador',
+          tipo: nuevoTipo
+        };
+      }
+      return turno;
+    }));
+    
+    setIsEditDialogOpen(false);
+    toast.success('Turno actualizado exitosamente');
+  };
+
+  const downloadExcel = () => {
+    const dataForExcel = turnosGenerados.map(turno => ({
+      'Fecha': turno.fecha.toLocaleDateString(),
+      'Operador': turno.operador_nombre,
+      'Hora Inicio': turno.hora_inicio,
+      'Hora Fin': turno.hora_fin,
+      'Tipo': turno.tipo,
+      'Horas Diurnas': turno.horas_diurnas,
+      'Horas Nocturnas': turno.horas_nocturnas,
+      'Es Domingo': turno.es_domingo ? 'Sí' : 'No',
+      'Es Feriado': turno.es_feriado ? 'Sí' : 'No'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Turnos');
+    XLSX.writeFile(workbook, 'turnos-personal.xlsx');
+    toast.success('Archivo Excel descargado');
+  };
+
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text('Reporte de Turnos de Personal', 20, 20);
+    
+    const tableData = turnosGenerados.map(turno => [
+      turno.fecha.toLocaleDateString(),
+      turno.operador_nombre,
+      `${turno.hora_inicio}-${turno.hora_fin}`,
+      turno.tipo,
+      turno.horas_diurnas.toString(),
+      turno.horas_nocturnas.toString()
+    ]);
+
+    (doc as any).autoTable({
+      head: [['Fecha', 'Operador', 'Horario', 'Tipo', 'H. Diurnas', 'H. Nocturnas']],
+      body: tableData,
+      startY: 30,
+      styles: { fontSize: 8 }
+    });
+
+    doc.save('turnos-personal.pdf');
+    toast.success('Archivo PDF descargado');
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -104,6 +180,18 @@ const Personal = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          {turnosGenerados.length > 0 && (
+            <>
+              <Button onClick={downloadExcel} variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Descargar Excel
+              </Button>
+              <Button onClick={downloadPDF} variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Descargar PDF
+              </Button>
+            </>
+          )}
           <Button onClick={() => setIsTurnosOpen(true)} variant="outline">
             <Clock className="h-4 w-4 mr-2" />
             Generar Turnos
@@ -122,6 +210,7 @@ const Personal = () => {
           onEditTurno={handleEditTurno}
           selectedWeek={selectedWeek}
           onWeekChange={setSelectedWeek}
+          onChangeTurno={handleChangeTurno}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -185,6 +274,63 @@ const Personal = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Modal de edición */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit2 className="h-5 w-5" />
+              Editar Turnos - {selectedDateTurnos.fecha.toLocaleDateString()}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedDateTurnos.turnos.map((turno) => (
+              <div key={turno.id} className="p-4 border rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">Turno: {turno.hora_inicio} - {turno.hora_fin}</span>
+                  <span className="text-sm text-muted-foreground">{turno.tipo}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-medium">Operador:</label>
+                    <Select
+                      value={turno.operador_id}
+                      onValueChange={(value) => handleUpdateTurno(turno.id, value, turno.tipo)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {personal.filter(p => p.cargo === 'operador').map((operador) => (
+                          <SelectItem key={operador.id} value={operador.id}>
+                            {operador.nombres} {operador.apellidos}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Tipo:</label>
+                    <Select
+                      value={turno.tipo}
+                      onValueChange={(value) => handleUpdateTurno(turno.id, turno.operador_id, value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="diurno">Diurno</SelectItem>
+                        <SelectItem value="nocturno">Nocturno</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <FormularioNuevoPersonal
         isOpen={isFormOpen}
