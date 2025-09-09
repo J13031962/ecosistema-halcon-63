@@ -6,64 +6,93 @@ import {
   BarChart3, 
   TrendingUp, 
   TrendingDown, 
-  DollarSign, 
+  Clock,
   Users, 
   AlertTriangle,
   Download,
   Calendar,
-  Target
+  Target,
+  Shield,
+  MapPin,
+  Activity,
+  XCircle
 } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Bar, BarChart, Line, LineChart, Pie, PieChart, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid } from "recharts";
 
 const ReportesEjecutivos = () => {
-  // Datos ejecutivos
+  // Datos operativos
   const kpiData = {
-    ingresosMensuales: 45000000,
-    crecimientoIngresos: 12.5,
+    alarmasGeneradas: 1247,
+    alarmasResueltas: 1219,
+    alarmasCanceladas: 28,
     clientesActivos: 156,
     crecimientoClientes: 8.3,
-    alarmasAtendidas: 1247,
     efectividadRespuesta: 97.8,
-    costoOperacional: 28000000,
-    margenOperacional: 37.8
+    tiempoPromedioRespuesta: 8.2, // minutos
+    excedenciaTiempo: 5.4 // porcentaje
   };
 
-  const ingresosTrimestre = [
-    { mes: "Oct", ingresos: 42000000, presupuesto: 40000000 },
-    { mes: "Nov", ingresos: 43500000, presupuesto: 41000000 },
-    { mes: "Dic", ingresos: 45000000, presupuesto: 42000000 }
+  // Alarmas por tipo
+  const alarmasPorTipo = [
+    { tipo: "Robo", cantidad: 487, porcentaje: 39.1 },
+    { tipo: "Pánico", cantidad: 312, porcentaje: 25.0 },
+    { tipo: "Médica", cantidad: 186, porcentaje: 14.9 },
+    { tipo: "Incendio", cantidad: 143, porcentaje: 11.5 },
+    { tipo: "Otros", cantidad: 119, porcentaje: 9.5 }
   ];
 
-  const clientesPorSegmento = [
-    { segmento: "Financiero", clientes: 45, ingresos: 18000000 },
-    { segmento: "Comercial", clientes: 67, ingresos: 15000000 },
-    { segmento: "Residencial", clientes: 32, ingresos: 8000000 },
-    { segmento: "Industrial", clientes: 12, ingresos: 4000000 }
+  // Revistas por tipo
+  const revistasPorTipo = [
+    { tipo: "Rutina", cantidad: 2180, porcentaje: 68.2 },
+    { tipo: "Acompañamiento", cantidad: 672, porcentaje: 21.0 },
+    { tipo: "Especial", cantidad: 234, porcentaje: 7.3 },
+    { tipo: "Nocturna", cantidad: 111, porcentaje: 3.5 }
   ];
 
-  const rendimientoMensual = [
-    { mes: "Ene", alarmas: 1180, efectividad: 96.2, satisfaccion: 4.3 },
-    { mes: "Feb", alarmas: 1095, efectividad: 97.1, satisfaccion: 4.4 },
-    { mes: "Mar", alarmas: 1247, efectividad: 97.8, satisfaccion: 4.5 },
-    { mes: "Abr", alarmas: 1156, efectividad: 96.8, satisfaccion: 4.4 },
-    { mes: "May", alarmas: 1289, efectividad: 98.2, satisfaccion: 4.6 },
-    { mes: "Jun", alarmas: 1334, efectividad: 97.9, satisfaccion: 4.5 }
+  // Clientes con más servicios
+  const clientesTopServicios = [
+    { cliente: "Banco Central", alarmas: 89, revistas: 156, total: 245 },
+    { cliente: "Centro Comercial Plaza", alarmas: 67, revistas: 134, total: 201 },
+    { cliente: "Residencial Los Pinos", alarmas: 45, revistas: 98, total: 143 },
+    { cliente: "Hospital Regional", alarmas: 34, revistas: 87, total: 121 },
+    { cliente: "Universidad Nacional", alarmas: 28, revistas: 76, total: 104 }
   ];
 
-  const costosOperacionales = [
-    { categoria: "Personal", monto: 15000000, porcentaje: 53.6 },
-    { categoria: "Combustible", monto: 4500000, porcentaje: 16.1 },
-    { categoria: "Mantenimiento", monto: 3200000, porcentaje: 11.4 },
-    { categoria: "Tecnología", monto: 2800000, porcentaje: 10.0 },
-    { categoria: "Otros", monto: 2500000, porcentaje: 8.9 }
+  // Rendimiento por días de la semana
+  const serviciosPorDia = [
+    { dia: "Lun", alarmas: 198, revistas: 289, total: 487 },
+    { dia: "Mar", alarmas: 176, revistas: 312, total: 488 },
+    { dia: "Mié", alarmas: 189, revistas: 298, total: 487 },
+    { dia: "Jue", alarmas: 203, revistas: 284, total: 487 },
+    { dia: "Vie", alarmas: 234, revistas: 253, total: 487 },
+    { dia: "Sáb", alarmas: 167, revistas: 198, total: 365 },
+    { dia: "Dom", alarmas: 80, revistas: 143, total: 223 }
+  ];
+
+  // Servicios por hora del día
+  const serviciosPorHora = [
+    { hora: "00-04", cantidad: 87 },
+    { hora: "04-08", cantidad: 156 },
+    { hora: "08-12", cantidad: 445 },
+    { hora: "12-16", cantidad: 623 },
+    { hora: "16-20", cantidad: 789 },
+    { hora: "20-24", cantidad: 234 }
+  ];
+
+  // Tiempos de respuesta
+  const tiemposRespuesta = [
+    { rango: "0-5 min", cantidad: 742, porcentaje: 59.5 },
+    { rango: "5-10 min", cantidad: 378, porcentaje: 30.3 },
+    { rango: "10-15 min", cantidad: 89, porcentaje: 7.1 },
+    { rango: "+15 min", cantidad: 38, porcentaje: 3.1 }
   ];
 
   const chartConfig = {
-    ingresos: { label: "Ingresos", color: "hsl(var(--chart-1))" },
-    presupuesto: { label: "Presupuesto", color: "hsl(var(--chart-2))" },
-    alarmas: { label: "Alarmas", color: "hsl(var(--chart-3))" },
-    efectividad: { label: "Efectividad %", color: "hsl(var(--chart-4))" }
+    alarmas: { label: "Alarmas", color: "hsl(var(--chart-1))" },
+    revistas: { label: "Revistas", color: "hsl(var(--chart-2))" },
+    efectividad: { label: "Efectividad %", color: "hsl(var(--chart-3))" },
+    tiempo: { label: "Tiempo Respuesta", color: "hsl(var(--chart-4))" }
   };
 
   const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1'];
@@ -72,9 +101,9 @@ const ReportesEjecutivos = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold">Reportes Ejecutivos</h2>
+          <h2 className="text-3xl font-bold">Reportes Operativos</h2>
           <p className="text-muted-foreground">
-            Dashboard estratégico para la toma de decisiones
+            Dashboard operativo para el control y seguimiento de servicios
           </p>
         </div>
         <div className="flex gap-2">
@@ -96,32 +125,17 @@ const ReportesEjecutivos = () => {
         </div>
       </div>
 
-      {/* KPIs Principales */}
+      {/* KPIs Operativos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ingresos Mensuales</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium">Alarmas Generadas</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${(kpiData.ingresosMensuales / 1000000).toFixed(1)}M</div>
-            <p className="text-xs text-green-600 flex items-center">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +{kpiData.crecimientoIngresos}% vs mes anterior
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clientes Activos</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpiData.clientesActivos}</div>
-            <p className="text-xs text-green-600 flex items-center">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +{kpiData.crecimientoClientes}% crecimiento
+            <div className="text-2xl font-bold">{kpiData.alarmasGeneradas}</div>
+            <p className="text-xs text-muted-foreground">
+              {kpiData.alarmasResueltas} resueltas, {kpiData.alarmasCanceladas} canceladas
             </p>
           </CardContent>
         </Card>
@@ -129,78 +143,84 @@ const ReportesEjecutivos = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Efectividad</CardTitle>
-            <Target className="h-4 w-4 text-purple-600" />
+            <Target className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{kpiData.efectividadRespuesta}%</div>
-            <p className="text-xs text-muted-foreground">
-              {kpiData.alarmasAtendidas} alarmas atendidas
+            <p className="text-xs text-green-600 flex items-center">
+              <TrendingUp className="h-3 w-3 mr-1" />
+              Meta: 95%
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Margen Operacional</CardTitle>
-            <BarChart3 className="h-4 w-4 text-orange-600" />
+            <CardTitle className="text-sm font-medium">Tiempo Respuesta</CardTitle>
+            <Clock className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpiData.margenOperacional}%</div>
+            <div className="text-2xl font-bold">{kpiData.tiempoPromedioRespuesta} min</div>
             <p className="text-xs text-muted-foreground">
-              Costos: ${(kpiData.costoOperacional / 1000000).toFixed(1)}M
+              Promedio este mes
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Excedencia Tiempo</CardTitle>
+            <XCircle className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{kpiData.excedenciaTiempo}%</div>
+            <p className="text-xs text-orange-600">
+              Servicios fuera de tiempo
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Gráficos principales */}
+      {/* Gráficos operativos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Ingresos vs Presupuesto */}
+        {/* Servicios por día de la semana */}
         <Card>
           <CardHeader>
-            <CardTitle>Ingresos vs Presupuesto</CardTitle>
-            <CardDescription>Comparación trimestral (en millones COP)</CardDescription>
+            <CardTitle>Servicios por Día de la Semana</CardTitle>
+            <CardDescription>Distribución de alarmas y revistas por día</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={ingresosTrimestre}>
+                <BarChart data={serviciosPorDia}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis tickFormatter={(value) => `$${(value / 1000000).toFixed(0)}M`} />
+                  <XAxis dataKey="dia" />
+                  <YAxis />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="ingresos" fill="var(--color-ingresos)" />
-                  <Bar dataKey="presupuesto" fill="var(--color-presupuesto)" />
+                  <Bar dataKey="alarmas" fill="var(--color-alarmas)" />
+                  <Bar dataKey="revistas" fill="var(--color-revistas)" />
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
         </Card>
 
-        {/* Rendimiento Mensual */}
+        {/* Servicios por franja horaria */}
         <Card>
           <CardHeader>
-            <CardTitle>Tendencia de Rendimiento</CardTitle>
-            <CardDescription>Alarmas atendidas y efectividad</CardDescription>
+            <CardTitle>Servicios por Franja Horaria</CardTitle>
+            <CardDescription>Distribución de servicios durante el día</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={rendimientoMensual}>
+                <BarChart data={serviciosPorHora}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
+                  <XAxis dataKey="hora" />
+                  <YAxis />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar yAxisId="left" dataKey="alarmas" fill="var(--color-alarmas)" />
-                  <Line 
-                    yAxisId="right" 
-                    type="monotone" 
-                    dataKey="efectividad" 
-                    stroke="var(--color-efectividad)" 
-                    strokeWidth={2}
-                  />
-                </LineChart>
+                  <Bar dataKey="cantidad" fill="var(--color-alarmas)" />
+                </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
@@ -208,26 +228,27 @@ const ReportesEjecutivos = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Clientes por Segmento */}
+        {/* Top Clientes por Servicios */}
         <Card>
           <CardHeader>
-            <CardTitle>Ingresos por Segmento</CardTitle>
-            <CardDescription>Distribución de clientes e ingresos</CardDescription>
+            <CardTitle>Clientes con Más Servicios</CardTitle>
+            <CardDescription>Top 5 clientes por cantidad de servicios recibidos</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {clientesPorSegmento.map((segmento, index) => (
-                <div key={segmento.segmento} className="flex items-center justify-between">
+              {clientesTopServicios.map((cliente, index) => (
+                <div key={cliente.cliente} className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: COLORS[index] }}
-                    />
-                    <span className="font-medium">{segmento.segmento}</span>
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs">
+                      {index + 1}
+                    </div>
+                    <span className="font-medium">{cliente.cliente}</span>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold">${(segmento.ingresos / 1000000).toFixed(1)}M</div>
-                    <div className="text-sm text-muted-foreground">{segmento.clientes} clientes</div>
+                    <div className="font-bold">{cliente.total} servicios</div>
+                    <div className="text-xs text-muted-foreground">
+                      {cliente.alarmas} alarmas • {cliente.revistas} revistas
+                    </div>
                   </div>
                 </div>
               ))}
@@ -235,31 +256,31 @@ const ReportesEjecutivos = () => {
           </CardContent>
         </Card>
 
-        {/* Costos Operacionales */}
+        {/* Análisis de Tiempos de Respuesta */}
         <Card>
           <CardHeader>
-            <CardTitle>Distribución de Costos</CardTitle>
-            <CardDescription>Análisis de costos operacionales</CardDescription>
+            <CardTitle>Tiempos de Respuesta</CardTitle>
+            <CardDescription>Distribución de tiempos de respuesta a alarmas</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {costosOperacionales.map((costo, index) => (
-                <div key={costo.categoria} className="space-y-2">
+              {tiemposRespuesta.map((tiempo, index) => (
+                <div key={tiempo.rango} className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>{costo.categoria}</span>
-                    <span className="font-medium">{costo.porcentaje}%</span>
+                    <span>{tiempo.rango}</span>
+                    <span className="font-medium">{tiempo.porcentaje}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
                       className="h-2 rounded-full" 
                       style={{ 
-                        width: `${costo.porcentaje}%`,
-                        backgroundColor: COLORS[index]
+                        width: `${tiempo.porcentaje}%`,
+                        backgroundColor: index === 0 ? '#22c55e' : index === 1 ? '#eab308' : index === 2 ? '#f97316' : '#ef4444'
                       }}
                     />
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    ${(costo.monto / 1000000).toFixed(1)}M
+                    {tiempo.cantidad} alarmas
                   </div>
                 </div>
               ))}
@@ -268,30 +289,100 @@ const ReportesEjecutivos = () => {
         </Card>
       </div>
 
-      {/* Acciones Recomendadas */}
+      {/* Análisis por Tipo */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Alarmas por Tipo */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Alarmas por Tipo</CardTitle>
+            <CardDescription>Distribución de alarmas según su categoría</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {alarmasPorTipo.map((alarma, index) => (
+                <div key={alarma.tipo} className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>{alarma.tipo}</span>
+                    <span className="font-medium">{alarma.cantidad} ({alarma.porcentaje}%)</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="h-2 rounded-full" 
+                      style={{ 
+                        width: `${alarma.porcentaje}%`,
+                        backgroundColor: COLORS[index]
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Revistas por Tipo */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Revistas por Tipo</CardTitle>
+            <CardDescription>Distribución de revistas según su categoría</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {revistasPorTipo.map((revista, index) => (
+                <div key={revista.tipo} className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>{revista.tipo}</span>
+                    <span className="font-medium">{revista.cantidad} ({revista.porcentaje}%)</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="h-2 rounded-full" 
+                      style={{ 
+                        width: `${revista.porcentaje}%`,
+                        backgroundColor: COLORS[index]
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recomendaciones Operativas */}
       <Card>
         <CardHeader>
-          <CardTitle>Recomendaciones Estratégicas</CardTitle>
-          <CardDescription>Acciones sugeridas basadas en el análisis de datos</CardDescription>
+          <CardTitle>Recomendaciones Operativas</CardTitle>
+          <CardDescription>Acciones sugeridas basadas en el análisis operativo</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="p-4 border rounded-lg">
               <div className="flex items-center space-x-2 mb-2">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-                <span className="font-medium">Oportunidad de Crecimiento</span>
+                <Clock className="h-4 w-4 text-orange-600" />
+                <span className="font-medium">Optimizar Tiempos</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                El segmento financiero muestra el mayor margen. Considerar expansión en este sector.
+                El 10.2% de alarmas exceden 10 minutos. Revisar protocolos de respuesta y rutas.
               </p>
             </div>
             <div className="p-4 border rounded-lg">
               <div className="flex items-center space-x-2 mb-2">
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                <span className="font-medium">Optimización de Costos</span>
+                <Users className="h-4 w-4 text-blue-600" />
+                <span className="font-medium">Reforzar Personal</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                Los costos de combustible han aumentado 15%. Evaluar rutas y eficiencia operativa.
+                Viernes presenta mayor carga de alarmas. Considerar personal adicional en este día.
+              </p>
+            </div>
+            <div className="p-4 border rounded-lg">
+              <div className="flex items-center space-x-2 mb-2">
+                <Shield className="h-4 w-4 text-green-600" />
+                <span className="font-medium">Prevención</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Alto índice de robos. Implementar programa preventivo en zonas de alta incidencia.
               </p>
             </div>
           </div>
