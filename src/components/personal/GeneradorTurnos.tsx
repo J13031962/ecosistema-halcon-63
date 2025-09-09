@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 
 interface TurnoAsignado {
   fecha: Date;
-  tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso' | '';
+  tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso' | 'sin-asignar';
   operador_id: string;
 }
 
@@ -68,22 +68,22 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
     return turnosAsignados.find(t => isSameDay(t.fecha, fecha) && t.operador_id === operadorSeleccionado);
   };
 
-  const asignarTurno = (fecha: Date, tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso' | '') => {
+  const asignarTurno = (fecha: Date, tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso' | 'sin-asignar') => {
     if (!operadorSeleccionado) return;
     
     setTurnosAsignados(prev => {
       const existing = prev.findIndex(t => isSameDay(t.fecha, fecha) && t.operador_id === operadorSeleccionado);
       if (existing >= 0) {
-        if (tipo === '') {
-          // Remover turno si se selecciona vacío
+        if (tipo === 'sin-asignar') {
+          // Remover turno si se selecciona sin asignar
           return prev.filter((_, index) => index !== existing);
         }
         // Reemplazar turno existente
         const newArray = [...prev];
         newArray[existing] = { fecha, tipo, operador_id: operadorSeleccionado };
         return newArray;
-      } else if (tipo !== '') {
-        // Agregar nuevo turno solo si no está vacío
+      } else if (tipo !== 'sin-asignar') {
+        // Agregar nuevo turno solo si no está sin asignar
         return [...prev, { fecha, tipo, operador_id: operadorSeleccionado }];
       }
       return prev;
@@ -153,7 +153,7 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
       // Convertir todos los turnos de todos los operadores al formato esperado
       const todosLosTurnos = operadoresConTurnos.flatMap(operadorData => {
         return operadorData.turnos
-          .filter(t => t.tipo !== 'descanso' && t.tipo !== '')
+          .filter(t => t.tipo !== 'descanso' && t.tipo !== 'sin-asignar')
           .map(turno => {
             const tipoTurno = TIPOS_TURNO[turno.tipo as keyof typeof TIPOS_TURNO];
             
@@ -372,8 +372,8 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
                               </div>
                               
                               <Select
-                                value={turnoAsignado?.tipo || ''}
-                                onValueChange={(tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso' | '') => 
+                                value={turnoAsignado?.tipo || 'sin-asignar'}
+                                onValueChange={(tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso' | 'sin-asignar') => 
                                   asignarTurno(fecha, tipo)
                                 }
                               >
@@ -381,7 +381,7 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
                                   <SelectValue placeholder="Turno" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-background border z-50">
-                                  <SelectItem value="" className="bg-background hover:bg-muted">Sin asignar</SelectItem>
+                                  <SelectItem value="sin-asignar" className="bg-background hover:bg-muted">Sin asignar</SelectItem>
                                   <SelectItem value="descanso" className="bg-background hover:bg-muted">Descanso</SelectItem>
                                   <SelectItem value="dia" className="bg-background hover:bg-muted">Día (06:00-18:00)</SelectItem>
                                   <SelectItem value="mañana" className="bg-background hover:bg-muted">Mañana (06:00-14:00)</SelectItem>
