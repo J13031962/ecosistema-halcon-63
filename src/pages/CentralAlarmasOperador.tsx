@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useUserSpecificData } from "@/hooks/useUserSpecificData";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { CalendarioTurnosGenerados } from "@/components/personal/CalendarioTurnosGenerados";
-import { format } from "date-fns";
+import { format, differenceInSeconds } from "date-fns";
 import { 
   AlertTriangle, 
   Phone, 
@@ -13,18 +13,30 @@ import {
   Clock,
   CheckCircle,
   User,
-  Calendar
+  Calendar,
+  Users,
+  Shield,
+  QrCode,
+  UserCheck,
+  Timer
 } from "lucide-react";
+import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
 
 const CentralAlarmasOperador = () => {
   const { user } = useAuthConsolidated();
   const [mostrarCalendarioTurnos, setMostrarCalendarioTurnos] = useState(false);
 
-  // Obtener alarmas específicas del operador
+  // Obtener alarmas específicas del operador (solo si es operador)
   const { data: misAlarmas, loading: alarmasLoading } = useUserSpecificData({
     table: 'alarmas',
     enabled: !!user?.id && user?.role === 'operador_alarmas'
   });
+
+  // Para roles distintos a operador, cargamos todas las alarmas de la central
+  const { alarmas: todasAlarmas, loading: loadingAll } = useSupabaseAlarmas();
+
+  // Fuente unificada de alarmas para la vista
+  const fuenteAlarmas = (user?.role === 'operador_alarmas') ? (misAlarmas || []) : (todasAlarmas || []);
 
   // Obtener turnos del operador
   const { data: misTurnos, loading: turnosLoading } = useUserSpecificData({
@@ -32,8 +44,8 @@ const CentralAlarmasOperador = () => {
     enabled: !!user?.id && user?.role === 'operador_alarmas'
   });
 
-  const alarmasActivas = misAlarmas?.filter(a => a.estado === 'activa') || [];
-  const alarmasResueltas = misAlarmas?.filter(a => a.estado === 'resuelta') || [];
+  const alarmasActivas = fuenteAlarmas.filter(a => a.estado === 'activa');
+  const alarmasResueltas = fuenteAlarmas.filter(a => a.estado === 'resuelta');
   const turnosHoy = misTurnos?.filter(t => 
     new Date(t.fecha).toDateString() === new Date().toDateString()
   ) || [];
@@ -56,6 +68,17 @@ const CentralAlarmasOperador = () => {
       default: return "text-gray-500";
     }
   };
+
+  const calcularDuracion = (inicioStr: string, finStr?: string) => {
+    const inicio = new Date(inicioStr);
+    const fin = finStr ? new Date(finStr) : new Date();
+    const diff = differenceInSeconds(fin, inicio);
+    const min = Math.floor(diff / 60);
+    const sec = diff % 60;
+    return `${min}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  const loadingAlarmasVista = (user?.role === 'operador_alarmas') ? alarmasLoading : loadingAll;
 
   return (
     <div className="space-y-6">
@@ -128,7 +151,7 @@ const CentralAlarmasOperador = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {misAlarmas?.length || 0}
+              {fuenteAlarmas.length}
             </div>
             <p className="text-xs text-muted-foreground">
               Todas mis alarmas
@@ -137,16 +160,16 @@ const CentralAlarmasOperador = () => {
         </Card>
       </div>
 
-      {/* Mis alarmas activas */}
+      {/* Alarmas activas */}
       <Card>
         <CardHeader>
-          <CardTitle>Mis Alarmas Activas</CardTitle>
+          <CardTitle>Alarmas Activas</CardTitle>
           <CardDescription>
-            Alarmas asignadas que requieren tu atención inmediata
+            Alarmas que requieren atención inmediata
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {alarmasLoading ? (
+          {loadingAlarmasVista ? (
             <div className="animate-pulse space-y-4">
               {[1, 2, 3].map(i => (
                 <div key={i} className="h-16 bg-muted rounded"></div>
@@ -160,42 +183,81 @@ const CentralAlarmasOperador = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {alarmasActivas.map((alarma) => (
-                <div key={alarma.id} className="p-4 border rounded-lg bg-red-50 border-red-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-semibold">{alarma.tipo}</h4>
-                        <Badge 
-                          variant="outline" 
-                          className={getPriorityColor(alarma.prioridad)}
-                        >
-                          {alarma.prioridad}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        📍 {alarma.direccion}, {alarma.municipio}
-                      </p>
-                      <p className="text-sm">
-                        <strong>Descripción:</strong> {alarma.descripcion}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <Badge variant={getStatusColor(alarma.estado)} className="mb-2">
-                        {alarma.estado}
-                      </Badge>
-                      <p className="text-sm text-muted-foreground">
-                        Recibida: {format(new Date(alarma.created_at), 'HH:mm')}
-                      </p>
-                      {alarma.tiempo_asignacion && (
+              {alarmasActivas.map((alarma) => {
+                const total = calcularDuracion(alarma.created_at);
+                const tDesp = alarma.tiempo_toma_despachador ? calcularDuracion(alarma.created_at, alarma.tiempo_toma_despachador) : null;
+                const tAsign = alarma.tiempo_asignacion_supervisor && alarma.tiempo_toma_despachador ? calcularDuracion(alarma.tiempo_toma_despachador, alarma.tiempo_asignacion_supervisor) : null;
+                const tAcept = alarma.tiempo_aceptacion_supervisor && alarma.tiempo_asignacion_supervisor ? calcularDuracion(alarma.tiempo_asignacion_supervisor, alarma.tiempo_aceptacion_supervisor) : null;
+                const tQR1 = alarma.tiempo_primera_lectura_qr && alarma.tiempo_aceptacion_supervisor ? calcularDuracion(alarma.tiempo_aceptacion_supervisor, alarma.tiempo_primera_lectura_qr) : null;
+                const tQR2 = alarma.tiempo_segunda_lectura_qr && alarma.tiempo_primera_lectura_qr ? calcularDuracion(alarma.tiempo_primera_lectura_qr, alarma.tiempo_segunda_lectura_qr) : null;
+
+                return (
+                  <div key={alarma.id} className="p-4 border rounded-lg bg-red-50 border-red-200">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold">{alarma.tipo}</h4>
+                          <Badge 
+                            variant="outline" 
+                            className={getPriorityColor(alarma.prioridad)}
+                          >
+                            {alarma.prioridad}
+                          </Badge>
+                        </div>
                         <p className="text-sm text-muted-foreground">
-                          Asignada: {format(new Date(alarma.tiempo_asignacion), 'HH:mm')}
+                          📍 {alarma.direccion}, {alarma.municipio}
                         </p>
-                      )}
+                        {alarma.descripcion && (
+                          <p className="text-sm mt-1">
+                            <strong>Descripción:</strong> {alarma.descripcion}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col items-end min-w-[220px] gap-1">
+                        <div className="grid grid-cols-3 gap-2 text-right">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xl font-bold">{total}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <UserCheck className="h-3 w-3 text-blue-500" />
+                            <span className={`text-lg font-semibold ${tDesp ? 'text-green-600' : 'text-gray-400'}`}>{tDesp || '0:00'}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3 text-purple-500" />
+                            <span className={`text-lg font-semibold ${tAsign ? 'text-orange-600' : 'text-gray-400'}`}>{tAsign || '0:00'}</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-right mt-1">
+                          <div className="flex items-center gap-1">
+                            <Shield className="h-3 w-3 text-green-500" />
+                            <span className={`text-sm font-medium ${tAcept ? 'text-green-600' : 'text-gray-400'}`}>{tAcept || '0:00'}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <QrCode className="h-3 w-3 text-orange-500" />
+                            <span className={`text-sm font-medium ${tQR1 ? 'text-blue-600' : 'text-gray-400'}`}>{tQR1 || '0:00'}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <QrCode className="h-3 w-3 text-teal-500" />
+                            <span className={`text-sm font-medium ${tQR2 ? 'text-teal-600' : 'text-gray-400'}`}>{tQR2 || '0:00'}</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground mt-1">
+                          <span>Tiempo Total</span>
+                          <span>Despachador</span>
+                          <span>Asignación</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                          <span>Aceptación</span>
+                          <span>Llegada</span>
+                          <span>Finalización</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
