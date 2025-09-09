@@ -34,7 +34,7 @@ const CentralAlarmasOperador = () => {
   });
 
   // Para roles distintos a operador, cargamos todas las alarmas de la central
-  const { alarmas: todasAlarmas, loading: loadingAll } = useSupabaseAlarmas();
+  const { alarmas: todasAlarmas, loading: loadingAll, cancelAlarma } = useSupabaseAlarmas();
 
   // Fuente unificada de alarmas para la vista
   const fuenteAlarmas = (user?.role === 'operador_alarmas') ? (misAlarmas || []) : (todasAlarmas || []);
@@ -185,7 +185,7 @@ const CentralAlarmasOperador = () => {
           ) : (
             <div className="space-y-4">
               {alarmasActivas.map((alarma) => (
-                <AlarmaActivaCard key={alarma.id} alarma={alarma} />
+                <AlarmaActivaCard key={alarma.id} alarma={alarma} onCancelar={cancelAlarma} />
               ))}
             </div>
           )}
