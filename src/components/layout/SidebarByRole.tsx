@@ -83,7 +83,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
             { title: "Reportes Ejecutivos", url: "/reportes-ejecutivos", icon: BarChart3 },
             { title: "Análisis Avanzado", url: "/analisis", icon: FileText },
             { title: "Estado General", url: "/estado-general", icon: Shield },
-            { title: "Gestión Personal", url: "/personal", icon: Users },
+            { title: "Gestión Personal Operadores", url: "/personal", icon: Users },
             { title: "Clientes", url: "/clientes-dir-central", icon: Building },
           ]
         },
