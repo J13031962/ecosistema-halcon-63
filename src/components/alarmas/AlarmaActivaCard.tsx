@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { differenceInSeconds } from "date-fns";
-import { Clock } from "lucide-react";
+import { Clock, X } from "lucide-react";
 
 interface AlarmaActivaCardProps {
   alarma: {
@@ -18,9 +19,10 @@ interface AlarmaActivaCardProps {
     tiempo_primera_lectura_qr?: string;
     tiempo_segunda_lectura_qr?: string;
   };
+  onCancelar?: (alarmaId: string) => void;
 }
 
-export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
+export const AlarmaActivaCard = ({ alarma, onCancelar }: AlarmaActivaCardProps) => {
   const [tiempos, setTiempos] = useState({
     total: { tiempo: '0:00', segundos: 0 },
     aceptacionDespachador: { tiempo: '0:00', segundos: 0 },
@@ -140,8 +142,29 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
     }
   };
 
+  const getCardColorAndClass = (tiempoTotalSegundos: number) => {
+    const minutos = tiempoTotalSegundos / 60;
+    
+    if (minutos < 10) {
+      return "bg-green-50 border-green-200";
+    } else if (minutos < 20) {
+      return "bg-yellow-50 border-yellow-200";
+    } else if (minutos < 25) {
+      return "bg-red-50 border-red-200";
+    } else if (minutos >= 30) {
+      return "bg-red-50 border-red-200 animate-pulse";
+    } else {
+      return "bg-red-50 border-red-200";
+    }
+  };
+
+  const puedeSerCancelada = (tiempoTotalSegundos: number) => {
+    const minutos = tiempoTotalSegundos / 60;
+    return minutos <= 5;
+  };
+
   return (
-    <div className="p-6 border rounded-lg bg-red-50 border-red-200 space-y-4">
+    <div className={`p-6 border rounded-lg space-y-4 ${getCardColorAndClass(tiempos.total.segundos)}`}>
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex-1">
@@ -160,10 +183,23 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2 text-right">
-          <span className="text-sm text-muted-foreground">Tiempo Total</span>
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <span className="text-2xl font-bold">{tiempos.total.tiempo}</span>
+        <div className="flex items-center gap-4 text-right">
+          {puedeSerCancelada(tiempos.total.segundos) && onCancelar && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onCancelar(alarma.id)}
+              className="flex items-center gap-1"
+            >
+              <X className="h-4 w-4" />
+              Cancelar
+            </Button>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Tiempo Total</span>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span className="text-2xl font-bold">{tiempos.total.tiempo}</span>
+          </div>
         </div>
       </div>
 
