@@ -112,10 +112,13 @@ const TurnosCalculadorHoras = () => {
       finMinutos += 24 * 60;
     }
     
+    const duracionTotalMinutos = finMinutos - inicioMinutos;
+    const duracionTotalHoras = duracionTotalMinutos / 60;
+    
     // Horarios de referencia en minutos
-    const inicioDiurno = 6 * 60; // 06:00
-    const finDiurno = 19 * 60;   // 19:00
-    const medianoche = 24 * 60;  // 24:00 (medianoche)
+    const inicioDiurno = 6 * 60;  // 06:00 = 360 minutos
+    const finDiurno = 19 * 60;    // 19:00 = 1140 minutos
+    const medianoche = 24 * 60;   // 24:00 = 1440 minutos
     
     let horasDiurnas = 0;
     let horasNocturnas = 0;
@@ -127,38 +130,58 @@ const TurnosCalculadorHoras = () => {
     const esDom = esDomingo(fecha);
     const esFest = esFestivo(fecha);
     
-    // Calcular por cada hora del turno
-    for (let minuto = inicioMinutos; minuto < finMinutos; minuto += 60) {
-      const minutoDelDia = minuto % (24 * 60);
-      const minutoReal = minuto; // Minuto desde el inicio del turno
-      const esDiurno = minutoDelDia >= inicioDiurno && minutoDelDia < finDiurno;
+    if (esDom) {
+      // Para domingos, calcular solo hasta medianoche
+      const finTurnoParaDomingo = Math.min(finMinutos, medianoche);
+      const duracionDomingo = finTurnoParaDomingo - inicioMinutos;
       
-      // Si estamos en un turno dominical o festivo, solo contar hasta medianoche
-      const esDespuesDeMedianoche = minutoReal >= medianoche;
+      // Calcular intersección con horario diurno para domingos
+      const inicioInterseccionDom = Math.max(inicioMinutos, inicioDiurno);
+      const finInterseccionDom = Math.min(finTurnoParaDomingo, finDiurno);
       
-      if ((esDom || esFest) && !esDespuesDeMedianoche) {
-        // Horas dominicales o festivas solo hasta las 24:00
-        if (esDom) {
-          if (esDiurno) {
-            horasDominicalesDiurnas++;
-          } else {
-            horasDominicalesNocturnas++;
-          }
-        } else if (esFest) {
-          if (esDiurno) {
-            horasFestivasDiurnas++;
-          } else {
-            horasFestivasNocturnas++;
-          }
-        }
-      } else {
-        // Horas ordinarias (después de medianoche o días ordinarios)
-        if (esDiurno) {
-          horasDiurnas++;
-        } else {
-          horasNocturnas++;
-        }
+      if (inicioInterseccionDom < finInterseccionDom) {
+        horasDominicalesDiurnas = (finInterseccionDom - inicioInterseccionDom) / 60;
       }
+      
+      horasDominicalesNocturnas = (duracionDomingo / 60) - horasDominicalesDiurnas;
+      
+      // Horas después de medianoche son nocturnas ordinarias
+      if (finMinutos > medianoche) {
+        horasNocturnas = (finMinutos - medianoche) / 60;
+      }
+      
+    } else if (esFest) {
+      // Para festivos, calcular solo hasta medianoche
+      const finTurnoParaFeriado = Math.min(finMinutos, medianoche);
+      const duracionFeriado = finTurnoParaFeriado - inicioMinutos;
+      
+      // Calcular intersección con horario diurno para festivos
+      const inicioInterseccionFest = Math.max(inicioMinutos, inicioDiurno);
+      const finInterseccionFest = Math.min(finTurnoParaFeriado, finDiurno);
+      
+      if (inicioInterseccionFest < finInterseccionFest) {
+        horasFestivasDiurnas = (finInterseccionFest - inicioInterseccionFest) / 60;
+      }
+      
+      horasFestivasNocturnas = (duracionFeriado / 60) - horasFestivasDiurnas;
+      
+      // Horas después de medianoche son nocturnas ordinarias
+      if (finMinutos > medianoche) {
+        horasNocturnas = (finMinutos - medianoche) / 60;
+      }
+      
+    } else {
+      // Día ordinario
+      // Calcular intersección con horario diurno (06:00-19:00)
+      const inicioInterseccion = Math.max(inicioMinutos, inicioDiurno);
+      const finInterseccion = Math.min(finMinutos, finDiurno);
+      
+      if (inicioInterseccion < finInterseccion) {
+        horasDiurnas = (finInterseccion - inicioInterseccion) / 60;
+      }
+      
+      // El resto son horas nocturnas
+      horasNocturnas = duracionTotalHoras - horasDiurnas;
     }
     
     const totalHoras = horasDiurnas + horasNocturnas + horasDominicalesDiurnas + horasDominicalesNocturnas + horasFestivasDiurnas + horasFestivasNocturnas;
