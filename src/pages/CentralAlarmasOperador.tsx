@@ -6,7 +6,7 @@ import { useUserSpecificData } from "@/hooks/useUserSpecificData";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { CalendarioTurnosGenerados } from "@/components/personal/CalendarioTurnosGenerados";
 import { AlarmaActivaCard } from "@/components/alarmas/AlarmaActivaCard";
-import { format, differenceInSeconds } from "date-fns";
+import { format, differenceInSeconds, isValid } from "date-fns";
 import { 
   AlertTriangle, 
   Phone, 
@@ -287,11 +287,21 @@ const CentralAlarmasOperador = () => {
                       <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-green-600">Generada:</span>
-                          <span>{format(new Date(alarma.created_at), 'dd/MM/yyyy HH:mm')}</span>
+                          <span>
+                            {alarma.created_at && isValid(new Date(alarma.created_at)) 
+                              ? format(new Date(alarma.created_at), 'dd/MM/yyyy HH:mm')
+                              : 'Fecha no válida'
+                            }
+                          </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-red-600">Cancelada:</span>
-                          <span>{format(new Date(alarma.updated_at), 'dd/MM/yyyy HH:mm')}</span>
+                          <span>
+                            {alarma.updated_at && isValid(new Date(alarma.updated_at)) 
+                              ? format(new Date(alarma.updated_at), 'dd/MM/yyyy HH:mm')
+                              : 'Fecha no válida'
+                            }
+                          </span>
                         </div>
                       </div>
                     </div>
