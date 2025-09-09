@@ -2,9 +2,13 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CalendarTurnos } from '@/components/turnos/CalendarTurnos';
+import { useSupabaseTurnos } from '@/hooks/useSupabaseTurnos';
 import { Users, Calendar, Settings, FileText, Wrench, Briefcase } from 'lucide-react';
 
 const DirectorTecnicoSection = () => {
+  // Cargar turnos desde la base de datos
+  const { turnosOperador, turnosSupervisor, loading: turnosLoading } = useSupabaseTurnos();
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">

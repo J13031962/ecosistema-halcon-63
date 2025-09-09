@@ -8,6 +8,7 @@ import { FormularioNuevoPersonal } from '@/components/personal/FormularioNuevoPe
 import { GeneradorTurnos } from '@/components/personal/GeneradorTurnos';
 import { CalendarioTurnos } from '@/components/personal/CalendarioTurnos';
 import { generarTurnosAutomaticos, calcularHorasTurno, esDomingo as esDomingoUtil, esFeriado as esFeriadoUtil } from '@/components/personal/TurnosCalculadorHoras';
+import { useSupabaseTurnos } from '@/hooks/useSupabaseTurnos';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -22,6 +23,9 @@ const Personal = () => {
   const [selectedDateTurnos, setSelectedDateTurnos] = useState<{fecha: Date, turnos: any[]}>({fecha: new Date(), turnos: []});
   const [newTurno, setNewTurno] = useState({ operador_id: '', tipo: '' });
   const [selectedDate, setSelectedDate] = useState('');
+
+  // Hook para manejar turnos en Supabase
+  const { addTurnoOperador, addTurnoSupervisor } = useSupabaseTurnos();
   
   // Datos de ejemplo del personal
   const [personal] = useState([
@@ -74,7 +78,11 @@ const Personal = () => {
           };
         });
         setTurnosGenerados(turnosRecalculados);
-        toast.success(`${turnosRecalculados.length} turnos generados exitosamente`);
+        
+        // Guardar turnos en la base de datos
+        guardarTurnosEnBD(turnosRecalculados);
+        
+        toast.success(`${turnosRecalculados.length} turnos generados y guardados exitosamente`);
         return;
       }
 
@@ -113,7 +121,11 @@ const Personal = () => {
       }));
       
       setTurnosGenerados(turnosConNombres);
-      toast.success(`${turnosNuevos.length} turnos generados exitosamente`);
+      
+      // Guardar turnos en la base de datos
+      guardarTurnosEnBD(turnosConNombres);
+      
+      toast.success(`${turnosNuevos.length} turnos generados y guardados exitosamente`);
     } catch (error) {
       console.error('Error en handleGenerarTurnos:', error);
       toast.error('Error al generar los turnos');
@@ -193,9 +205,64 @@ const Personal = () => {
     } as any;
 
     setTurnosGenerados(prev => [...prev, nuevoTurno]);
+    
+    // Guardar turno individual en la base de datos
+    guardarTurnoIndividual(nuevoTurno);
+    
     setIsEditDialogOpen(false);
     setNewTurno({ operador_id: '', tipo: '' });
-    toast.success('Turno asignado exitosamente');
+    toast.success('Turno asignado y guardado exitosamente');
+  };
+
+  // Función para guardar turnos en la base de datos
+  const guardarTurnosEnBD = async (turnos: any[]) => {
+    try {
+      for (const turno of turnos) {
+        const operador = personal.find(p => p.id === turno.operador_id);
+        if (operador && operador.cargo === 'operador') {
+          await addTurnoOperador({
+            fecha: turno.fecha.toISOString().split('T')[0], // Formato YYYY-MM-DD
+            turno: `${turno.hora_inicio}-${turno.hora_fin}`,
+            operador_id: turno.operador_id,
+            operador_nombre: turno.operador_nombre,
+            horario_inicio: turno.hora_inicio,
+            horario_fin: turno.hora_fin
+          });
+        } else if (operador && operador.cargo === 'supervisor') {
+          await addTurnoSupervisor({
+            fecha: turno.fecha.toISOString().split('T')[0],
+            turno: `${turno.hora_inicio}-${turno.hora_fin}`,
+            supervisor_id: turno.operador_id,
+            supervisor_nombre: turno.operador_nombre,
+            horario_inicio: turno.hora_inicio,
+            horario_fin: turno.hora_fin
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error guardando turnos:', error);
+      toast.error('Error al guardar algunos turnos en la base de datos');
+    }
+  };
+
+  // Función para guardar un turno individual
+  const guardarTurnoIndividual = async (turno: any) => {
+    try {
+      const operador = personal.find(p => p.id === turno.operador_id);
+      if (operador && operador.cargo === 'operador') {
+        await addTurnoOperador({
+          fecha: turno.fecha.toISOString().split('T')[0],
+          turno: `${turno.hora_inicio}-${turno.hora_fin}`,
+          operador_id: turno.operador_id,
+          operador_nombre: turno.operador_nombre,
+          horario_inicio: turno.hora_inicio,
+          horario_fin: turno.hora_fin
+        });
+      }
+    } catch (error) {
+      console.error('Error guardando turno individual:', error);
+      toast.error('Error al guardar el turno en la base de datos');
+    }
   };
 
   const downloadExcel = () => {
