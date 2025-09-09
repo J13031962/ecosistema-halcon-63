@@ -1,10 +1,15 @@
-import { addHours, differenceInMinutes, isAfter, isBefore, parseISO, format } from 'date-fns';
+import { format } from 'date-fns';
 
 export interface CalculoHoras {
   horas_diurnas: number;
   horas_nocturnas: number;
   horas_domingo: number;
   horas_feriado: number;
+  // Detalle por tipo para reglas avanzadas
+  horas_diurnas_ordinarias: number;
+  horas_nocturnas_ordinarias: number;
+  horas_diurnas_dominicales: number;
+  horas_nocturnas_dominicales: number;
   total_horas: number;
 }
 
@@ -66,61 +71,80 @@ export const calcularHorasTurno = (turno: TurnoCompleto): CalculoHoras => {
   }
   
   const duracionTotalMinutos = finMinutos - inicioMinutos;
-  const duracionTotalHoras = duracionTotalMinutos / 60;
   
   // Definir rangos en minutos
   const inicioDiurno = HORA_INICIO_DIURNO * 60; // 06:00 = 360 minutos
   const finDiurno = HORA_FIN_DIURNO * 60;       // 19:00 = 1140 minutos
   const medianoche = 24 * 60;                   // 24:00 = 1440 minutos
   
-  let horas_diurnas = 0;
-  let horas_nocturnas = 0;
-  let horas_domingo = 0;
-  let horas_feriado = 0;
+  // Helper para intersecciones
+  const overlap = (a1: number, a2: number, b1: number, b2: number) => Math.max(0, Math.min(a2, b2) - Math.max(a1, b1));
   
-  if (es_domingo) {
-    // Para domingos, solo contar hasta medianoche
-    const finTurnoParaDomingo = Math.min(finMinutos, medianoche);
-    const duracionDomingo = (finTurnoParaDomingo - inicioMinutos) / 60;
-    horas_domingo = Math.max(0, duracionDomingo);
-    
-    // Horas después de medianoche son nocturnas ordinarias
-    if (finMinutos > medianoche) {
-      horas_nocturnas = (finMinutos - medianoche) / 60;
+  let horas_diurnas_ordinarias = 0;
+  let horas_nocturnas_ordinarias = 0;
+  let horas_diurnas_dominicales = 0;
+  let horas_nocturnas_dominicales = 0;
+  let minutosFeriado = 0;
+  
+  // Segmento A: mismo día hasta medianoche
+  const aInicio = inicioMinutos;
+  const aFin = Math.min(finMinutos, medianoche);
+  if (aFin > aInicio) {
+    const diurnasA = overlap(aInicio, aFin, inicioDiurno, finDiurno);
+    const nocturnasA = (aFin - aInicio) - diurnasA;
+    const esDomOFerA = es_domingo || es_feriado;
+    if (esDomOFerA) {
+      horas_diurnas_dominicales += diurnasA / 60;
+      horas_nocturnas_dominicales += nocturnasA / 60;
+      if (es_feriado) minutosFeriado += (aFin - aInicio);
+    } else {
+      horas_diurnas_ordinarias += diurnasA / 60;
+      horas_nocturnas_ordinarias += nocturnasA / 60;
     }
-    
-  } else if (es_feriado) {
-    // Para festivos, solo contar hasta medianoche
-    const finTurnoParaFeriado = Math.min(finMinutos, medianoche);
-    const duracionFeriado = (finTurnoParaFeriado - inicioMinutos) / 60;
-    horas_feriado = Math.max(0, duracionFeriado);
-    
-    // Horas después de medianoche son nocturnas ordinarias
-    if (finMinutos > medianoche) {
-      horas_nocturnas = (finMinutos - medianoche) / 60;
-    }
-    
-  } else {
-    // Día ordinario - calcular diurnas y nocturnas
-    
-    // Calcular intersección con horario diurno (06:00-19:00)
-    const inicioInterseccion = Math.max(inicioMinutos, inicioDiurno);
-    const finInterseccion = Math.min(finMinutos, finDiurno);
-    
-    if (inicioInterseccion < finInterseccion) {
-      horas_diurnas = (finInterseccion - inicioInterseccion) / 60;
-    }
-    
-    // El resto son horas nocturnas
-    horas_nocturnas = duracionTotalHoras - horas_diurnas;
   }
   
+  // Segmento B: después de medianoche (día siguiente)
+  if (finMinutos > medianoche) {
+    const bInicio = 0;
+    const bFin = finMinutos - medianoche;
+    const fechaSiguiente = new Date(fecha);
+    fechaSiguiente.setDate(fechaSiguiente.getDate() + 1);
+    
+    // Regla: si el día de inicio fue domingo o festivo, después de las 24:00 son horas ordinarias
+    const diaInicioDomOFer = es_domingo || es_feriado;
+    const diaSiguienteDomOFer = esDomingo(fechaSiguiente) || esFeriado(fechaSiguiente);
+    const usarDominicalB = !diaInicioDomOFer && diaSiguienteDomOFer;
+    
+    const diurnasB = overlap(bInicio, bFin, inicioDiurno, finDiurno);
+    const nocturnasB = (bFin - bInicio) - diurnasB;
+    
+    if (usarDominicalB) {
+      horas_diurnas_dominicales += diurnasB / 60;
+      horas_nocturnas_dominicales += nocturnasB / 60;
+      if (esFeriado(fechaSiguiente)) minutosFeriado += (bFin - bInicio);
+    } else {
+      // Ordinarias (incluye caso domingo/feriado -> después de medianoche)
+      horas_diurnas_ordinarias += diurnasB / 60;
+      horas_nocturnas_ordinarias += nocturnasB / 60;
+    }
+  }
+  
+  const horas_diurnas = Math.round((horas_diurnas_ordinarias + horas_diurnas_dominicales) * 100) / 100;
+  const horas_nocturnas = Math.round((horas_nocturnas_ordinarias + horas_nocturnas_dominicales) * 100) / 100;
+  const horas_domingo = Math.round((horas_diurnas_dominicales + horas_nocturnas_dominicales) * 100) / 100;
+  const horas_feriado = Math.round((minutosFeriado / 60) * 100) / 100;
+  const total_horas = Math.round((duracionTotalMinutos / 60) * 100) / 100;
+  
   return {
-    horas_diurnas: Math.round(horas_diurnas * 100) / 100,
-    horas_nocturnas: Math.round(horas_nocturnas * 100) / 100,
-    horas_domingo: Math.round(horas_domingo * 100) / 100,
-    horas_feriado: Math.round(horas_feriado * 100) / 100,
-    total_horas: Math.round(duracionTotalHoras * 100) / 100
+    horas_diurnas,
+    horas_nocturnas,
+    horas_domingo,
+    horas_feriado,
+    horas_diurnas_ordinarias: Math.round(horas_diurnas_ordinarias * 100) / 100,
+    horas_nocturnas_ordinarias: Math.round(horas_nocturnas_ordinarias * 100) / 100,
+    horas_diurnas_dominicales: Math.round(horas_diurnas_dominicales * 100) / 100,
+    horas_nocturnas_dominicales: Math.round(horas_nocturnas_dominicales * 100) / 100,
+    total_horas
   };
 };
 
