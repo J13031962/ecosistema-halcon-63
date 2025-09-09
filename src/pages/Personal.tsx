@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -397,6 +397,36 @@ const Personal = () => {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Calendario de Turnos Generados */}
+      {turnosGenerados.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Calendario de Turnos Generados
+            </CardTitle>
+            <CardDescription>
+              Vista semanal de los turnos asignados. Haz clic en un día para modificar turnos.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CalendarioTurnos
+              turnos={turnosGenerados}
+              onEditTurno={(turno) => {
+                console.log('Editar turno:', turno);
+              }}
+              selectedWeek={selectedWeek}
+              onWeekChange={setSelectedWeek}
+              onChangeTurno={(fecha, turnos) => {
+                setSelectedDateTurnos({fecha, turnos});
+                setSelectedDate(fecha.toLocaleDateString());
+                setIsEditDialogOpen(true);
+              }}
+            />
+          </CardContent>
+        </Card>
       )}
 
       {/* Personal registrado */}

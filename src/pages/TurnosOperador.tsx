@@ -7,10 +7,33 @@ import { GeneradorTurnosAvanzado } from "@/components/turnos/GeneradorTurnosAvan
 import { VisualizadorTurnosOperador } from "@/components/turnos/VisualizadorTurnosOperador";
 import { CalendarTurnos } from "@/components/turnos/CalendarTurnos";
 import { CalendarioTurnosQuincenal } from "@/components/personal/CalendarioTurnosQuincenal";
+import { CalendarioTurnos as CalendarioTurnosPersonal } from "@/components/personal/CalendarioTurnos";
+import { useSupabaseTurnos } from "@/hooks/useSupabaseTurnos";
 import { Plus, Calendar, Users, Clock, Settings, Eye } from "lucide-react";
 
 const TurnosOperador = () => {
   const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedWeek, setSelectedWeek] = useState(new Date());
+  const { turnosOperador, loading, error } = useSupabaseTurnos();
+
+  // Convertir TurnoOperador a formato Turno para el calendario
+  const turnosAdaptados = turnosOperador.map(turno => ({
+    id: turno.id?.toString() || '',
+    fecha: new Date(turno.fecha),
+    operador_id: turno.operador_id || '',
+    operador_nombre: turno.operador_nombre || `Operador ${turno.operador_id}`,
+    hora_inicio: turno.horario_inicio || '08:00',
+    hora_fin: turno.horario_fin || '16:00',
+    tipo: (turno.turno === 'nocturno' ? 'nocturno' : 'diurno') as 'diurno' | 'nocturno',
+    horas_diurnas: 8,
+    horas_nocturnas: turno.turno === 'nocturno' ? 8 : 0,
+    horas_domingo: 0,
+    horas_feriado: 0,
+    horas_extra: 0,
+    total_horas: 8,
+    es_domingo: false,
+    es_feriado: false
+  }));
 
   return (
     <div className="space-y-4 p-4 md:p-6">
@@ -86,18 +109,39 @@ const TurnosOperador = () => {
         </Card>
       </div>
 
-      {/* Calendario Quincenal */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Calendario de Turnos - 15 días</CardTitle>
-          <CardDescription>
-            Vista completa de los turnos asignados para los próximos 15 días
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <CalendarioTurnosQuincenal />
-        </CardContent>
-      </Card>
+      {/* Calendario de Turnos Generados */}
+      {turnosAdaptados.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Calendario de Turnos Asignados</CardTitle>
+            <CardDescription>
+              Vista semanal de los turnos asignados desde la gestión de personal
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CalendarioTurnosPersonal
+              turnos={turnosAdaptados}
+              onEditTurno={(turno) => {
+                console.log('Ver detalles del turno:', turno);
+              }}
+              selectedWeek={selectedWeek}
+              onWeekChange={setSelectedWeek}
+            />
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Calendario de Turnos - 15 días</CardTitle>
+            <CardDescription>
+              {loading ? 'Cargando turnos...' : 'No hay turnos asignados. Los turnos aparecerán aquí una vez generados desde la gestión de personal.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CalendarioTurnosQuincenal />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Resumen de horas por operador */}
       <Card>
