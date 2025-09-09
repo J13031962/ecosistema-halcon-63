@@ -290,18 +290,75 @@ export function CalendarioTurnosQuincenal() {
                       const turnoTipo = registro?.turno as keyof typeof tiposTurno | undefined;
                       const tipoInfo = turnoTipo ? (tiposTurno as any)[turnoTipo] : null;
                       
+                      const cambiarTurnoEmpleado = (nuevoTurno: string) => {
+                        if (!turnoSeleccionado) return;
+                        
+                        const turnosActualizados = [...turnosGuardados];
+                        const indiceTurnos = turnosActualizados.findIndex(t => t.id === turnoSeleccionado.id);
+                        
+                        if (indiceTurnos >= 0) {
+                          const nuevosTurnos = turnosActualizados[indiceTurnos].turnos.map((t: any) => {
+                            if (t.fecha === fecha && t.empleadoId === empleado.id) {
+                              return {
+                                ...t,
+                                turno: nuevoTurno,
+                                horas: tiposTurno[nuevoTurno]?.horas || 0
+                              };
+                            }
+                            return t;
+                          });
+                          
+                          turnosActualizados[indiceTurnos] = {
+                            ...turnosActualizados[indiceTurnos],
+                            turnos: nuevosTurnos
+                          };
+                          
+                          setTurnosGuardados(turnosActualizados);
+                          setTurnoSeleccionado(turnosActualizados[indiceTurnos]);
+                          localStorage.setItem('turnosGenerados', JSON.stringify(turnosActualizados));
+                        }
+                      };
+                      
                       return (
                         <td key={fecha} className="text-center p-1">
-                          {tipoInfo ? (
-                            <Badge 
-                              variant="outline" 
-                              className={`text-xs ${tipoInfo.color}`}
+                          {editMode ? (
+                            <Select 
+                              value={registro?.turno || 'descanso'}
+                              onValueChange={cambiarTurnoEmpleado}
                             >
-                              {tipoInfo.label}
-                              <div className="text-xs mt-1">{tipoInfo.horario !== "---" ? tipoInfo.horario.split('-')[0] : ""}</div>
-                            </Badge>
+                              <SelectTrigger className="h-12 w-full border-none p-1">
+                                <Badge 
+                                  variant="outline" 
+                                  className={`text-xs ${tipoInfo?.color || tiposTurno.descanso.color} cursor-pointer w-full justify-center`}
+                                >
+                                  {tipoInfo?.label || 'Desc'}
+                                </Badge>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(tiposTurno).map(([key, tipo]) => (
+                                  <SelectItem key={key} value={key}>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className={`${tipo.color} text-xs`}>
+                                        {tipo.label}
+                                      </Badge>
+                                      <span>{tipo.horario}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           ) : (
-                            <span className="text-xs text-muted-foreground">---</span>
+                            tipoInfo ? (
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs ${tipoInfo.color}`}
+                              >
+                                {tipoInfo.label}
+                                <div className="text-xs mt-1">{tipoInfo.horario !== "---" ? tipoInfo.horario.split('-')[0] : ""}</div>
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">---</span>
+                            )
                           )}
                         </td>
                       );

@@ -107,37 +107,90 @@ export function CalendarioTurnosGenerados() {
     const fechas = [...new Set(turnosSeleccionados.turnos.map(t => t.fecha))].sort();
     const empleados = [...new Set(turnosSeleccionados.turnos.map(t => ({ id: t.empleadoId, nombre: t.empleadoNombre })))];
     
+    // Determinar días a mostrar según el período generado
+    const periodo = turnosSeleccionados.configuracion?.periodo || 'semanal';
+    const diasAMostrar = periodo === 'semanal' ? 7 : periodo === 'quincenal' ? 15 : 30;
+    const fechasAMostrar = fechas.slice(0, Math.min(diasAMostrar, fechas.length));
+    
+    const cambiarTurno = (empleadoId: number, fecha: string, nuevoTurno: string) => {
+      const turnosActualizados = { ...turnosSeleccionados };
+      const indice = turnosActualizados.turnos.findIndex(t => 
+        t.empleadoId === empleadoId && t.fecha === fecha
+      );
+      
+      if (indice >= 0) {
+        turnosActualizados.turnos[indice] = {
+          ...turnosActualizados.turnos[indice],
+          turno: nuevoTurno,
+          horas: tiposTurno[nuevoTurno]?.horas || 0
+        };
+        
+        // Actualizar en localStorage
+        const todosLosTurnos = JSON.parse(localStorage.getItem('turnosGenerados') || '[]');
+        const indiceTurnos = todosLosTurnos.findIndex(t => t.id === turnosSeleccionados.id);
+        if (indiceTurnos >= 0) {
+          todosLosTurnos[indiceTurnos] = turnosActualizados;
+          localStorage.setItem('turnosGenerados', JSON.stringify(todosLosTurnos));
+          setTurnosSeleccionados(turnosActualizados);
+          setTurnosGuardados(todosLosTurnos);
+        }
+      }
+    };
+
+    // Calcular columnas dinámicamente
+    const numColumnas = fechasAMostrar.length + 1;
+    const gridCols = `grid-cols-${Math.min(numColumnas, 16)}`;
+    
     return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-8 gap-2 text-sm font-medium text-center">
-          <div>Empleado</div>
-          {fechas.slice(0, 7).map(fecha => (
-            <div key={fecha} className="text-xs">
-              <div>{format(new Date(fecha), 'EEE', { locale: es })}</div>
+      <div className="space-y-4 overflow-x-auto">
+        <div className={`grid ${gridCols} gap-1 text-sm font-medium text-center min-w-max`}>
+          <div className="p-2 font-semibold">Empleado</div>
+          {fechasAMostrar.map(fecha => (
+            <div key={fecha} className="text-xs p-1 min-w-[80px]">
+              <div className="font-medium">{format(new Date(fecha), 'EEE', { locale: es })}</div>
               <div>{format(new Date(fecha), 'dd/MM')}</div>
             </div>
           ))}
         </div>
         
         {empleados.map(empleado => (
-          <div key={empleado.id} className="grid grid-cols-8 gap-2 items-center">
-            <div className="text-sm font-medium p-2 bg-muted rounded">
+          <div key={empleado.id} className={`grid ${gridCols} gap-1 items-center min-w-max`}>
+            <div className="text-sm font-medium p-2 bg-muted rounded min-w-[120px]">
               <div className="truncate">{empleado.nombre}</div>
             </div>
-            {fechas.slice(0, 7).map(fecha => {
+            {fechasAMostrar.map(fecha => {
               const turno = turnosSeleccionados.turnos.find(t => 
                 t.fecha === fecha && t.empleadoId === empleado.id
               );
               const tipoTurno = tiposTurno[turno?.turno] || tiposTurno.descanso;
               
               return (
-                <div key={fecha} className="text-center">
-                  <Badge 
-                    variant="outline" 
-                    className={`${tipoTurno.color} text-xs p-1 border`}
+                <div key={fecha} className="text-center min-w-[80px]">
+                  <Select 
+                    value={turno?.turno || 'descanso'}
+                    onValueChange={(value) => cambiarTurno(empleado.id, fecha, value)}
                   >
-                    {tipoTurno.codigo}
-                  </Badge>
+                    <SelectTrigger className="h-12 w-full border-none p-1">
+                      <Badge 
+                        variant="outline" 
+                        className={`${tipoTurno.color} text-xs p-1 border cursor-pointer w-full justify-center`}
+                      >
+                        {tipoTurno.codigo}
+                      </Badge>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(tiposTurno).map(([key, tipo]) => (
+                        <SelectItem key={key} value={key}>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className={`${tipo.color} text-xs`}>
+                              {tipo.codigo}
+                            </Badge>
+                            <span>{tipo.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   {turno?.horas > 0 && (
                     <div className="text-xs text-muted-foreground mt-1">
                       {turno.horas}h
