@@ -54,7 +54,9 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startWeek, i));
 
   // Obtener operadores únicos y asignar colores
-  const operadoresUnicos = [...new Set(turnos.map(t => ({ id: t.operador_id, nombre: t.operador_nombre })))];
+  const operadoresUnicos = Array.from(
+    new Map(turnos.map(t => [t.operador_id, { id: t.operador_id, nombre: t.operador_nombre }])).values()
+  );
   const operadorColores = new Map();
   operadoresUnicos.forEach((operador, index) => {
     operadorColores.set(operador.id, COLORES_OPERADORES[index % COLORES_OPERADORES.length]);
@@ -83,29 +85,10 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
     };
   };
 
-  const operadoresUnicosArray = [...new Set(turnos.map(t => ({ id: t.operador_id, nombre: t.operador_nombre })))];
+  // Usar la misma variable que ya tenemos para operadores únicos
 
   return (
     <div className="space-y-6">
-      {/* Leyenda de colores */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Leyenda de Operadores</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            {operadoresUnicos.map((operador) => {
-              const color = getOperadorColor(operador.id);
-              return (
-                <div key={operador.id} className="flex items-center gap-2">
-                  <div className={`w-4 h-4 rounded border ${color.bg} ${color.border}`}></div>
-                  <span className="text-sm font-medium">{operador.nombre}</span>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Controles de navegación */}
       <div className="flex items-center justify-between">
@@ -215,7 +198,7 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {operadoresUnicosArray.map((operador) => {
+            {operadoresUnicos.map((operador) => {
               const horas = getTotalHorasOperador(operador.id);
               const operadorColor = getOperadorColor(operador.id);
               return (
