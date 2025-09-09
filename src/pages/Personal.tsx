@@ -353,9 +353,9 @@ const Personal = () => {
         </CardContent>
       </Card>
 
-      {/* Calendario de Turnos Quincenales */}
+      {/* Calendario de Turnos Generados */}
       <div className="space-y-6">
-        <CalendarioTurnosQuincenal />
+        <CalendarioTurnosGenerados />
       </div>
 
       {/* Lista de Personal */}

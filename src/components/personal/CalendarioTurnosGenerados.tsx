@@ -11,17 +11,17 @@ import { es } from "date-fns/locale";
 const tiposTurno = {
   manana: { 
     label: "Día", 
-    horario: "06:00-14:00", 
+    horario: "06:00-18:00", 
     color: "bg-yellow-200 text-yellow-900 border-yellow-300",
     codigo: "Día",
-    horas: 8
+    horas: 12
   },
   tarde: { 
     label: "Día", 
-    horario: "14:00-22:00", 
+    horario: "06:00-18:00", 
     color: "bg-yellow-200 text-yellow-900 border-yellow-300",
     codigo: "Día", 
-    horas: 8
+    horas: 12
   },
   noche: { 
     label: "Noche", 
@@ -107,10 +107,8 @@ export function CalendarioTurnosGenerados() {
     const fechas = [...new Set(turnosSeleccionados.turnos.map(t => t.fecha))].sort();
     const empleados = [...new Set(turnosSeleccionados.turnos.map(t => ({ id: t.empleadoId, nombre: t.empleadoNombre })))];
     
-    // Determinar días a mostrar según el período generado
-    const periodo = turnosSeleccionados.configuracion?.periodo || 'semanal';
-    const diasAMostrar = periodo === 'semanal' ? 7 : periodo === 'quincenal' ? 15 : 30;
-    const fechasAMostrar = fechas.slice(0, Math.min(diasAMostrar, fechas.length));
+    // Mostrar TODOS los días generados, no limitarlos
+    const fechasAMostrar = fechas;
     
     const cambiarTurno = (empleadoId: number, fecha: string, nuevoTurno: string) => {
       const turnosActualizados = { ...turnosSeleccionados };
