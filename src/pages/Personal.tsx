@@ -346,16 +346,32 @@ const Personal = () => {
         </div>
       </div>
 
-      {/* Vista de turnos generados */}
-      {turnosGenerados.length > 0 ? (
-        <CalendarioTurnos
-          turnos={turnosGenerados}
-          onEditTurno={handleEditTurno}
-          selectedWeek={selectedWeek}
-          onWeekChange={setSelectedWeek}
-          onChangeTurno={handleChangeTurno}
-        />
-      ) : (
+      {/* Vista principal - siempre mostrar calendario si hay turnos */}
+      {turnosGenerados.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Calendario de Turnos Generados
+            </CardTitle>
+            <CardDescription>
+              Vista semanal de los turnos asignados. Haz clic en un día para modificar turnos.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CalendarioTurnos
+              turnos={turnosGenerados}
+              onEditTurno={handleEditTurno}
+              selectedWeek={selectedWeek}
+              onWeekChange={setSelectedWeek}
+              onChangeTurno={handleChangeTurno}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Vista de bienvenida cuando no hay turnos */}
+      {turnosGenerados.length === 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
@@ -397,36 +413,6 @@ const Personal = () => {
             </CardContent>
           </Card>
         </div>
-      )}
-
-      {/* Calendario de Turnos Generados */}
-      {turnosGenerados.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Calendario de Turnos Generados
-            </CardTitle>
-            <CardDescription>
-              Vista semanal de los turnos asignados. Haz clic en un día para modificar turnos.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CalendarioTurnos
-              turnos={turnosGenerados}
-              onEditTurno={(turno) => {
-                console.log('Editar turno:', turno);
-              }}
-              selectedWeek={selectedWeek}
-              onWeekChange={setSelectedWeek}
-              onChangeTurno={(fecha, turnos) => {
-                setSelectedDateTurnos({fecha, turnos});
-                setSelectedDate(fecha.toLocaleDateString());
-                setIsEditDialogOpen(true);
-              }}
-            />
-          </CardContent>
-        </Card>
       )}
 
       {/* Personal registrado */}

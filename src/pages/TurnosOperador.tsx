@@ -39,285 +39,158 @@ const TurnosOperador = () => {
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-bold">Gestión de Turnos - Operadores</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Mis Turnos - Operador</h1>
           <p className="text-sm text-muted-foreground">
-            Sistema completo de generación, visualización y gestión de turnos para operadores
+            Consulta y visualización de tus turnos asignados
           </p>
         </div>
       </div>
 
-      <Tabs defaultValue="visualizar" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="visualizar" className="flex items-center gap-2">
-            <Eye className="h-4 w-4" />
-            Mis Turnos
-          </TabsTrigger>
-          <TabsTrigger value="generar" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Generar Turnos
-          </TabsTrigger>
-          <TabsTrigger value="legacy" className="flex items-center gap-2">
+      <Tabs defaultValue="calendar" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="calendar" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            Vista Legacy
+            Calendario de Turnos
+          </TabsTrigger>
+          <TabsTrigger value="summary" className="flex items-center gap-2">
+            <Eye className="h-4 w-4" />
+            Resumen de Horas
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="visualizar" className="mt-6">
-          <VisualizadorTurnosOperador />
+        <TabsContent value="calendar" className="mt-6">
+          {/* Calendario de Turnos Principal */}
+          {turnosAdaptados.length > 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Calendario de Turnos Asignados</CardTitle>
+                <CardDescription>
+                  Vista semanal de tus turnos asignados. Los cambios realizados por dirección central se reflejan automáticamente aquí.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CalendarioTurnosPersonal
+                  turnos={turnosAdaptados}
+                  onEditTurno={(turno) => {
+                    console.log('Ver detalles del turno:', turno);
+                  }}
+                  selectedWeek={selectedWeek}
+                  onWeekChange={setSelectedWeek}
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Calendario de Turnos</CardTitle>
+                <CardDescription>
+                  {loading ? 'Cargando turnos...' : 'No hay turnos asignados. Los turnos aparecerán aquí una vez generados desde la gestión de personal.'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CalendarioTurnosQuincenal />
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
         
-        <TabsContent value="generar" className="mt-6">
-          <GeneradorTurnosAvanzado />
-        </TabsContent>
-        
-        <TabsContent value="legacy" className="mt-6">
+        <TabsContent value="summary" className="mt-6">
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Mis Turnos</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{turnosOperador.length}</div>
+                <p className="text-xs text-muted-foreground">Turnos asignados</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Horas Esta Semana</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">40h</div>
+                <p className="text-xs text-muted-foreground">Horas programadas</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Próximo Turno</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">Mañana</div>
+                <p className="text-xs text-muted-foreground">06:00 - 14:00</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Mi resumen personal */}
           <div className="space-y-4">
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Turnos Programados</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">28</div>
-            <p className="text-xs text-muted-foreground">Esta semana</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Operadores Activos</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">Personal disponible</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Horas Cubiertas</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">98%</div>
-            <p className="text-xs text-muted-foreground">Cobertura semanal</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Calendario de Turnos Generados */}
-      {turnosAdaptados.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Calendario de Turnos Asignados</CardTitle>
-            <CardDescription>
-              Vista semanal de los turnos asignados desde la gestión de personal
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CalendarioTurnosPersonal
-              turnos={turnosAdaptados}
-              onEditTurno={(turno) => {
-                console.log('Ver detalles del turno:', turno);
-              }}
-              selectedWeek={selectedWeek}
-              onWeekChange={setSelectedWeek}
-            />
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Calendario de Turnos - 15 días</CardTitle>
-            <CardDescription>
-              {loading ? 'Cargando turnos...' : 'No hay turnos asignados. Los turnos aparecerán aquí una vez generados desde la gestión de personal.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CalendarioTurnosQuincenal />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Resumen de horas por operador */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Resumen de Horas por Operador</CardTitle>
-          <CardDescription>
-            Total de horas trabajadas por cada operador en el período actual
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">Juan Pérez</h4>
-                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
-                    JP
-                  </div>
-                </div>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Horas esta semana:</span>
-                    <span className="font-medium">48h</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Horas extra:</span>
-                    <span className="font-medium text-orange-600">8h</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Eficiencia:</span>
-                    <span className="font-medium text-green-600">95%</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">María García</h4>
-                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
-                    MG
-                  </div>
-                </div>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Horas esta semana:</span>
-                    <span className="font-medium">40h</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Horas extra:</span>
-                    <span className="font-medium">0h</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Eficiencia:</span>
-                    <span className="font-medium text-green-600">98%</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">Carlos López</h4>
-                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
-                    CL
-                  </div>
-                </div>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Horas esta semana:</span>
-                    <span className="font-medium">42h</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Horas extra:</span>
-                    <span className="font-medium text-orange-600">2h</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Eficiencia:</span>
-                    <span className="font-medium text-green-600">92%</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">Ana Martínez</h4>
-                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
-                    AM
-                  </div>
-                </div>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Horas esta semana:</span>
-                    <span className="font-medium">40h</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Horas extra:</span>
-                    <span className="font-medium">0h</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Eficiencia:</span>
-                    <span className="font-medium text-green-600">97%</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">Diego Rodríguez</h4>
-                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
-                    DR
-                  </div>
-                </div>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Horas esta semana:</span>
-                    <span className="font-medium">38h</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Horas extra:</span>
-                    <span className="font-medium">0h</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Eficiencia:</span>
-                    <span className="font-medium text-green-600">94%</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">Elena Torres</h4>
-                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
-                    ET
-                  </div>
-                </div>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Horas esta semana:</span>
-                    <span className="font-medium">44h</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Horas extra:</span>
-                    <span className="font-medium text-orange-600">4h</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Eficiencia:</span>
-                    <span className="font-medium text-green-600">96%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Resumen total */}
-            <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-              <h4 className="font-medium mb-3">Resumen Total</h4>
+            <div className="p-4 bg-muted/30 rounded-lg">
+              <h4 className="font-medium mb-3">Mi Resumen Personal</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <span className="text-muted-foreground block">Total Horas:</span>
-                  <span className="font-medium text-lg">252h</span>
+                  <span className="text-muted-foreground block">Horas Esta Semana:</span>
+                  <span className="font-medium text-lg">40h</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground block">Horas Extra:</span>
-                  <span className="font-medium text-lg text-orange-600">14h</span>
+                  <span className="font-medium text-lg text-orange-600">0h</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block">Eficiencia Promedio:</span>
-                  <span className="font-medium text-lg text-green-600">95%</span>
+                  <span className="text-muted-foreground block">Turnos Asignados:</span>
+                  <span className="font-medium text-lg">{turnosOperador.length}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block">Operadores Activos:</span>
-                  <span className="font-medium text-lg">6</span>
+                  <span className="text-muted-foreground block">Próximo Turno:</span>
+                  <span className="font-medium text-lg">Mañana 06:00</span>
                 </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            
+            {/* Historial de cambios */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Historial de Cambios</CardTitle>
+                <CardDescription>
+                  Modificaciones realizadas por dirección central en tus turnos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <div>
+                      <p className="font-medium">Cambio de turno - 15 Ene 2025</p>
+                      <p className="text-sm text-muted-foreground">Turno cambiado de noche (22:00-06:00) a día (06:00-14:00)</p>
+                    </div>
+                    <div className="text-sm text-blue-600">Hace 2h</div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <div>
+                      <p className="font-medium">Turno asignado - 10 Ene 2025</p>
+                      <p className="text-sm text-muted-foreground">Nuevo turno día (06:00-14:00) asignado</p>
+                    </div>
+                    <div className="text-sm text-green-600">Hace 5d</div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                    <div>
+                      <p className="font-medium">Modificación de horario - 8 Ene 2025</p>
+                      <p className="text-sm text-muted-foreground">Horario ajustado: 07:00-15:00 → 06:00-14:00</p>
+                    </div>
+                    <div className="text-sm text-orange-600">Hace 7d</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
       </Tabs>
