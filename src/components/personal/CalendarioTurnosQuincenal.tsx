@@ -5,6 +5,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, Calendar, Users, AlertCircle } from "lucide-react";
 
+// Tipos de empleado para TypeScript
+interface Empleado {
+  id: number;
+  nombre: string;
+  rol: string;
+}
+
 // Tipos de turno con horarios y colores
 const tiposTurno = {
   dia: { 
@@ -164,7 +171,7 @@ export function CalendarioTurnosQuincenal() {
                 </CardTitle>
               </div>
               <Badge variant="outline" className="text-sm">
-                {turnoSeleccionado ? `${diasAMostrar} días generados` : 'Sin turnos'}
+                {turnoSeleccionado ? `${fechasVisibles.length} días generados` : 'Sin turnos'}
               </Badge>
             </div>
             
@@ -220,7 +227,7 @@ export function CalendarioTurnosQuincenal() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos los empleados</SelectItem>
-                {empleadosDisponibles.map(emp => (
+                {empleadosDisponibles.map((emp: Empleado) => (
                   <SelectItem key={emp.id} value={emp.nombre.toLowerCase()}>
                     {emp.nombre}
                   </SelectItem>
@@ -253,7 +260,7 @@ export function CalendarioTurnosQuincenal() {
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="text-left p-3 font-medium">Jornada / Empleado</th>
-                  {fechasVisibles.map((fecha) => (
+                  {fechasVisibles.map((fecha: string) => (
                     <th key={fecha} className="text-center p-2 font-medium min-w-[60px]">
                       <div className="text-xs text-muted-foreground">{new Date(fecha).toLocaleDateString('es-ES', { weekday: 'short' })}</div>
                       <div className="text-sm">{new Date(fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}</div>
@@ -262,7 +269,7 @@ export function CalendarioTurnosQuincenal() {
                 </tr>
               </thead>
               <tbody>
-                {empleadosFiltrados.map((empleado) => (
+                {empleadosFiltrados.map((empleado: Empleado) => (
                   <tr key={empleado.id} className="border-b hover:bg-muted/30">
                     <td className="p-3 font-medium text-sm">
                       <div className="flex flex-col">
@@ -270,7 +277,7 @@ export function CalendarioTurnosQuincenal() {
                         <span className="text-xs text-muted-foreground">{empleado.rol}</span>
                       </div>
                     </td>
-                    {fechasVisibles.map((fecha) => {
+                    {fechasVisibles.map((fecha: string) => {
                       const registro = turnosFlat.find((t: any) => t.fecha === fecha && t.empleadoId === empleado.id);
                       const turnoTipo = registro?.turno as keyof typeof tiposTurno | undefined;
                       const tipoInfo = turnoTipo ? (tiposTurno as any)[turnoTipo] : null;
