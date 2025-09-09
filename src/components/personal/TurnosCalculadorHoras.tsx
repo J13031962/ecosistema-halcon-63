@@ -133,7 +133,17 @@ export const calcularHorasTurno = (turno: TurnoCompleto): CalculoHoras => {
   let horas_feriado = 0;
   
   if (es_domingo) {
-    horas_domingo = duracionTotalHoras;
+    // Para turnos dominicales, solo contar hasta medianoche (24:00)
+    const medianoche = new Date(fecha);
+    medianoche.setHours(24, 0, 0, 0);
+    
+    if (fechaFin.getDate() !== fechaInicio.getDate()) {
+      // Turno cruza medianoche - solo contar hasta las 24:00 del domingo
+      horas_domingo = differenceInMinutes(medianoche, fechaInicio) / 60;
+    } else {
+      // Turno no cruza medianoche - todas las horas son dominicales
+      horas_domingo = duracionTotalHoras;
+    }
   }
   
   if (es_feriado) {
