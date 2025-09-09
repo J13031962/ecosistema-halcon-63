@@ -98,9 +98,49 @@ const Personal = () => {
     toast.info('Función de edición en desarrollo');
   };
 
+  // Tipos de turnos disponibles con sus horarios
+  const tiposTurnos = [
+    { label: 'Sin asignar', value: 'sin_asignar', horas: '00:00-00:00', tipo: 'descanso' },
+    { label: 'Descanso', value: 'descanso', horas: '00:00-00:00', tipo: 'descanso' },
+    { label: 'Día (06:00-18:00)', value: 'dia_completo', horas: '06:00-18:00', tipo: 'diurno' },
+    { label: 'Mañana (06:00-14:00)', value: 'manana', horas: '06:00-14:00', tipo: 'diurno' },
+    { label: 'Tarde (14:00-22:00)', value: 'tarde', horas: '14:00-22:00', tipo: 'diurno' },
+    { label: 'Noche (18:00-06:00)', value: 'noche', horas: '18:00-06:00', tipo: 'nocturno' },
+    { label: 'Noche (22:00-06:00)', value: 'noche_tarde', horas: '22:00-06:00', tipo: 'nocturno' },
+  ];
+
   const handleChangeTurno = (fecha: Date, turnosDelDia: any[]) => {
-    const ordenados = [...turnosDelDia].sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
-    setSelectedDateTurnos({fecha, turnos: ordenados});
+    // Crear una entrada para cada tipo de turno posible
+    const turnosCompletos = tiposTurnos.map(tipoTurno => {
+      const turnoExistente = turnosDelDia.find(t => 
+        t.hora_inicio === tipoTurno.horas.split('-')[0] && 
+        t.hora_fin === tipoTurno.horas.split('-')[1]
+      );
+      
+      if (turnoExistente) {
+        return turnoExistente;
+      } else {
+        // Crear un turno vacío para este tipo
+        return {
+          id: `new_${tipoTurno.value}`,
+          fecha: fecha,
+          operador_id: '',
+          operador_nombre: 'Sin asignar',
+          hora_inicio: tipoTurno.horas.split('-')[0],
+          hora_fin: tipoTurno.horas.split('-')[1],
+          tipo: tipoTurno.tipo,
+          horas_diurnas: tipoTurno.tipo === 'diurno' ? (tipoTurno.value === 'dia_completo' ? 12 : 8) : 0,
+          horas_nocturnas: tipoTurno.tipo === 'nocturno' ? (tipoTurno.value === 'noche' ? 12 : 8) : 0,
+          horas_domingo: 0,
+          horas_feriado: 0,
+          es_domingo: fecha.getDay() === 0,
+          es_feriado: false,
+          tipo_turno_label: tipoTurno.label
+        };
+      }
+    });
+    
+    setSelectedDateTurnos({fecha, turnos: turnosCompletos});
     setIsEditDialogOpen(true);
   };
 
@@ -289,23 +329,38 @@ const Personal = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {selectedDateTurnos.turnos.map((turno) => (
-              <div key={turno.id} className="p-4 border rounded-lg space-y-3">
+            {selectedDateTurnos.turnos.map((turno, index) => (
+              <div key={`${turno.hora_inicio}-${turno.hora_fin}-${index}`} className="p-4 border rounded-lg space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">Turno: {turno.hora_inicio} - {turno.hora_fin}</span>
+                  <span className="font-medium">
+                    {turno.tipo_turno_label || `${turno.hora_inicio} - ${turno.hora_fin}`}
+                  </span>
                   <span className="text-sm text-muted-foreground">{turno.tipo}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <div>
                     <label className="text-sm font-medium">Operador:</label>
                     <Select
                       value={turno.operador_id}
-                      onValueChange={(value) => handleUpdateTurno(turno.id, value, turno.tipo)}
+                      onValueChange={(value) => {
+                        const operadorSeleccionado = personal.find(p => p.id === value);
+                        const nuevosTurnos = selectedDateTurnos.turnos.map(t => 
+                          t === turno 
+                            ? { 
+                                ...t, 
+                                operador_id: value, 
+                                operador_nombre: operadorSeleccionado ? `${operadorSeleccionado.nombres} ${operadorSeleccionado.apellidos}` : 'Sin asignar'
+                              }
+                            : t
+                        );
+                        setSelectedDateTurnos(prev => ({...prev, turnos: nuevosTurnos}));
+                      }}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Seleccionar operador" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="">Sin asignar</SelectItem>
                         {personal.filter(p => p.cargo === 'operador').map((operador) => (
                           <SelectItem key={operador.id} value={operador.id}>
                             {operador.nombres} {operador.apellidos}
@@ -314,34 +369,19 @@ const Personal = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium">Tipo:</label>
-                    <Select
-                      value={turno.tipo}
-                      onValueChange={(value) => handleUpdateTurno(turno.id, turno.operador_id, value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="diurno">Diurno</SelectItem>
-                        <SelectItem value="nocturno">Nocturno</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3 text-sm">
                   <div className="rounded-md border p-2">
                     <div className="text-muted-foreground">H. Diurnas</div>
-                    <div className="font-semibold">{Number(turno.horas_diurnas).toFixed(2)}h</div>
+                    <div className="font-semibold">{Number(turno.horas_diurnas || 0).toFixed(2)}h</div>
                   </div>
                   <div className="rounded-md border p-2">
                     <div className="text-muted-foreground">H. Nocturnas</div>
-                    <div className="font-semibold">{Number(turno.horas_nocturnas).toFixed(2)}h</div>
+                    <div className="font-semibold">{Number(turno.horas_nocturnas || 0).toFixed(2)}h</div>
                   </div>
                   <div className="rounded-md border p-2">
                     <div className="text-muted-foreground">Total</div>
-                    <div className="font-semibold">{(Number(turno.horas_diurnas) + Number(turno.horas_nocturnas)).toFixed(2)}h</div>
+                    <div className="font-semibold">{(Number(turno.horas_diurnas || 0) + Number(turno.horas_nocturnas || 0)).toFixed(2)}h</div>
                   </div>
                 </div>
               </div>
