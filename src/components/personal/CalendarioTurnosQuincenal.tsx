@@ -17,32 +17,38 @@ const tiposTurno = {
   dia: { 
     label: "Día", 
     horario: "06:00-18:00", 
-    color: "bg-yellow-100 text-yellow-800 border-yellow-200" 
+    color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    horas: 12 
   },
   manana: { 
-    label: "Mañana", 
-    horario: "06:00-14:00", 
-    color: "bg-blue-100 text-blue-800 border-blue-200" 
+    label: "Día", 
+    horario: "06:00-18:00", 
+    color: "bg-blue-100 text-blue-800 border-blue-200",
+    horas: 12 
   },
   tarde: { 
-    label: "Tarde", 
-    horario: "14:00-22:00", 
-    color: "bg-green-100 text-green-800 border-green-200" 
+    label: "Día", 
+    horario: "06:00-18:00", 
+    color: "bg-green-100 text-green-800 border-green-200",
+    horas: 12 
   },
   noche: { 
     label: "Noche", 
     horario: "18:00-06:00", 
-    color: "bg-purple-100 text-purple-800 border-purple-200" 
+    color: "bg-purple-100 text-purple-800 border-purple-200",
+    horas: 12 
   },
   descanso: { 
     label: "Descanso", 
     horario: "---", 
-    color: "bg-gray-100 text-gray-600 border-gray-200" 
+    color: "bg-gray-100 text-gray-600 border-gray-200",
+    horas: 0 
   },
   vacaciones: { 
     label: "Vacaciones", 
     horario: "---", 
-    color: "bg-red-100 text-red-800 border-red-200" 
+    color: "bg-red-100 text-red-800 border-red-200",
+    horas: 0 
   }
 };
 
@@ -123,17 +129,8 @@ export function CalendarioTurnosQuincenal() {
   // Período generado (usa la configuración real del generador)
   const periodo = turnoSeleccionado?.configuracion?.periodo || 'semanal';
 
-  // Determinar cuántos días mostrar según el período
-  let diasAMostrar = fechas.length;
-  if (periodo === 'semanal') {
-    diasAMostrar = Math.min(7, fechas.length);
-  } else if (periodo === 'quincenal') {
-    diasAMostrar = Math.min(15, fechas.length);
-  } else if (periodo === 'mensual') {
-    diasAMostrar = Math.min(30, fechas.length);
-  }
-
-  const fechasVisibles = fechas.slice(0, diasAMostrar);
+// Mostrar TODOS los días generados
+const fechasVisibles = fechas;
 
   // Empleados disponibles a partir de los turnos guardados
   const empleadosDisponibles = Array.from(
