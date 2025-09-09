@@ -168,20 +168,35 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
       setIsGenerating(true);
       
       // Convertir todos los turnos de todos los operadores al formato esperado
-      const todosLosTurnos = operadoresConTurnos.flatMap(operadorData => {
-        // Validar que operadorData.turnos existe y es un array
-        if (!operadorData?.turnos || !Array.isArray(operadorData.turnos)) {
-          console.error('Turnos no válidos para operador:', operadorData);
-          return [];
+      const todosLosTurnos = [];
+      
+      for (const operadorData of operadoresConTurnos) {
+        // Validar que operadorData existe y tiene las propiedades necesarias
+        if (!operadorData || !operadorData.operador_id || !operadorData.operador_nombre) {
+          console.error('Datos de operador inválidos:', operadorData);
+          continue;
         }
-        
-        return operadorData.turnos
-          .filter(t => t.tipo !== 'descanso' && t.tipo !== 'sin-asignar')
+
+        // Validar que operadorData.turnos existe y es un array
+        if (!operadorData.turnos || !Array.isArray(operadorData.turnos)) {
+          console.error('Turnos no válidos para operador:', operadorData.operador_nombre);
+          continue;
+        }
+
+        // Procesar turnos del operador
+        const turnosOperador = operadorData.turnos
+          .filter(t => t && t.tipo && t.tipo !== 'descanso' && t.tipo !== 'sin-asignar')
           .map(turno => {
             const tipoTurno = TIPOS_TURNO[turno.tipo as keyof typeof TIPOS_TURNO];
             
             if (!tipoTurno) {
               console.error('Tipo de turno no encontrado:', turno.tipo);
+              return null;
+            }
+            
+            // Validar que el turno tiene fecha
+            if (!turno.fecha) {
+              console.error('Turno sin fecha:', turno);
               return null;
             }
             
@@ -204,8 +219,15 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
               es_feriado: false
             };
           })
-          .filter(turno => turno !== null); // Filtrar turnos nulos
-      });
+          .filter(turno => turno !== null);
+
+        todosLosTurnos.push(...turnosOperador);
+      }
+
+      if (todosLosTurnos.length === 0) {
+        toast.error('No hay turnos válidos para generar');
+        return;
+      }
 
       console.log('Turnos a generar:', todosLosTurnos);
       await onGenerate({ turnos: todosLosTurnos });
