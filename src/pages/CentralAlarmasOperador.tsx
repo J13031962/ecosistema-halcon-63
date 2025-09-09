@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useUserSpecificData } from "@/hooks/useUserSpecificData";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { CalendarioTurnosGenerados } from "@/components/personal/CalendarioTurnosGenerados";
+import { AlarmaActivaCard } from "@/components/alarmas/AlarmaActivaCard";
 import { format, differenceInSeconds } from "date-fns";
 import { 
   AlertTriangle, 
@@ -183,81 +184,9 @@ const CentralAlarmasOperador = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {alarmasActivas.map((alarma) => {
-                const total = calcularDuracion(alarma.created_at);
-                const tDesp = alarma.tiempo_toma_despachador ? calcularDuracion(alarma.created_at, alarma.tiempo_toma_despachador) : null;
-                const tAsign = alarma.tiempo_asignacion_supervisor && alarma.tiempo_toma_despachador ? calcularDuracion(alarma.tiempo_toma_despachador, alarma.tiempo_asignacion_supervisor) : null;
-                const tAcept = alarma.tiempo_aceptacion_supervisor && alarma.tiempo_asignacion_supervisor ? calcularDuracion(alarma.tiempo_asignacion_supervisor, alarma.tiempo_aceptacion_supervisor) : null;
-                const tQR1 = alarma.tiempo_primera_lectura_qr && alarma.tiempo_aceptacion_supervisor ? calcularDuracion(alarma.tiempo_aceptacion_supervisor, alarma.tiempo_primera_lectura_qr) : null;
-                const tQR2 = alarma.tiempo_segunda_lectura_qr && alarma.tiempo_primera_lectura_qr ? calcularDuracion(alarma.tiempo_primera_lectura_qr, alarma.tiempo_segunda_lectura_qr) : null;
-
-                return (
-                  <div key={alarma.id} className="p-4 border rounded-lg bg-red-50 border-red-200">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-semibold">{alarma.tipo}</h4>
-                          <Badge 
-                            variant="outline" 
-                            className={getPriorityColor(alarma.prioridad)}
-                          >
-                            {alarma.prioridad}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          📍 {alarma.direccion}, {alarma.municipio}
-                        </p>
-                        {alarma.descripcion && (
-                          <p className="text-sm mt-1">
-                            <strong>Descripción:</strong> {alarma.descripcion}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col items-end min-w-[220px] gap-1">
-                        <div className="grid grid-cols-3 gap-2 text-right">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xl font-bold">{total}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <UserCheck className="h-3 w-3 text-blue-500" />
-                            <span className={`text-lg font-semibold ${tDesp ? 'text-green-600' : 'text-gray-400'}`}>{tDesp || '0:00'}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Users className="h-3 w-3 text-purple-500" />
-                            <span className={`text-lg font-semibold ${tAsign ? 'text-orange-600' : 'text-gray-400'}`}>{tAsign || '0:00'}</span>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-right mt-1">
-                          <div className="flex items-center gap-1">
-                            <Shield className="h-3 w-3 text-green-500" />
-                            <span className={`text-sm font-medium ${tAcept ? 'text-green-600' : 'text-gray-400'}`}>{tAcept || '0:00'}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <QrCode className="h-3 w-3 text-orange-500" />
-                            <span className={`text-sm font-medium ${tQR1 ? 'text-blue-600' : 'text-gray-400'}`}>{tQR1 || '0:00'}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <QrCode className="h-3 w-3 text-teal-500" />
-                            <span className={`text-sm font-medium ${tQR2 ? 'text-teal-600' : 'text-gray-400'}`}>{tQR2 || '0:00'}</span>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground mt-1">
-                          <span>Tiempo Total</span>
-                          <span>Despachador</span>
-                          <span>Asignación</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-                          <span>Aceptación</span>
-                          <span>Llegada</span>
-                          <span>Finalización</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {alarmasActivas.map((alarma) => (
+                <AlarmaActivaCard key={alarma.id} alarma={alarma} />
+              ))}
             </div>
           )}
         </CardContent>
