@@ -115,6 +115,7 @@ const TurnosCalculadorHoras = () => {
     // Horarios de referencia en minutos
     const inicioDiurno = 6 * 60; // 06:00
     const finDiurno = 19 * 60;   // 19:00
+    const medianoche = 24 * 60;  // 24:00 (medianoche)
     
     let horasDiurnas = 0;
     let horasNocturnas = 0;
@@ -129,21 +130,29 @@ const TurnosCalculadorHoras = () => {
     // Calcular por cada hora del turno
     for (let minuto = inicioMinutos; minuto < finMinutos; minuto += 60) {
       const minutoDelDia = minuto % (24 * 60);
+      const minutoReal = minuto; // Minuto desde el inicio del turno
       const esDiurno = minutoDelDia >= inicioDiurno && minutoDelDia < finDiurno;
       
-      if (esDom) {
-        if (esDiurno) {
-          horasDominicalesDiurnas++;
-        } else {
-          horasDominicalesNocturnas++;
-        }
-      } else if (esFest) {
-        if (esDiurno) {
-          horasFestivasDiurnas++;
-        } else {
-          horasFestivasNocturnas++;
+      // Si estamos en un turno dominical o festivo, solo contar hasta medianoche
+      const esDespuesDeMedianoche = minutoReal >= medianoche;
+      
+      if ((esDom || esFest) && !esDespuesDeMedianoche) {
+        // Horas dominicales o festivas solo hasta las 24:00
+        if (esDom) {
+          if (esDiurno) {
+            horasDominicalesDiurnas++;
+          } else {
+            horasDominicalesNocturnas++;
+          }
+        } else if (esFest) {
+          if (esDiurno) {
+            horasFestivasDiurnas++;
+          } else {
+            horasFestivasNocturnas++;
+          }
         }
       } else {
+        // Horas ordinarias (después de medianoche o días ordinarios)
         if (esDiurno) {
           horasDiurnas++;
         } else {

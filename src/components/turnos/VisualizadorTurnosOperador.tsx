@@ -81,6 +81,7 @@ export function VisualizadorTurnosOperador() {
     
     const inicioDiurno = 6 * 60;
     const finDiurno = 19 * 60;
+    const medianoche = 24 * 60;
     
     let horasDiurnas = 0;
     let horasNocturnas = 0;
@@ -93,16 +94,26 @@ export function VisualizadorTurnosOperador() {
     
     for (let minuto = inicioMinutos; minuto < finMinutos; minuto += 60) {
       const minutoDelDia = minuto % (24 * 60);
+      const minutoReal = minuto;
       const esDiurno = minutoDelDia >= inicioDiurno && minutoDelDia < finDiurno;
       
-      if (esDom) {
-        horasDominicales++;
-      } else if (esFest) {
-        horasFestivas++;
-      } else if (esDiurno) {
-        horasDiurnas++;
+      // Si estamos después de medianoche, son horas ordinarias
+      const esDespuesDeMedianoche = minutoReal >= medianoche;
+      
+      if ((esDom || esFest) && !esDespuesDeMedianoche) {
+        // Horas dominicales/festivas solo hasta las 24:00
+        if (esDom) {
+          horasDominicales++;
+        } else if (esFest) {
+          horasFestivas++;
+        }
       } else {
-        horasNocturnas++;
+        // Horas ordinarias
+        if (esDiurno) {
+          horasDiurnas++;
+        } else {
+          horasNocturnas++;
+        }
       }
     }
     
