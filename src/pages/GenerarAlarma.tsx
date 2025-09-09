@@ -726,10 +726,16 @@ const GenerarAlarma = () => {
                         Pánico
                       </div>
                     </SelectItem>
-                    <SelectItem value="Revisión">
+                    <SelectItem value="Revista Rutina">
                       <div className="flex items-center gap-2">
                         <Eye className="h-4 w-4 text-blue-500" />
-                        Revisión
+                        Revista Rutina
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Revista Paga">
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4 text-cyan-500" />
+                        Revista Paga
                       </div>
                     </SelectItem>
                     <SelectItem value="Fuego">

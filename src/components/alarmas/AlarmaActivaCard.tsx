@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { differenceInSeconds } from "date-fns";
+import { differenceInSeconds, format } from "date-fns";
 import { Clock, X } from "lucide-react";
 
 interface AlarmaActivaCardProps {
@@ -168,6 +168,9 @@ export const AlarmaActivaCard = ({ alarma, onCancelar }: AlarmaActivaCardProps) 
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex-1">
+          <div className="text-xs text-muted-foreground mb-2">
+            {format(new Date(alarma.created_at), 'dd/MM/yyyy HH:mm:ss')}
+          </div>
           <div className="flex items-center gap-2 mb-2">
             <h4 className="text-lg font-semibold">{alarma.tipo}</h4>
             <Badge variant={getBadgeVariant(alarma.prioridad)}>
