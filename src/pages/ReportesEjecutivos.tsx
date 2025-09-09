@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSupabaseLlamadas } from "@/hooks/useSupabaseLlamadas";
 import { 
   BarChart3, 
   TrendingUp, 
@@ -15,12 +16,16 @@ import {
   Shield,
   MapPin,
   Activity,
-  XCircle
+  XCircle,
+  Phone,
+  Smartphone
 } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Bar, BarChart, Line, LineChart, Pie, PieChart, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid } from "recharts";
 
 const ReportesEjecutivos = () => {
+  const { getEstadisticasLlamadas } = useSupabaseLlamadas();
+  
   // Datos operativos
   const kpiData = {
     alarmasGeneradas: 1247,
@@ -48,6 +53,21 @@ const ReportesEjecutivos = () => {
     { tipo: "Acompañamiento", cantidad: 672, porcentaje: 21.0 },
     { tipo: "Especial", cantidad: 234, porcentaje: 7.3 },
     { tipo: "Nocturna", cantidad: 111, porcentaje: 3.5 }
+  ];
+
+  // Llamadas por tipo
+  const llamadasPorTipo = [
+    { tipo: "Celular", cantidad: 892, porcentaje: 73.4 },
+    { tipo: "SmartUrban", cantidad: 324, porcentaje: 26.6 }
+  ];
+
+  // Clientes con más llamadas
+  const clientesTopLlamadas = [
+    { cliente: "Banco Central", celular: 45, smarturban: 23, total: 68 },
+    { cliente: "Centro Comercial Plaza", celular: 38, smarturban: 19, total: 57 },
+    { cliente: "Residencial Los Pinos", celular: 29, smarturban: 15, total: 44 },
+    { cliente: "Hospital Regional", celular: 24, smarturban: 12, total: 36 },
+    { cliente: "Universidad Nacional", celular: 19, smarturban: 9, total: 28 }
   ];
 
   // Clientes con más servicios
@@ -176,6 +196,48 @@ const ReportesEjecutivos = () => {
             <div className="text-2xl font-bold">{kpiData.excedenciaTiempo}%</div>
             <p className="text-xs text-orange-600">
               Servicios fuera de tiempo
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* KPIs de Llamadas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Llamadas</CardTitle>
+            <Phone className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">1,216</div>
+            <p className="text-xs text-muted-foreground">
+              892 celular, 324 SmartUrban
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Llamadas Celular</CardTitle>
+            <Smartphone className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">892</div>
+            <p className="text-xs text-blue-600">
+              73.4% del total
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Llamadas SmartUrban</CardTitle>
+            <Phone className="h-4 w-4 text-indigo-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">324</div>
+            <p className="text-xs text-indigo-600">
+              26.6% del total
             </p>
           </CardContent>
         </Card>
@@ -343,6 +405,71 @@ const ReportesEjecutivos = () => {
                       }}
                     />
                   </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Llamadas por Tipo */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Llamadas por Tipo</CardTitle>
+            <CardDescription>Distribución de llamadas celular vs SmartUrban</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {llamadasPorTipo.map((llamada, index) => (
+                <div key={llamada.tipo} className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      {llamada.tipo === 'Celular' ? 
+                        <Smartphone className="h-4 w-4 text-blue-600" /> : 
+                        <Phone className="h-4 w-4 text-indigo-600" />
+                      }
+                      {llamada.tipo}
+                    </span>
+                    <span className="font-medium">{llamada.cantidad} ({llamada.porcentaje}%)</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="h-2 rounded-full" 
+                      style={{ 
+                        width: `${llamada.porcentaje}%`,
+                        backgroundColor: llamada.tipo === 'Celular' ? '#3b82f6' : '#6366f1'
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Clientes con Más Llamadas */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Clientes con Más Llamadas</CardTitle>
+            <CardDescription>Top 5 clientes por cantidad de llamadas</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {clientesTopLlamadas.map((cliente, index) => (
+                <div key={cliente.cliente} className="flex items-center justify-between p-2 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-600 rounded-full text-sm font-medium">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{cliente.cliente}</p>
+                      <p className="text-xs text-muted-foreground">
+                        📱 {cliente.celular} | 📞 {cliente.smarturban}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="font-medium">
+                    {cliente.total} llamadas
+                  </Badge>
                 </div>
               ))}
             </div>

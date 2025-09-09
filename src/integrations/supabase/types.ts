@@ -526,6 +526,48 @@ export type Database = {
         }
         Relationships: []
       }
+      llamadas_clientes: {
+        Row: {
+          cliente_id: string
+          contacto_nombre: string
+          created_at: string
+          duracion_segundos: number | null
+          estado: string | null
+          id: string
+          motivo: string | null
+          numero_telefono: string
+          observaciones: string | null
+          operador_id: string | null
+          tipo_llamada: string
+        }
+        Insert: {
+          cliente_id: string
+          contacto_nombre: string
+          created_at?: string
+          duracion_segundos?: number | null
+          estado?: string | null
+          id?: string
+          motivo?: string | null
+          numero_telefono: string
+          observaciones?: string | null
+          operador_id?: string | null
+          tipo_llamada: string
+        }
+        Update: {
+          cliente_id?: string
+          contacto_nombre?: string
+          created_at?: string
+          duracion_segundos?: number | null
+          estado?: string | null
+          id?: string
+          motivo?: string | null
+          numero_telefono?: string
+          observaciones?: string | null
+          operador_id?: string | null
+          tipo_llamada?: string
+        }
+        Relationships: []
+      }
       observaciones_alarmas: {
         Row: {
           alarma_id: string

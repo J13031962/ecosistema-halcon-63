@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useSupabaseClientes } from "@/hooks/useSupabaseClientes";
 import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
+import { useSupabaseLlamadas } from "@/hooks/useSupabaseLlamadas";
 import { useAuthConsolidatedContext } from "@/contexts/AuthContextConsolidated";
 
 interface ClienteFormData {
@@ -29,6 +30,7 @@ const GenerarAlarma = () => {
   const { toast } = useToast();
   const { clientes, loading: clientesLoading, addCliente } = useSupabaseClientes();
   const { addAlarma, cancelAlarma } = useSupabaseAlarmas();
+  const { addLlamada } = useSupabaseLlamadas();
   const { user, isAuthenticated } = useAuthConsolidatedContext();
   
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,6 +41,19 @@ const GenerarAlarma = () => {
   const [selectedClienteForAlarm, setSelectedClienteForAlarm] = useState<any>(null);
   const [selectedAlarmType, setSelectedAlarmType] = useState<string>("");
   const [showClienteForm, setShowClienteForm] = useState(false);
+  
+  // Estados para el formulario de llamadas
+  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
+  const [selectedClienteForCall, setSelectedClienteForCall] = useState<any>(null);
+  const [callFormData, setCallFormData] = useState({
+    contacto_nombre: '',
+    numero_telefono: '',
+    tipo_llamada: 'celular' as 'celular' | 'smarturban',
+    motivo: '',
+    observaciones: '',
+    duracion_segundos: 0,
+    estado: 'completada' as 'completada' | 'no_contesto' | 'ocupado' | 'fuera_servicio'
+  });
   
   // Estados para el botón de cancelar
   const [alarmaGenerada, setAlarmaGenerada] = useState<any>(null);
@@ -109,6 +124,49 @@ const GenerarAlarma = () => {
     }
     setSelectedAlarmType("");
     setIsAlarmModalOpen(true);
+  };
+
+  const openCallModal = (cliente: any) => {
+    setSelectedClienteForCall(cliente);
+    setCallFormData({
+      contacto_nombre: '',
+      numero_telefono: '',
+      tipo_llamada: 'celular',
+      motivo: '',
+      observaciones: '',
+      duracion_segundos: 0,
+      estado: 'completada'
+    });
+    setIsCallModalOpen(true);
+  };
+
+  const handleCallSubmit = async () => {
+    if (!selectedClienteForCall || !callFormData.contacto_nombre || !callFormData.numero_telefono) {
+      toast({
+        title: "Error",
+        description: "Debe completar los campos obligatorios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await addLlamada({
+        cliente_id: selectedClienteForCall.id,
+        contacto_nombre: callFormData.contacto_nombre,
+        numero_telefono: callFormData.numero_telefono,
+        tipo_llamada: callFormData.tipo_llamada,
+        motivo: callFormData.motivo,
+        observaciones: callFormData.observaciones,
+        duracion_segundos: callFormData.duracion_segundos,
+        estado: callFormData.estado
+      });
+
+      setIsCallModalOpen(false);
+      setSelectedClienteForCall(null);
+    } catch (error) {
+      console.error('Error al registrar llamada:', error);
+    }
   };
 
   const generateAlarm = async () => {
@@ -443,13 +501,22 @@ const GenerarAlarma = () => {
                     <p className="text-sm text-green-700">🏙️ {clienteEncontrado.municipio}</p>
                     <p className="text-sm text-green-700">📄 Cuenta: {clienteEncontrado.numero_cuenta}</p>
                   </div>
-                  <Button 
-                    onClick={() => openAlarmModal(clienteEncontrado)}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <Siren className="h-4 w-4 mr-2" />
-                    Generar Alarma
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => openAlarmModal(clienteEncontrado)}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Siren className="h-4 w-4 mr-2" />
+                      Generar Alarma
+                    </Button>
+                    <Button 
+                      onClick={() => openCallModal(clienteEncontrado)}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Generar Llamada
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -784,6 +851,141 @@ const GenerarAlarma = () => {
               Cancelar
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para generar llamada */}
+      <Dialog open={isCallModalOpen} onOpenChange={setIsCallModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-purple-800">
+              <Eye className="h-5 w-5" />
+              Generar Llamada
+            </DialogTitle>
+            <DialogDescription>
+              Registra una llamada realizada al cliente
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedClienteForCall && (
+            <div className="space-y-4">
+              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                <h4 className="font-semibold text-purple-800 mb-1">Cliente</h4>
+                <p className="text-sm text-purple-700">{selectedClienteForCall.nombre}</p>
+                <p className="text-xs text-purple-600">📍 {selectedClienteForCall.direccion}</p>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="contacto_nombre">Nombre del Contacto *</Label>
+                  <Input
+                    id="contacto_nombre"
+                    value={callFormData.contacto_nombre}
+                    onChange={(e) => setCallFormData(prev => ({ ...prev, contacto_nombre: e.target.value }))}
+                    placeholder="Nombre de la persona contactada"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="numero_telefono">Número de Teléfono *</Label>
+                  <Input
+                    id="numero_telefono"
+                    value={callFormData.numero_telefono}
+                    onChange={(e) => setCallFormData(prev => ({ ...prev, numero_telefono: e.target.value }))}
+                    placeholder="Número de teléfono o SmartUrban"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="tipo_llamada">Tipo de Llamada</Label>
+                  <Select 
+                    value={callFormData.tipo_llamada} 
+                    onValueChange={(value: 'celular' | 'smarturban') => 
+                      setCallFormData(prev => ({ ...prev, tipo_llamada: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="celular">📱 Celular</SelectItem>
+                      <SelectItem value="smarturban">📞 SmartUrban</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="estado">Estado de la Llamada</Label>
+                  <Select 
+                    value={callFormData.estado} 
+                    onValueChange={(value: 'completada' | 'no_contesto' | 'ocupado' | 'fuera_servicio') => 
+                      setCallFormData(prev => ({ ...prev, estado: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="completada">✅ Completada</SelectItem>
+                      <SelectItem value="no_contesto">❌ No Contestó</SelectItem>
+                      <SelectItem value="ocupado">🔄 Ocupado</SelectItem>
+                      <SelectItem value="fuera_servicio">📵 Fuera de Servicio</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="motivo">Motivo de la Llamada</Label>
+                  <Input
+                    id="motivo"
+                    value={callFormData.motivo}
+                    onChange={(e) => setCallFormData(prev => ({ ...prev, motivo: e.target.value }))}
+                    placeholder="Motivo de la llamada"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="observaciones">Observaciones</Label>
+                  <Textarea
+                    id="observaciones"
+                    value={callFormData.observaciones}
+                    onChange={(e) => setCallFormData(prev => ({ ...prev, observaciones: e.target.value }))}
+                    placeholder="Observaciones adicionales"
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="duracion">Duración (segundos)</Label>
+                  <Input
+                    id="duracion"
+                    type="number"
+                    value={callFormData.duracion_segundos}
+                    onChange={(e) => setCallFormData(prev => ({ ...prev, duracion_segundos: parseInt(e.target.value) || 0 }))}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  onClick={handleCallSubmit}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                >
+                  Registrar Llamada
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsCallModalOpen(false);
+                    setSelectedClienteForCall(null);
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
