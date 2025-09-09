@@ -27,12 +27,12 @@ const Personal = () => {
   // Hook para manejar turnos en Supabase
   const { addTurnoOperador, addTurnoSupervisor } = useSupabaseTurnos();
   
-  // Datos de ejemplo del personal
+  // Datos de ejemplo del personal con UUIDs válidos
   const [personal] = useState([
-    { id: '1', nombres: 'Juan Carlos', apellidos: 'Pérez García', cargo: 'operador' },
-    { id: '2', nombres: 'María Elena', apellidos: 'Rodríguez López', cargo: 'operador' },
-    { id: '3', nombres: 'Carlos Alberto', apellidos: 'González Ruiz', cargo: 'operador' },
-    { id: '4', nombres: 'Ana Sofia', apellidos: 'Martínez Vega', cargo: 'supervisor' },
+    { id: '550e8400-e29b-41d4-a716-446655440001', nombres: 'Juan Carlos', apellidos: 'Pérez García', cargo: 'operador' },
+    { id: '550e8400-e29b-41d4-a716-446655440002', nombres: 'María Elena', apellidos: 'Rodríguez López', cargo: 'operador' },
+    { id: '550e8400-e29b-41d4-a716-446655440003', nombres: 'Carlos Alberto', apellidos: 'González Ruiz', cargo: 'operador' },
+    { id: '550e8400-e29b-41d4-a716-446655440004', nombres: 'Ana Sofia', apellidos: 'Martínez Vega', cargo: 'supervisor' },
   ]);
 
   const handleSubmitPersonal = async (data: any) => {
@@ -217,51 +217,71 @@ const Personal = () => {
   // Función para guardar turnos en la base de datos
   const guardarTurnosEnBD = async (turnos: any[]) => {
     try {
+      console.log('Guardando turnos en BD:', turnos);
+      
       for (const turno of turnos) {
         const operador = personal.find(p => p.id === turno.operador_id);
+        console.log('Operador encontrado:', operador, 'para ID:', turno.operador_id);
+        
         if (operador && operador.cargo === 'operador') {
-          await addTurnoOperador({
+          const turnoData = {
             fecha: turno.fecha.toISOString().split('T')[0], // Formato YYYY-MM-DD
             turno: `${turno.hora_inicio}-${turno.hora_fin}`,
-            operador_id: turno.operador_id,
+            operador_id: turno.operador_id, // Ya es UUID válido
             operador_nombre: turno.operador_nombre,
             horario_inicio: turno.hora_inicio,
             horario_fin: turno.hora_fin
-          });
+          };
+          console.log('Datos del turno operador:', turnoData);
+          
+          await addTurnoOperador(turnoData);
+          toast.success(`Turno guardado para ${operador.nombres}`);
+          
         } else if (operador && operador.cargo === 'supervisor') {
-          await addTurnoSupervisor({
+          const turnoData = {
             fecha: turno.fecha.toISOString().split('T')[0],
             turno: `${turno.hora_inicio}-${turno.hora_fin}`,
-            supervisor_id: turno.operador_id,
+            supervisor_id: turno.operador_id, // Ya es UUID válido
             supervisor_nombre: turno.operador_nombre,
             horario_inicio: turno.hora_inicio,
             horario_fin: turno.hora_fin
-          });
+          };
+          console.log('Datos del turno supervisor:', turnoData);
+          
+          await addTurnoSupervisor(turnoData);
+          toast.success(`Turno guardado para supervisor ${operador.nombres}`);
         }
       }
+      toast.success('Todos los turnos guardados exitosamente');
     } catch (error) {
       console.error('Error guardando turnos:', error);
-      toast.error('Error al guardar algunos turnos en la base de datos');
+      toast.error(`Error al guardar turnos: ${error.message}`);
     }
   };
 
   // Función para guardar un turno individual
   const guardarTurnoIndividual = async (turno: any) => {
     try {
+      console.log('Guardando turno individual:', turno);
       const operador = personal.find(p => p.id === turno.operador_id);
+      
       if (operador && operador.cargo === 'operador') {
-        await addTurnoOperador({
+        const turnoData = {
           fecha: turno.fecha.toISOString().split('T')[0],
           turno: `${turno.hora_inicio}-${turno.hora_fin}`,
-          operador_id: turno.operador_id,
+          operador_id: turno.operador_id, // Ya es UUID válido
           operador_nombre: turno.operador_nombre,
           horario_inicio: turno.hora_inicio,
           horario_fin: turno.hora_fin
-        });
+        };
+        console.log('Guardando turno individual con datos:', turnoData);
+        
+        await addTurnoOperador(turnoData);
+        toast.success(`Turno guardado para ${operador.nombres}`);
       }
     } catch (error) {
       console.error('Error guardando turno individual:', error);
-      toast.error('Error al guardar el turno en la base de datos');
+      toast.error(`Error al guardar el turno: ${error.message}`);
     }
   };
 
@@ -286,28 +306,52 @@ const Personal = () => {
   };
 
   const downloadPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text('Reporte de Turnos de Personal', 20, 20);
-    
-    const tableData = turnosGenerados.map(turno => [
-      turno.fecha.toLocaleDateString(),
-      turno.operador_nombre,
-      `${turno.hora_inicio}-${turno.hora_fin}`,
-      turno.tipo,
-      turno.horas_diurnas.toString(),
-      turno.horas_nocturnas.toString()
-    ]);
+    try {
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text('Reporte de Turnos de Personal', 20, 20);
+      
+      const tableData = turnosGenerados.map(turno => [
+        turno.fecha.toLocaleDateString(),
+        turno.operador_nombre,
+        `${turno.hora_inicio}-${turno.hora_fin}`,
+        turno.tipo,
+        turno.horas_diurnas.toString(),
+        turno.horas_nocturnas.toString()
+      ]);
 
-    (doc as any).autoTable({
-      head: [['Fecha', 'Operador', 'Horario', 'Tipo', 'H. Diurnas', 'H. Nocturnas']],
-      body: tableData,
-      startY: 30,
-      styles: { fontSize: 8 }
-    });
+      // Crear tabla manualmente sin autoTable
+      let yPosition = 40;
+      const lineHeight = 10;
+      
+      // Encabezados
+      doc.setFontSize(10);
+      doc.text('Fecha', 20, yPosition);
+      doc.text('Operador', 50, yPosition);
+      doc.text('Horario', 100, yPosition);
+      doc.text('Tipo', 130, yPosition);
+      doc.text('H. Diurnas', 150, yPosition);
+      doc.text('H. Nocturnas', 180, yPosition);
+      
+      yPosition += lineHeight;
+      
+      // Datos
+      tableData.forEach(row => {
+        doc.text(row[0], 20, yPosition);
+        doc.text(row[1], 50, yPosition);
+        doc.text(row[2], 100, yPosition);
+        doc.text(row[3], 130, yPosition);
+        doc.text(row[4], 150, yPosition);
+        doc.text(row[5], 180, yPosition);
+        yPosition += lineHeight;
+      });
 
-    doc.save('turnos-personal.pdf');
-    toast.success('Archivo PDF descargado');
+      doc.save('turnos-personal.pdf');
+      toast.success('Archivo PDF descargado');
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+      toast.error('Error al generar PDF');
+    }
   };
 
   return (
