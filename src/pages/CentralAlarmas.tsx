@@ -3,12 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Siren, Shield, AlertTriangle, Flame, Eye, UserCheck, Clock } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Siren, Shield, AlertTriangle, Flame, Eye, UserCheck, Clock, Timer, QrCode, Users } from "lucide-react";
 import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
 import { useUserSpecificData } from "@/hooks/useUserSpecificData";
-import { format } from "date-fns";
+import { format, differenceInSeconds, differenceInMinutes } from "date-fns";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorModal";
+import { supabase } from "@/integrations/supabase/client";
 
 const CentralAlarmas = () => {
   const { user } = useAuthConsolidated();
@@ -19,9 +21,37 @@ const CentralAlarmas = () => {
     table: 'alarmas',
     enabled: !!user?.id
   });
+  
+  // Estado para almacenar tiempos de alarmas
+  const [alarmaTiempos, setAlarmaTiempos] = useState<{ [key: string]: any[] }>({});
   const [timers, setTimers] = useState<{ [key: string]: string }>({});
   const [supervisorModalOpen, setSupervisorModalOpen] = useState(false);
   const [selectedAlarmaForSupervisor, setSelectedAlarmaForSupervisor] = useState<any>(null);
+
+  // Cargar tiempos de cada alarma
+  useEffect(() => {
+    const cargarTiemposAlarmas = async () => {
+      if (alarmas.length === 0) return;
+      
+      const tiemposMap: { [key: string]: any[] } = {};
+      
+      for (const alarma of alarmas) {
+        const { data: tiempos } = await supabase
+          .from('alarma_tiempos')
+          .select('*')
+          .eq('alarma_id', alarma.id)
+          .order('timestamp_evento', { ascending: true });
+        
+        if (tiempos) {
+          tiemposMap[alarma.id] = tiempos;
+        }
+      }
+      
+      setAlarmaTiempos(tiemposMap);
+    };
+    
+    cargarTiemposAlarmas();
+  }, [alarmas]);
 
   // Actualizar timers cada segundo
   useEffect(() => {
@@ -99,9 +129,60 @@ const CentralAlarmas = () => {
     // Implementar eliminación si es necesario
   };
 
+  // Función para que supervisor acepte la alarma
+  const handleSupervisorAccept = async (alarmaId: string) => {
+    try {
+      await supabase
+        .from('alarmas')
+        .update({
+          tiempo_aceptacion_supervisor: new Date().toISOString(),
+          estado: 'en_proceso'
+        })
+        .eq('id', alarmaId);
+    } catch (error) {
+      console.error('Error accepting alarm by supervisor:', error);
+    }
+  };
+
+  // Función para manejar lectura de códigos QR
+  const handleQRScan = async (alarmaId: string, tipo: 'primera' | 'segunda') => {
+    try {
+      const updates: any = {};
+      const ubicacion = `Simulada - ${tipo === 'primera' ? 'Llegada' : 'Finalización'}`;
+      
+      if (tipo === 'primera') {
+        updates.tiempo_primera_lectura_qr = new Date().toISOString();
+        updates.ubicacion_primer_qr = ubicacion;
+      } else {
+        updates.tiempo_segunda_lectura_qr = new Date().toISOString();
+        updates.ubicacion_segundo_qr = ubicacion;
+        updates.estado = 'resuelta';
+        updates.resolved_at = new Date().toISOString();
+      }
+
+      await supabase
+        .from('alarmas')
+        .update(updates)
+        .eq('id', alarmaId);
+    } catch (error) {
+      console.error('Error scanning QR:', error);
+    }
+  };
+
   const handleAttendAlarm = async (alarmaId: string) => {
     try {
-      await attendAlarma(alarmaId);
+      // Actualizar la alarma con tiempo de toma del despachador
+      await supabase
+        .from('alarmas')
+        .update({
+          attended_at: new Date().toISOString(),
+          tiempo_toma_despachador: new Date().toISOString(),
+          despachador_id: user?.id,
+          despachador_nombre: user?.full_name,
+          estado: 'en_proceso'
+        })
+        .eq('id', alarmaId);
+
       // Después de atender la alarma, si el usuario es despachador, puede asignar supervisor
       if (user?.role === 'despachador_patrullas') {
         const alarmaAtendida = alarmas.find(a => a.id === alarmaId);
@@ -117,15 +198,151 @@ const CentralAlarmas = () => {
 
   const handleAssignSupervisor = async (alarmaId: string, supervisorData: { supervisor_id: string; supervisor_nombre: string; patrulla_asignada: string }) => {
     try {
-      await assignPatrulla(alarmaId, {
-        patrulla_asignada: supervisorData.patrulla_asignada,
-        supervisor: supervisorData.supervisor_nombre,
-        supervisor_id: supervisorData.supervisor_id,
-      });
+      await supabase
+        .from('alarmas')
+        .update({
+          patrulla_asignada: supervisorData.patrulla_asignada,
+          supervisor: supervisorData.supervisor_nombre,
+          supervisor_id: supervisorData.supervisor_id,
+          tiempo_asignacion_supervisor: new Date().toISOString(),
+          estado: 'asignada'
+        })
+        .eq('id', alarmaId);
     } catch (error) {
       console.error('Error assigning supervisor:', error);
       throw error;
     }
+  };
+
+  // Función para calcular duración entre eventos
+  const calcularDuracion = (fechaInicio: string, fechaFin?: string) => {
+    const inicio = new Date(fechaInicio);
+    const fin = fechaFin ? new Date(fechaFin) : new Date();
+    const diferencia = differenceInSeconds(fin, inicio);
+    const minutos = Math.floor(diferencia / 60);
+    const segundos = diferencia % 60;
+    return `${minutos}:${segundos.toString().padStart(2, '0')}`;
+  };
+
+  // Función para renderizar el progreso de la alarma
+  const renderProcesoAlarma = (alarma: any) => {
+    const tiempos = alarmaTiempos[alarma.id] || [];
+    const now = new Date();
+    
+    const eventos = [
+      {
+        nombre: "Alarma Recibida",
+        tiempo: alarma.created_at,
+        icono: <Siren className="h-4 w-4" />,
+        color: "text-red-600",
+        completado: true
+      },
+      {
+        nombre: "Despachador Toma",
+        tiempo: alarma.tiempo_toma_despachador,
+        icono: <UserCheck className="h-4 w-4" />,
+        color: "text-blue-600",
+        completado: !!alarma.tiempo_toma_despachador,
+        duracion: alarma.tiempo_toma_despachador ? 
+          calcularDuracion(alarma.created_at, alarma.tiempo_toma_despachador) : 
+          calcularDuracion(alarma.created_at)
+      },
+      {
+        nombre: "Supervisor Asignado",
+        tiempo: alarma.tiempo_asignacion_supervisor,
+        icono: <Users className="h-4 w-4" />,
+        color: "text-green-600",
+        completado: !!alarma.tiempo_asignacion_supervisor,
+        duracion: alarma.tiempo_asignacion_supervisor && alarma.tiempo_toma_despachador ? 
+          calcularDuracion(alarma.tiempo_toma_despachador, alarma.tiempo_asignacion_supervisor) : null
+      },
+      {
+        nombre: "Supervisor Acepta",
+        tiempo: alarma.tiempo_aceptacion_supervisor,
+        icono: <Shield className="h-4 w-4" />,
+        color: "text-purple-600",
+        completado: !!alarma.tiempo_aceptacion_supervisor,
+        duracion: alarma.tiempo_aceptacion_supervisor && alarma.tiempo_asignacion_supervisor ? 
+          calcularDuracion(alarma.tiempo_asignacion_supervisor, alarma.tiempo_aceptacion_supervisor) : null
+      },
+      {
+        nombre: "Primera Lectura QR",
+        tiempo: alarma.tiempo_primera_lectura_qr,
+        icono: <QrCode className="h-4 w-4" />,
+        color: "text-orange-600",
+        completado: !!alarma.tiempo_primera_lectura_qr,
+        duracion: alarma.tiempo_primera_lectura_qr && alarma.tiempo_aceptacion_supervisor ? 
+          calcularDuracion(alarma.tiempo_aceptacion_supervisor, alarma.tiempo_primera_lectura_qr) : null
+      },
+      {
+        nombre: "Segunda Lectura QR",
+        tiempo: alarma.tiempo_segunda_lectura_qr,
+        icono: <QrCode className="h-4 w-4" />,
+        color: "text-teal-600",
+        completado: !!alarma.tiempo_segunda_lectura_qr,
+        duracion: alarma.tiempo_segunda_lectura_qr && alarma.tiempo_primera_lectura_qr ? 
+          calcularDuracion(alarma.tiempo_primera_lectura_qr, alarma.tiempo_segunda_lectura_qr) : null
+      }
+    ];
+
+    const completados = eventos.filter(e => e.completado).length;
+    const progreso = (completados / eventos.length) * 100;
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h5 className="font-semibold">Seguimiento de Procesos</h5>
+          <div className="flex items-center gap-2">
+            <Progress value={progreso} className="w-24" />
+            <span className="text-sm font-medium">{Math.round(progreso)}%</span>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          {eventos.map((evento, index) => (
+            <div 
+              key={index} 
+              className={`flex items-center gap-3 p-2 rounded ${
+                evento.completado ? 'bg-green-50' : 'bg-gray-50'
+              }`}
+            >
+              <div className={`${evento.color} ${evento.completado ? 'opacity-100' : 'opacity-40'}`}>
+                {evento.icono}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <span className={`text-sm font-medium ${
+                    evento.completado ? 'text-green-800' : 'text-gray-500'
+                  }`}>
+                    {evento.nombre}
+                  </span>
+                  {evento.tiempo && (
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(evento.tiempo), 'HH:mm:ss')}
+                    </span>
+                  )}
+                </div>
+                {evento.duracion && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <Timer className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      Duración: {evento.duracion}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {evento.completado && (
+                <div className="text-green-600">
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -280,11 +497,15 @@ const CentralAlarmas = () => {
                         <p><strong>Dirección:</strong> {alarma.direccion || 'No especificada'}</p>
                         <p><strong>Municipio:</strong> {alarma.municipio || 'No especificado'}</p>
                         <p><strong>Hora de inicio:</strong> {format(new Date(alarma.created_at), 'HH:mm:ss')}</p>
+                        {alarma.despachador_nombre && (
+                          <p><strong>Despachador:</strong> {alarma.despachador_nombre}</p>
+                        )}
                       </div>
                       <div>
                         <p><strong>Estado:</strong> {alarma.estado.toUpperCase()}</p>
                         <p><strong>Prioridad:</strong> {alarma.prioridad.toUpperCase()}</p>
-                        {alarma.operador_id && <p><strong>Operador:</strong> {alarma.operador_id}</p>}
+                        {alarma.supervisor && <p><strong>Supervisor:</strong> {alarma.supervisor}</p>}
+                        {alarma.patrulla_asignada && <p><strong>Patrulla:</strong> {alarma.patrulla_asignada}</p>}
                       </div>
                     </div>
                     {alarma.descripcion && (
@@ -292,6 +513,9 @@ const CentralAlarmas = () => {
                         <p><strong>Descripción:</strong> {alarma.descripcion}</p>
                       </div>
                     )}
+
+                    {/* Seguimiento de tiempos */}
+                    {renderProcesoAlarma(alarma)}
 
                     <div className="flex flex-wrap gap-2 pt-4 border-t">
                       {canDeleteAlarm(alarma.created_at) ? (
@@ -310,6 +534,7 @@ const CentralAlarmas = () => {
                         </div>
                       )}
                       
+                      {/* Botón para que despachador tome la alarma */}
                       {alarma.estado === 'activa' && (
                         <Button 
                           size="sm" 
@@ -317,28 +542,62 @@ const CentralAlarmas = () => {
                           className="flex items-center gap-1"
                         >
                           <UserCheck className="h-4 w-4" />
-                          Atender Alarma
+                          Tomar Alarma
                         </Button>
                       )}
                       
-                       {alarma.estado === 'en_proceso' && alarma.attended_at && (
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm text-green-600 bg-green-50 px-3 py-2 rounded flex items-center gap-1">
-                            <UserCheck className="h-4 w-4" />
-                            Atendida el: {format(new Date(alarma.attended_at), 'HH:mm:ss')}
-                          </div>
-                          {user?.role === 'despachador_patrullas' && (
+                      {/* Botón para asignar supervisor */}
+                      {alarma.estado === 'en_proceso' && alarma.tiempo_toma_despachador && user?.role === 'despachador_patrullas' && (
+                        <Button 
+                          size="sm" 
+                          variant="secondary"
+                          onClick={() => {
+                            setSelectedAlarmaForSupervisor(alarma);
+                            setSupervisorModalOpen(true);
+                          }}
+                          className="flex items-center gap-1"
+                        >
+                          <Shield className="h-4 w-4" />
+                          Asignar Supervisor
+                        </Button>
+                      )}
+
+                      {/* Botón para que supervisor acepte */}
+                      {alarma.estado === 'asignada' && alarma.supervisor_id && user?.id === alarma.supervisor_id && !alarma.tiempo_aceptacion_supervisor && (
+                        <Button 
+                          size="sm" 
+                          variant="default"
+                          onClick={() => handleSupervisorAccept(alarma.id)}
+                          className="flex items-center gap-1"
+                        >
+                          <Shield className="h-4 w-4" />
+                          Aceptar Servicio
+                        </Button>
+                      )}
+
+                      {/* Botones para lecturas QR */}
+                      {alarma.tiempo_aceptacion_supervisor && user?.id === alarma.supervisor_id && (
+                        <div className="flex gap-2">
+                          {!alarma.tiempo_primera_lectura_qr && (
                             <Button 
                               size="sm" 
-                              variant="secondary"
-                              onClick={() => {
-                                setSelectedAlarmaForSupervisor(alarma);
-                                setSupervisorModalOpen(true);
-                              }}
+                              variant="outline"
+                              onClick={() => handleQRScan(alarma.id, 'primera')}
                               className="flex items-center gap-1"
                             >
-                              <Shield className="h-4 w-4" />
-                              Asignar Supervisor
+                              <QrCode className="h-4 w-4" />
+                              Llegada (QR)
+                            </Button>
+                          )}
+                          {alarma.tiempo_primera_lectura_qr && !alarma.tiempo_segunda_lectura_qr && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleQRScan(alarma.id, 'segunda')}
+                              className="flex items-center gap-1"
+                            >
+                              <QrCode className="h-4 w-4" />
+                              Finalización (QR)
                             </Button>
                           )}
                         </div>

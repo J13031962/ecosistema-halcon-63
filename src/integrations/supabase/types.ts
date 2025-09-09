@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      alarma_tiempos: {
+        Row: {
+          alarma_id: string
+          created_at: string
+          detalles: Json | null
+          evento_tipo: string
+          id: string
+          timestamp_evento: string
+          usuario_id: string | null
+          usuario_nombre: string | null
+        }
+        Insert: {
+          alarma_id: string
+          created_at?: string
+          detalles?: Json | null
+          evento_tipo: string
+          id?: string
+          timestamp_evento?: string
+          usuario_id?: string | null
+          usuario_nombre?: string | null
+        }
+        Update: {
+          alarma_id?: string
+          created_at?: string
+          detalles?: Json | null
+          evento_tipo?: string
+          id?: string
+          timestamp_evento?: string
+          usuario_id?: string | null
+          usuario_nombre?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alarma_tiempos_alarma_id_fkey"
+            columns: ["alarma_id"]
+            isOneToOne: false
+            referencedRelation: "alarmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alarmas: {
         Row: {
           attended_at: string | null
@@ -34,10 +75,17 @@ export type Database = {
           resolved_at: string | null
           supervisor: string | null
           supervisor_id: string | null
+          tiempo_aceptacion_supervisor: string | null
           tiempo_asignacion: string | null
+          tiempo_asignacion_supervisor: string | null
           tiempo_atencion: string | null
+          tiempo_primera_lectura_qr: string | null
           tiempo_respuesta_segundos: number | null
+          tiempo_segunda_lectura_qr: string | null
+          tiempo_toma_despachador: string | null
           tipo: string
+          ubicacion_primer_qr: string | null
+          ubicacion_segundo_qr: string | null
         }
         Insert: {
           attended_at?: string | null
@@ -58,10 +106,17 @@ export type Database = {
           resolved_at?: string | null
           supervisor?: string | null
           supervisor_id?: string | null
+          tiempo_aceptacion_supervisor?: string | null
           tiempo_asignacion?: string | null
+          tiempo_asignacion_supervisor?: string | null
           tiempo_atencion?: string | null
+          tiempo_primera_lectura_qr?: string | null
           tiempo_respuesta_segundos?: number | null
+          tiempo_segunda_lectura_qr?: string | null
+          tiempo_toma_despachador?: string | null
           tipo: string
+          ubicacion_primer_qr?: string | null
+          ubicacion_segundo_qr?: string | null
         }
         Update: {
           attended_at?: string | null
@@ -82,10 +137,17 @@ export type Database = {
           resolved_at?: string | null
           supervisor?: string | null
           supervisor_id?: string | null
+          tiempo_aceptacion_supervisor?: string | null
           tiempo_asignacion?: string | null
+          tiempo_asignacion_supervisor?: string | null
           tiempo_atencion?: string | null
+          tiempo_primera_lectura_qr?: string | null
           tiempo_respuesta_segundos?: number | null
+          tiempo_segunda_lectura_qr?: string | null
+          tiempo_toma_despachador?: string | null
           tipo?: string
+          ubicacion_primer_qr?: string | null
+          ubicacion_segundo_qr?: string | null
         }
         Relationships: [
           {
