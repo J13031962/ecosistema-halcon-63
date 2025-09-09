@@ -31,36 +31,59 @@ const Personal = () => {
   const handleGenerarTurnos = async (data: any) => {
     console.log('Generando turnos con:', data);
     
-    // Obtener nombres de operadores
-    const operadoresConNombres = data.personal_asignado.map((id: string) => {
-      const operador = personal.find(p => p.id === id);
-      return {
-        id,
-        nombre: operador ? `${operador.nombres} ${operador.apellidos}` : 'Operador'
-      };
-    });
-    
-    // Generar turnos automáticamente
-    const turnosNuevos = generarTurnosAutomaticos(
-      data.fecha_inicio,
-      data.duracion_dias,
-      data.personal_asignado,
-      {
-        turno_diurno_inicio: data.turno_diurno_inicio,
-        turno_diurno_fin: data.turno_diurno_fin,
-        turno_nocturno_inicio: data.turno_nocturno_inicio,
-        turno_nocturno_fin: data.turno_nocturno_fin
+    try {
+      // Si viene del nuevo GeneradorTurnos, usar los turnos directamente
+      if (data.turnos && Array.isArray(data.turnos)) {
+        const turnosConNombres = data.turnos.map((turno: any) => ({
+          ...turno,
+          operador_nombre: turno.operador_nombre || 'Operador'
+        }));
+        
+        setTurnosGenerados(turnosConNombres);
+        toast.success(`${turnosConNombres.length} turnos generados exitosamente`);
+        return;
       }
-    );
-    
-    // Agregar nombres a los turnos
-    const turnosConNombres = turnosNuevos.map(turno => ({
-      ...turno,
-      operador_nombre: operadoresConNombres.find(op => op.id === turno.operador_id)?.nombre || 'Operador'
-    }));
-    
-    setTurnosGenerados(turnosConNombres);
-    toast.success(`${turnosNuevos.length} turnos generados exitosamente`);
+
+      // Código anterior para compatibilidad con otros generadores
+      if (!data.personal_asignado || !Array.isArray(data.personal_asignado)) {
+        toast.error('No se especificó personal asignado');
+        return;
+      }
+
+      // Obtener nombres de operadores
+      const operadoresConNombres = data.personal_asignado.map((id: string) => {
+        const operador = personal.find(p => p.id === id);
+        return {
+          id,
+          nombre: operador ? `${operador.nombres} ${operador.apellidos}` : 'Operador'
+        };
+      });
+      
+      // Generar turnos automáticamente (función anterior)
+      const turnosNuevos = generarTurnosAutomaticos(
+        data.fecha_inicio,
+        data.duracion_dias,
+        data.personal_asignado,
+        {
+          turno_diurno_inicio: data.turno_diurno_inicio,
+          turno_diurno_fin: data.turno_diurno_fin,
+          turno_nocturno_inicio: data.turno_nocturno_inicio,
+          turno_nocturno_fin: data.turno_nocturno_fin
+        }
+      );
+      
+      // Agregar nombres a los turnos
+      const turnosConNombres = turnosNuevos.map(turno => ({
+        ...turno,
+        operador_nombre: operadoresConNombres.find(op => op.id === turno.operador_id)?.nombre || 'Operador'
+      }));
+      
+      setTurnosGenerados(turnosConNombres);
+      toast.success(`${turnosNuevos.length} turnos generados exitosamente`);
+    } catch (error) {
+      console.error('Error en handleGenerarTurnos:', error);
+      toast.error('Error al generar los turnos');
+    }
   };
 
   const handleEditTurno = (turno: any) => {

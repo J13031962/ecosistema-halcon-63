@@ -230,7 +230,15 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
       }
 
       console.log('Turnos a generar:', todosLosTurnos);
-      await onGenerate({ turnos: todosLosTurnos });
+      
+      // Enviar en el formato que espera Personal.tsx
+      await onGenerate({ 
+        turnos: todosLosTurnos,
+        // Mantener compatibilidad con el formato anterior si es necesario
+        personal_asignado: operadoresConTurnos.map(op => op.operador_id),
+        fecha_inicio: fechaInicio,
+        duracion_dias: periodicidad === 'semanal' ? 7 : periodicidad === 'quincenal' ? 15 : 30
+      });
       toast.success('Turnos generados exitosamente');
       
       // Limpiar formulario
