@@ -78,7 +78,38 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
 
   const getTotalHorasOperador = (operadorId: string) => {
     const turnosOperador = turnos.filter(t => t.operador_id === operadorId);
-    
+
+    // Si existen campos detallados, usarlos (corrige cruces sábado-noche → domingo)
+    const hasDetalle = turnosOperador.some((t: any) =>
+      t.horas_diurnas_ordinarias !== undefined ||
+      t.horas_nocturnas_ordinarias !== undefined ||
+      t.horas_diurnas_dominicales !== undefined ||
+      t.horas_nocturnas_dominicales !== undefined
+    );
+
+    if (hasDetalle) {
+      const hdo = turnosOperador.reduce((s, t: any) => s + (t.horas_diurnas_ordinarias || 0), 0);
+      const hno = turnosOperador.reduce((s, t: any) => s + (t.horas_nocturnas_ordinarias || 0), 0);
+      const hdd = turnosOperador.reduce((s, t: any) => s + (t.horas_diurnas_dominicales || 0), 0);
+      const hnd = turnosOperador.reduce((s, t: any) => s + (t.horas_nocturnas_dominicales || 0), 0);
+
+      const total = hdo + hno + hdd + hnd;
+      const diurnasExtras = Math.max(0, hdo - 88);
+      const diurnasOrdinariasLimitadas = Math.min(hdo, 88);
+
+      return {
+        diurnasOrdinarias: diurnasOrdinariasLimitadas,
+        diurnasExtras,
+        nocturnasOrdinarias: hno,
+        dominicalesDiurnas: hdd,
+        dominicalesNocturnas: hnd,
+        festivasDiurnas: 0,
+        festivasNocturnas: 0,
+        total,
+      };
+    }
+
+    // Fallback: lógica anterior (si no hay desglose)
     // Calcular horas diurnas ordinarias (lunes a sábado, 06:00-19:00)
     const horasDiurnasOrdinarias = turnosOperador.reduce((sum, t) => {
       if (!t.es_domingo && !t.es_feriado) {

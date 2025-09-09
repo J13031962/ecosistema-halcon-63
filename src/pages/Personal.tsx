@@ -7,7 +7,7 @@ import { Users, Plus, Clock, Calendar, Download, Edit2 } from 'lucide-react';
 import { FormularioNuevoPersonal } from '@/components/personal/FormularioNuevoPersonal';
 import { GeneradorTurnos } from '@/components/personal/GeneradorTurnos';
 import { CalendarioTurnos } from '@/components/personal/CalendarioTurnos';
-import { generarTurnosAutomaticos } from '@/components/personal/TurnosCalculadorHoras';
+import { generarTurnosAutomaticos, calcularHorasTurno, esDomingo as esDomingoUtil, esFeriado as esFeriadoUtil } from '@/components/personal/TurnosCalculadorHoras';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -43,13 +43,38 @@ const Personal = () => {
     try {
       // Si viene del nuevo GeneradorTurnos, usar los turnos directamente
       if (data.turnos && Array.isArray(data.turnos)) {
-        const turnosConNombres = data.turnos.map((turno: any) => ({
-          ...turno,
-          operador_nombre: turno.operador_nombre || 'Operador'
-        }));
-        
-        setTurnosGenerados(turnosConNombres);
-        toast.success(`${turnosConNombres.length} turnos generados exitosamente`);
+        const turnosRecalculados = data.turnos.map((t: any) => {
+          const fecha = t?.fecha instanceof Date ? t.fecha : new Date(t?.fecha);
+          const es_domingo_calc = esDomingoUtil(fecha);
+          const es_feriado_calc = esFeriadoUtil(fecha);
+
+          const calculo = calcularHorasTurno({
+            fecha,
+            hora_inicio: t.hora_inicio,
+            hora_fin: t.hora_fin,
+            es_domingo: es_domingo_calc,
+            es_feriado: es_feriado_calc,
+          });
+
+          return {
+            ...t,
+            fecha,
+            es_domingo: es_domingo_calc,
+            es_feriado: es_feriado_calc,
+            horas_diurnas: calculo.horas_diurnas,
+            horas_nocturnas: calculo.horas_nocturnas,
+            horas_domingo: calculo.horas_domingo,
+            horas_feriado: calculo.horas_feriado,
+            horas_diurnas_ordinarias: calculo.horas_diurnas_ordinarias,
+            horas_nocturnas_ordinarias: calculo.horas_nocturnas_ordinarias,
+            horas_diurnas_dominicales: calculo.horas_diurnas_dominicales,
+            horas_nocturnas_dominicales: calculo.horas_nocturnas_dominicales,
+            horas_extras: calculo.horas_extras,
+            total_horas: calculo.total_horas,
+          };
+        });
+        setTurnosGenerados(turnosRecalculados);
+        toast.success(`${turnosRecalculados.length} turnos generados exitosamente`);
         return;
       }
 
@@ -131,22 +156,41 @@ const Personal = () => {
       return;
     }
 
-    // Crear nuevo turno
+    // Crear nuevo turno con cálculo real
+    const [horaInicio, horaFin] = tipoTurno.horas.split('-');
+    const fechaTurno = new Date(selectedDate);
+    const es_domingo = esDomingoUtil(fechaTurno);
+    const es_feriado = esFeriadoUtil(fechaTurno);
+
+    const calculo = calcularHorasTurno({
+      fecha: fechaTurno,
+      hora_inicio: horaInicio,
+      hora_fin: horaFin,
+      es_domingo,
+      es_feriado,
+    });
+
     const nuevoTurno = {
       id: `turno_${Date.now()}`,
-      fecha: new Date(selectedDate),
+      fecha: fechaTurno,
       operador_id: newTurno.operador_id,
       operador_nombre: `${operador.nombres} ${operador.apellidos}`,
-      hora_inicio: tipoTurno.horas.split('-')[0],
-      hora_fin: tipoTurno.horas.split('-')[1],
+      hora_inicio: horaInicio,
+      hora_fin: horaFin,
       tipo: tipoTurno.tipo,
-      horas_diurnas: tipoTurno.tipo === 'diurno' ? (tipoTurno.value === 'dia_completo' ? 12 : 8) : 0,
-      horas_nocturnas: tipoTurno.tipo === 'nocturno' ? (tipoTurno.value === 'noche' ? 12 : 8) : 0,
-      horas_domingo: 0,
-      horas_feriado: 0,
-      es_domingo: new Date(selectedDate).getDay() === 0,
-      es_feriado: false
-    };
+      horas_diurnas: calculo.horas_diurnas,
+      horas_nocturnas: calculo.horas_nocturnas,
+      horas_domingo: calculo.horas_domingo,
+      horas_feriado: calculo.horas_feriado,
+      horas_diurnas_ordinarias: calculo.horas_diurnas_ordinarias,
+      horas_nocturnas_ordinarias: calculo.horas_nocturnas_ordinarias,
+      horas_diurnas_dominicales: calculo.horas_diurnas_dominicales,
+      horas_nocturnas_dominicales: calculo.horas_nocturnas_dominicales,
+      horas_extras: calculo.horas_extras,
+      es_domingo,
+      es_feriado,
+      total_horas: calculo.total_horas,
+    } as any;
 
     setTurnosGenerados(prev => [...prev, nuevoTurno]);
     setIsEditDialogOpen(false);
