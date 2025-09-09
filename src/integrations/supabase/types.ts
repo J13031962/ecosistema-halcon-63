@@ -917,6 +917,48 @@ export type Database = {
         }
         Relationships: []
       }
+      turnos_cambios: {
+        Row: {
+          changed_by: string | null
+          changed_by_nombre: string | null
+          created_at: string
+          descripcion: string | null
+          detalles: Json | null
+          fecha: string
+          id: string
+          turno_id: string | null
+          turno_tipo: string
+          usuario_afectado_id: string | null
+          usuario_afectado_nombre: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_nombre?: string | null
+          created_at?: string
+          descripcion?: string | null
+          detalles?: Json | null
+          fecha: string
+          id?: string
+          turno_id?: string | null
+          turno_tipo?: string
+          usuario_afectado_id?: string | null
+          usuario_afectado_nombre?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_nombre?: string | null
+          created_at?: string
+          descripcion?: string | null
+          detalles?: Json | null
+          fecha?: string
+          id?: string
+          turno_id?: string | null
+          turno_tipo?: string
+          usuario_afectado_id?: string | null
+          usuario_afectado_nombre?: string | null
+        }
+        Relationships: []
+      }
       turnos_operador: {
         Row: {
           created_at: string | null
