@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Edit2, Save, X, Sun, Moon, AlertTriangle } from 'lucide-react';
+import { Clock, Edit2, Save, X, Sun, Moon, AlertTriangle, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface TurnoConHoras {
@@ -17,7 +17,13 @@ interface TurnoConHoras {
   horaFin: string;
   horasDiurnas: number;
   horasNocturnas: number;
+  horasDominicalesDiurnas: number;
+  horasDominicalesNocturnas: number;
+  horasFestivasDiurnas: number;
+  horasFestivasNocturnas: number;
   totalHoras: number;
+  esDomingo: boolean;
+  esFestivo: boolean;
   esEditado: boolean;
 }
 
@@ -27,6 +33,11 @@ interface EmpleadoResumen {
   horasSemanales: number;
   horasDiurnas: number;
   horasNocturnas: number;
+  horasDominicalesDiurnas: number;
+  horasDominicalesNocturnas: number;
+  horasFestivasDiurnas: number;
+  horasFestivasNocturnas: number;
+  horasExtras: number;
   cumpleJornada: boolean;
 }
 
@@ -47,6 +58,29 @@ const HORARIOS_PREDEFINIDOS = {
   dia_completo: { inicio: '06:00', fin: '18:00' }
 };
 
+// Días festivos de Colombia 2025 (ejemplo)
+const DIAS_FESTIVOS_2025 = [
+  '2025-01-01', // Año Nuevo
+  '2025-01-06', // Reyes Magos
+  '2025-03-24', // San José
+  '2025-04-17', // Jueves Santo
+  '2025-04-18', // Viernes Santo
+  '2025-05-01', // Día del Trabajo
+  '2025-06-02', // Ascensión
+  '2025-06-23', // Corpus Christi
+  '2025-06-30', // Sagrado Corazón
+  '2025-07-20', // Independencia
+  '2025-08-07', // Batalla de Boyacá
+  '2025-08-18', // Asunción
+  '2025-10-13', // Día de la Raza
+  '2025-11-03', // Todos los Santos
+  '2025-11-17', // Independencia de Cartagena
+  '2025-12-08', // Inmaculada
+  '2025-12-25'  // Navidad
+];
+
+const JORNADA_MAXIMA_2025 = 44; // Nueva jornada máxima para 2025
+
 const TurnosCalculadorHoras = () => {
   const [turnos, setTurnos] = useState<TurnoConHoras[]>([]);
   const [empleadosResumen, setEmpleadosResumen] = useState<EmpleadoResumen[]>([]);
@@ -54,8 +88,19 @@ const TurnosCalculadorHoras = () => {
   const [horarioEditado, setHorarioEditado] = useState({ inicio: '', fin: '' });
   const { toast } = useToast();
 
-  // Función para calcular horas diurnas y nocturnas
-  const calcularHoras = (horaInicio: string, horaFin: string) => {
+  // Función para verificar si es domingo
+  const esDomingo = (fecha: string) => {
+    const date = new Date(fecha);
+    return date.getDay() === 0; // 0 = domingo
+  };
+
+  // Función para verificar si es festivo
+  const esFestivo = (fecha: string) => {
+    return DIAS_FESTIVOS_2025.includes(fecha);
+  };
+
+  // Función para calcular horas diurnas y nocturnas con clasificaciones
+  const calcularHoras = (horaInicio: string, horaFin: string, fecha: string) => {
     const [horaInicioH, horaInicioM] = horaInicio.split(':').map(Number);
     const [horaFinH, horaFinM] = horaFin.split(':').map(Number);
     
@@ -73,21 +118,53 @@ const TurnosCalculadorHoras = () => {
     
     let horasDiurnas = 0;
     let horasNocturnas = 0;
+    let horasDominicalesDiurnas = 0;
+    let horasDominicalesNocturnas = 0;
+    let horasFestivasDiurnas = 0;
+    let horasFestivasNocturnas = 0;
+    
+    const esDom = esDomingo(fecha);
+    const esFest = esFestivo(fecha);
     
     // Calcular por cada hora del turno
     for (let minuto = inicioMinutos; minuto < finMinutos; minuto += 60) {
       const minutoDelDia = minuto % (24 * 60);
+      const esDiurno = minutoDelDia >= inicioDiurno && minutoDelDia < finDiurno;
       
-      if (minutoDelDia >= inicioDiurno && minutoDelDia < finDiurno) {
-        horasDiurnas++;
+      if (esDom) {
+        if (esDiurno) {
+          horasDominicalesDiurnas++;
+        } else {
+          horasDominicalesNocturnas++;
+        }
+      } else if (esFest) {
+        if (esDiurno) {
+          horasFestivasDiurnas++;
+        } else {
+          horasFestivasNocturnas++;
+        }
       } else {
-        horasNocturnas++;
+        if (esDiurno) {
+          horasDiurnas++;
+        } else {
+          horasNocturnas++;
+        }
       }
     }
     
-    const totalHoras = horasDiurnas + horasNocturnas;
+    const totalHoras = horasDiurnas + horasNocturnas + horasDominicalesDiurnas + horasDominicalesNocturnas + horasFestivasDiurnas + horasFestivasNocturnas;
     
-    return { horasDiurnas, horasNocturnas, totalHoras };
+    return { 
+      horasDiurnas, 
+      horasNocturnas, 
+      horasDominicalesDiurnas, 
+      horasDominicalesNocturnas,
+      horasFestivasDiurnas,
+      horasFestivasNocturnas,
+      totalHoras,
+      esDomingo: esDom,
+      esFestivo: esFest
+    };
   };
 
   // Generar turnos de ejemplo
@@ -107,7 +184,17 @@ const TurnosCalculadorHoras = () => {
         
         if (!horario) return;
         
-        const { horasDiurnas, horasNocturnas, totalHoras } = calcularHoras(horario.inicio, horario.fin);
+        const { 
+          horasDiurnas, 
+          horasNocturnas, 
+          horasDominicalesDiurnas, 
+          horasDominicalesNocturnas,
+          horasFestivasDiurnas,
+          horasFestivasNocturnas,
+          totalHoras,
+          esDomingo: esDom,
+          esFestivo: esFest
+        } = calcularHoras(horario.inicio, horario.fin, fecha);
         
         turnosEjemplo.push({
           id: `${empleado.id}-${fecha}`,
@@ -118,7 +205,13 @@ const TurnosCalculadorHoras = () => {
           horaFin: horario.fin,
           horasDiurnas,
           horasNocturnas,
+          horasDominicalesDiurnas,
+          horasDominicalesNocturnas,
+          horasFestivasDiurnas,
+          horasFestivasNocturnas,
           totalHoras,
+          esDomingo: esDom,
+          esFestivo: esFest,
           esEditado: false
         });
       });
@@ -134,6 +227,11 @@ const TurnosCalculadorHoras = () => {
       const horasSemanales = turnosEmpleado.reduce((sum, t) => sum + t.totalHoras, 0);
       const horasDiurnas = turnosEmpleado.reduce((sum, t) => sum + t.horasDiurnas, 0);
       const horasNocturnas = turnosEmpleado.reduce((sum, t) => sum + t.horasNocturnas, 0);
+      const horasDominicalesDiurnas = turnosEmpleado.reduce((sum, t) => sum + t.horasDominicalesDiurnas, 0);
+      const horasDominicalesNocturnas = turnosEmpleado.reduce((sum, t) => sum + t.horasDominicalesNocturnas, 0);
+      const horasFestivasDiurnas = turnosEmpleado.reduce((sum, t) => sum + t.horasFestivasDiurnas, 0);
+      const horasFestivasNocturnas = turnosEmpleado.reduce((sum, t) => sum + t.horasFestivasNocturnas, 0);
+      const horasExtras = Math.max(0, horasSemanales - JORNADA_MAXIMA_2025);
       
       return {
         id: empleado.id,
@@ -141,7 +239,12 @@ const TurnosCalculadorHoras = () => {
         horasSemanales,
         horasDiurnas,
         horasNocturnas,
-        cumpleJornada: horasSemanales >= 46
+        horasDominicalesDiurnas,
+        horasDominicalesNocturnas,
+        horasFestivasDiurnas,
+        horasFestivasNocturnas,
+        horasExtras,
+        cumpleJornada: horasSemanales >= JORNADA_MAXIMA_2025
       };
     });
     
@@ -156,10 +259,17 @@ const TurnosCalculadorHoras = () => {
   const guardarEdicion = () => {
     if (!editando) return;
     
-    const { horasDiurnas, horasNocturnas, totalHoras } = calcularHoras(
-      horarioEditado.inicio, 
-      horarioEditado.fin
-    );
+    const { 
+      horasDiurnas, 
+      horasNocturnas, 
+      horasDominicalesDiurnas, 
+      horasDominicalesNocturnas,
+      horasFestivasDiurnas,
+      horasFestivasNocturnas,
+      totalHoras,
+      esDomingo: esDom,
+      esFestivo: esFest
+    } = calcularHoras(horarioEditado.inicio, horarioEditado.fin, turnos.find(t => t.id === editando)?.fecha || '');
     
     setTurnos(prev => prev.map(turno => 
       turno.id === editando 
@@ -169,7 +279,13 @@ const TurnosCalculadorHoras = () => {
             horaFin: horarioEditado.fin,
             horasDiurnas,
             horasNocturnas,
+            horasDominicalesDiurnas,
+            horasDominicalesNocturnas,
+            horasFestivasDiurnas,
+            horasFestivasNocturnas,
             totalHoras,
+            esDomingo: esDom,
+            esFestivo: esFest,
             esEditado: true
           }
         : turno
@@ -193,12 +309,12 @@ const TurnosCalculadorHoras = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Jornada Objetivo</CardTitle>
+            <CardTitle className="text-sm font-medium">Jornada Máxima 2025</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">46</div>
-            <p className="text-xs text-muted-foreground">horas semanales</p>
+            <div className="text-2xl font-bold">{JORNADA_MAXIMA_2025}</div>
+            <p className="text-xs text-muted-foreground">horas semanales máximas</p>
           </CardContent>
         </Card>
         
@@ -219,14 +335,125 @@ const TurnosCalculadorHoras = () => {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Turnos Editados</CardTitle>
-            <Edit2 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Horas Extras Totales</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {turnos.filter(t => t.esEditado).length}
+            <div className="text-2xl font-bold text-orange-600">
+              {empleadosResumen.reduce((sum, e) => sum + e.horasExtras, 0)}
             </div>
-            <p className="text-xs text-muted-foreground">modificaciones manuales</p>
+            <p className="text-xs text-muted-foreground">
+              horas sobre {JORNADA_MAXIMA_2025}h semanales
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Resumen Detallado */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Horas Totales Semanales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm flex items-center gap-1">
+                  <Sun className="h-3 w-3 text-yellow-500" />
+                  Diurnas:
+                </span>
+                <span className="font-medium">
+                  {empleadosResumen.reduce((sum, e) => sum + e.horasDiurnas, 0)}h
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm flex items-center gap-1">
+                  <Moon className="h-3 w-3 text-blue-500" />
+                  Nocturnas:
+                </span>
+                <span className="font-medium">
+                  {empleadosResumen.reduce((sum, e) => sum + e.horasNocturnas, 0)}h
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Horas Dominicales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm flex items-center gap-1">
+                  <Sun className="h-3 w-3 text-yellow-500" />
+                  Diurnas:
+                </span>
+                <span className="font-medium">
+                  {empleadosResumen.reduce((sum, e) => sum + e.horasDominicalesDiurnas, 0)}h
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm flex items-center gap-1">
+                  <Moon className="h-3 w-3 text-blue-500" />
+                  Nocturnas:
+                </span>
+                <span className="font-medium">
+                  {empleadosResumen.reduce((sum, e) => sum + e.horasDominicalesNocturnas, 0)}h
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Horas Festivas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm flex items-center gap-1">
+                  <Sun className="h-3 w-3 text-yellow-500" />
+                  Diurnas:
+                </span>
+                <span className="font-medium">
+                  {empleadosResumen.reduce((sum, e) => sum + e.horasFestivasDiurnas, 0)}h
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm flex items-center gap-1">
+                  <Moon className="h-3 w-3 text-blue-500" />
+                  Nocturnas:
+                </span>
+                <span className="font-medium">
+                  {empleadosResumen.reduce((sum, e) => sum + e.horasFestivasNocturnas, 0)}h
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Horas Extras</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm">Total:</span>
+                <span className="font-medium text-orange-600">
+                  {empleadosResumen.reduce((sum, e) => sum + e.horasExtras, 0)}h
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-xs text-muted-foreground">Empleados con extras:</span>
+                <span className="text-xs">
+                  {empleadosResumen.filter(e => e.horasExtras > 0).length}
+                </span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -261,6 +488,24 @@ const TurnosCalculadorHoras = () => {
                     <Moon className="h-4 w-4 text-blue-500" />
                     <span>{empleado.horasNocturnas}h</span>
                   </div>
+                  {empleado.horasDominicalesDiurnas + empleado.horasDominicalesNocturnas > 0 && (
+                    <div className="flex items-center gap-1 text-sm">
+                      <Calendar className="h-4 w-4 text-purple-500" />
+                      <span>{empleado.horasDominicalesDiurnas + empleado.horasDominicalesNocturnas}h Dom</span>
+                    </div>
+                  )}
+                  {empleado.horasFestivasDiurnas + empleado.horasFestivasNocturnas > 0 && (
+                    <div className="flex items-center gap-1 text-sm">
+                      <Calendar className="h-4 w-4 text-green-500" />
+                      <span>{empleado.horasFestivasDiurnas + empleado.horasFestivasNocturnas}h Fest</span>
+                    </div>
+                  )}
+                  {empleado.horasExtras > 0 && (
+                    <div className="flex items-center gap-1 text-sm">
+                      <AlertTriangle className="h-4 w-4 text-orange-500" />
+                      <span>{empleado.horasExtras}h Extra</span>
+                    </div>
+                  )}
                   <Badge 
                     variant={empleado.cumpleJornada ? "default" : "destructive"}
                     className="flex items-center gap-1"
@@ -270,7 +515,7 @@ const TurnosCalculadorHoras = () => {
                     ) : (
                       <>
                         <AlertTriangle className="h-3 w-3" />
-                        Faltan {46 - empleado.horasSemanales}h
+                        Faltan {JORNADA_MAXIMA_2025 - empleado.horasSemanales}h
                       </>
                     )}
                   </Badge>
@@ -294,8 +539,10 @@ const TurnosCalculadorHoras = () => {
                   <th className="text-left p-2">Empleado</th>
                   <th className="text-left p-2">Fecha</th>
                   <th className="text-center p-2">Horario</th>
+                  <th className="text-center p-2">Tipo</th>
                   <th className="text-center p-2">Diurnas</th>
                   <th className="text-center p-2">Nocturnas</th>
+                  <th className="text-center p-2">Dom/Fest</th>
                   <th className="text-center p-2">Total</th>
                   <th className="text-center p-2">Acciones</th>
                 </tr>
@@ -305,11 +552,15 @@ const TurnosCalculadorHoras = () => {
                   <tr key={turno.id} className="border-b hover:bg-muted/50">
                     <td className="p-2 font-medium">{turno.empleadoNombre}</td>
                     <td className="p-2">
-                      {new Date(turno.fecha).toLocaleDateString('es-ES', {
-                        weekday: 'short',
-                        day: '2-digit',
-                        month: '2-digit'
-                      })}
+                      <div className="flex items-center gap-1">
+                        {new Date(turno.fecha).toLocaleDateString('es-ES', {
+                          weekday: 'short',
+                          day: '2-digit',
+                          month: '2-digit'
+                        })}
+                        {turno.esDomingo && <Badge variant="outline" className="text-xs">Dom</Badge>}
+                        {turno.esFestivo && <Badge variant="secondary" className="text-xs">Fest</Badge>}
+                      </div>
                     </td>
                     <td className="p-2 text-center">
                       {editando === turno.id ? (
@@ -337,14 +588,38 @@ const TurnosCalculadorHoras = () => {
                     </td>
                     <td className="p-2 text-center">
                       <div className="flex items-center justify-center gap-1">
+                        {turno.esDomingo && <span className="text-purple-600 text-xs">Dom</span>}
+                        {turno.esFestivo && <span className="text-green-600 text-xs">Fest</span>}
+                        {!turno.esDomingo && !turno.esFestivo && <span className="text-gray-500 text-xs">Normal</span>}
+                      </div>
+                    </td>
+                    <td className="p-2 text-center">
+                      <div className="flex items-center justify-center gap-1">
                         <Sun className="h-4 w-4 text-yellow-500" />
-                        <span>{turno.horasDiurnas}h</span>
+                        <span>{turno.horasDiurnas + turno.horasDominicalesDiurnas + turno.horasFestivasDiurnas}h</span>
                       </div>
                     </td>
                     <td className="p-2 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Moon className="h-4 w-4 text-blue-500" />
-                        <span>{turno.horasNocturnas}h</span>
+                        <span>{turno.horasNocturnas + turno.horasDominicalesNocturnas + turno.horasFestivasNocturnas}h</span>
+                      </div>
+                    </td>
+                    <td className="p-2 text-center">
+                      <div className="text-xs space-y-1">
+                        {(turno.horasDominicalesDiurnas + turno.horasDominicalesNocturnas) > 0 && (
+                          <div className="text-purple-600">
+                            Dom: {turno.horasDominicalesDiurnas + turno.horasDominicalesNocturnas}h
+                          </div>
+                        )}
+                        {(turno.horasFestivasDiurnas + turno.horasFestivasNocturnas) > 0 && (
+                          <div className="text-green-600">
+                            Fest: {turno.horasFestivasDiurnas + turno.horasFestivasNocturnas}h
+                          </div>
+                        )}
+                        {(turno.horasDominicalesDiurnas + turno.horasDominicalesNocturnas + turno.horasFestivasDiurnas + turno.horasFestivasNocturnas) === 0 && (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </div>
                     </td>
                     <td className="p-2 text-center font-medium">{turno.totalHoras}h</td>
@@ -397,8 +672,20 @@ const TurnosCalculadorHoras = () => {
               <span>Horas Nocturnas (19:00 - 06:00)</span>
             </div>
             <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-purple-500" />
+              <span>Dominicales (Domingo)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-green-500" />
+              <span>Festivas (Días festivos)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              <span>Extras (Sobre {JORNADA_MAXIMA_2025}h)</span>
+            </div>
+            <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
-              <span>Jornada Objetivo: 46 horas semanales</span>
+              <span>Jornada Máxima 2025: {JORNADA_MAXIMA_2025} horas semanales</span>
             </div>
           </div>
         </CardContent>
