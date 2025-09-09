@@ -184,7 +184,7 @@ const Personal = () => {
             </Button>
             <Button variant="outline" onClick={() => setVistaActual('calculador')}>
               <Clock className="h-4 w-4 mr-2" />
-              Calculador de Horas
+              Calendario Operadores
             </Button>
             <Button variant="outline" onClick={() => setVistaActual('personal')}>
               <Users className="h-4 w-4 mr-2" />
@@ -193,6 +193,36 @@ const Personal = () => {
           </div>
         </div>
         <GeneradorTurnos />
+      </div>
+    );
+  }
+
+  if (vistaActual === 'calculador') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold">Calendario de Operadores</h2>
+            <p className="text-muted-foreground">
+              Visualización de turnos programados para operadores
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setVistaActual('turnos')}>
+              <Calendar className="h-4 w-4 mr-2" />
+              Ver Turnos Generados
+            </Button>
+            <Button variant="outline" onClick={() => setVistaActual('generador')}>
+              <Settings className="h-4 w-4 mr-2" />
+              Generar Turnos
+            </Button>
+            <Button variant="outline" onClick={() => setVistaActual('personal')}>
+              <Users className="h-4 w-4 mr-2" />
+              Ver Personal
+            </Button>
+          </div>
+        </div>
+        <CalendarioTurnosQuincenal />
       </div>
     );
   }
@@ -213,7 +243,7 @@ const Personal = () => {
           </Button>
           <Button variant="outline" onClick={() => setVistaActual('calculador')}>
             <Clock className="h-4 w-4 mr-2" />
-            Calculador de Horas
+            Calendario Operadores
           </Button>
           <Button variant="outline" onClick={() => setVistaActual('turnos')}>
             <Calendar className="h-4 w-4 mr-2" />
@@ -347,7 +377,8 @@ const Personal = () => {
                 <TableHead>Estado</TableHead>
                 <TableHead>Ubicación</TableHead>
                 <TableHead>Ingreso</TableHead>
-                <TableHead>Horas</TableHead>
+                <TableHead>Horas Hoy</TableHead>
+                <TableHead>Resumen Horas</TableHead>
                 <TableHead>Rendimiento</TableHead>
                 <TableHead>Contacto</TableHead>
                 <TableHead>Acciones</TableHead>
@@ -393,6 +424,21 @@ const Personal = () => {
                     <Badge variant="outline">
                       {persona.horasHoy}h
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-xs space-y-1">
+                      <div className="grid grid-cols-2 gap-1">
+                        <span className="text-blue-600">D: 32h</span>
+                        <span className="text-purple-600">N: 12h</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1">
+                        <span className="text-green-600">Dom: 8h</span>
+                        <span className="text-orange-600">Ext: 4h</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground border-t pt-1">
+                        Total: 44h
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
