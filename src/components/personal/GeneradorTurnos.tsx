@@ -1,42 +1,36 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { CalendarIcon, Clock, User } from 'lucide-react';
+import { format, addDays, startOfWeek, eachDayOfInterval, endOfWeek, isSameDay, isWeekend } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-const turnosSchema = z.object({
-  periodicidad: z.enum(['semanal', 'quincenal', 'mensual'], {
-    required_error: 'La periodicidad es requerida'
-  }),
-  fecha_inicio: z.date({
-    required_error: 'La fecha de inicio es requerida'
-  }),
-  operador_id: z.string().min(1, 'Debe seleccionar un operador'),
-  tipo_turno: z.enum(['dia', 'manana', 'tarde', 'noche'], {
-    required_error: 'Debe seleccionar el tipo de turno'
-  }),
-  dias_descanso: z.array(z.string()).min(1, 'Debe seleccionar al menos un día de descanso')
-});
-
-type TurnosFormData = z.infer<typeof turnosSchema>;
+interface TurnoAsignado {
+  fecha: Date;
+  tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso';
+}
 
 interface GeneradorTurnosProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerate: (data: TurnosFormData) => Promise<void>;
+  onGenerate: (data: any) => Promise<void>;
   personal: Array<{ id: string; nombres: string; apellidos: string; cargo: string }>;
 }
+
+const TIPOS_TURNO = {
+  dia: { nombre: 'Día', horario: '06:00-18:00', tipo: 'diurno', horas: 12, color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
+  mañana: { nombre: 'Mañana', horario: '06:00-14:00', tipo: 'diurno', horas: 8, color: 'bg-blue-100 text-blue-800 border-blue-300' },
+  tarde: { nombre: 'Tarde', horario: '14:00-22:00', tipo: 'mixto', horas: 8, color: 'bg-orange-100 text-orange-800 border-orange-300' },
+  noche: { nombre: 'Noche', horario: '18:00-06:00', tipo: 'nocturno', horas: 12, color: 'bg-purple-100 text-purple-800 border-purple-300' },
+  descanso: { nombre: 'Descanso', horario: '-', tipo: 'descanso', horas: 0, color: 'bg-gray-100 text-gray-800 border-gray-300' }
+};
 
 export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
   isOpen,
@@ -44,36 +38,79 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
   onGenerate,
   personal
 }) => {
+  const [periodicidad, setPeriodicidad] = useState<'semanal' | 'quincenal' | 'mensual'>('quincenal');
+  const [fechaInicio, setFechaInicio] = useState<Date>();
+  const [operadorSeleccionado, setOperadorSeleccionado] = useState<string>('');
+  const [turnosAsignados, setTurnosAsignados] = useState<TurnoAsignado[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const form = useForm<TurnosFormData>({
-    resolver: zodResolver(turnosSchema),
-    defaultValues: {
-      periodicidad: 'quincenal',
-      operador_id: '',
-      tipo_turno: 'dia',
-      dias_descanso: []
-    }
-  });
+  const operadores = personal.filter(p => p.cargo === 'operador');
 
-  const tipoTurno = form.watch('tipo_turno');
-  
-  const getHorarioTurno = (tipo: string) => {
-    const horarios = {
-      dia: { inicio: '06:00', fin: '18:00' },
-      manana: { inicio: '06:00', fin: '14:00' },
-      tarde: { inicio: '14:00', fin: '22:00' },
-      noche: { inicio: '18:00', fin: '06:00' }
-    };
-    return horarios[tipo as keyof typeof horarios] || horarios.dia;
+  const getDiasDelPeriodo = () => {
+    if (!fechaInicio) return [];
+    
+    const dias = periodicidad === 'semanal' ? 7 : periodicidad === 'quincenal' ? 15 : 30;
+    return eachDayOfInterval({
+      start: fechaInicio,
+      end: addDays(fechaInicio, dias - 1)
+    });
   };
 
-  const handleGenerate = async (data: TurnosFormData) => {
+  const getTurnoParaFecha = (fecha: Date) => {
+    return turnosAsignados.find(t => isSameDay(t.fecha, fecha));
+  };
+
+  const asignarTurno = (fecha: Date, tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso') => {
+    setTurnosAsignados(prev => {
+      const existing = prev.findIndex(t => isSameDay(t.fecha, fecha));
+      if (existing >= 0) {
+        // Reemplazar turno existente
+        const newArray = [...prev];
+        newArray[existing] = { fecha, tipo };
+        return newArray;
+      } else {
+        // Agregar nuevo turno
+        return [...prev, { fecha, tipo }];
+      }
+    });
+  };
+
+  const handleGenerate = async () => {
+    if (!operadorSeleccionado || !fechaInicio || turnosAsignados.length === 0) {
+      toast.error('Debe seleccionar operador, fecha de inicio y asignar al menos un turno');
+      return;
+    }
+
     try {
       setIsGenerating(true);
-      await onGenerate(data);
+      
+      // Convertir turnos asignados al formato esperado
+      const turnosParaGenerar = turnosAsignados.filter(t => t.tipo !== 'descanso').map(turno => {
+        const tipoTurno = TIPOS_TURNO[turno.tipo];
+        const operador = operadores.find(op => op.id === operadorSeleccionado);
+        
+        return {
+          fecha: turno.fecha,
+          operador_id: operadorSeleccionado,
+          operador_nombre: `${operador?.nombres} ${operador?.apellidos}`,
+          hora_inicio: tipoTurno.horario.split('-')[0],
+          hora_fin: tipoTurno.horario.split('-')[1],
+          tipo: tipoTurno.tipo === 'nocturno' ? 'nocturno' : 'diurno',
+          horas_diurnas: tipoTurno.tipo === 'diurno' ? tipoTurno.horas : tipoTurno.tipo === 'mixto' ? 5 : 0,
+          horas_nocturnas: tipoTurno.tipo === 'nocturno' ? tipoTurno.horas : tipoTurno.tipo === 'mixto' ? 3 : 0,
+          horas_domingo: isWeekend(turno.fecha) && turno.fecha.getDay() === 0 ? tipoTurno.horas : 0,
+          horas_feriado: 0, // Se puede mejorar con lógica de feriados
+          es_domingo: isWeekend(turno.fecha) && turno.fecha.getDay() === 0,
+          es_feriado: false
+        };
+      });
+
+      await onGenerate({ turnos: turnosParaGenerar });
       toast.success('Turnos generados exitosamente');
-      form.reset();
+      
+      // Limpiar formulario
+      setOperadorSeleccionado('');
+      setTurnosAsignados([]);
       onClose();
     } catch (error) {
       console.error('Error al generar turnos:', error);
@@ -83,226 +120,202 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
     }
   };
 
-  const operadores = personal.filter(p => p.cargo === 'operador');
+  const operadorSeleccionadoData = operadores.find(op => op.id === operadorSeleccionado);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Generar Turnos para Personal
+            Asignar Turnos por Operador
           </DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleGenerate)} className="space-y-6">
-            {/* Configuración Básica */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Configuración Básica</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="periodicidad"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Período</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar período" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="semanal">Semanal (7 días)</SelectItem>
-                          <SelectItem value="quincenal">Quincenal (15 días)</SelectItem>
-                          <SelectItem value="mensual">Mensual (30 días)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+        <div className="space-y-6">
+          {/* Configuración Básica */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Tipo de Período</Label>
+              <Select value={periodicidad} onValueChange={(value: 'semanal' | 'quincenal' | 'mensual') => setPeriodicidad(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="semanal">Semanal (7 días)</SelectItem>
+                  <SelectItem value="quincenal">Quincenal (15 días)</SelectItem>
+                  <SelectItem value="mensual">Mensual (30 días)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                <FormField
-                  control={form.control}
-                  name="fecha_inicio"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Fecha de Inicio</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP", { locale: es })
-                              ) : (
-                                <span>Seleccionar fecha</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date < new Date()}
-                            initialFocus
-                            className="p-3 pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <div className="space-y-2">
+              <Label>Fecha de Inicio</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !fechaInicio && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {fechaInicio ? format(fechaInicio, "PPP", { locale: es }) : "Seleccionar fecha"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={fechaInicio}
+                    onSelect={setFechaInicio}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Operador</Label>
+              <Select value={operadorSeleccionado} onValueChange={setOperadorSeleccionado}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar operador" />
+                </SelectTrigger>
+                <SelectContent>
+                  {operadores.map((operador) => (
+                    <SelectItem key={operador.id} value={operador.id}>
+                      {operador.nombres} {operador.apellidos}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Operador Seleccionado */}
+          {operadorSeleccionadoData && (
+            <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
+              <div className="flex items-center gap-2">
+                <User className="h-5 w-5 text-blue-600" />
+                <h3 className="font-semibold text-blue-800 dark:text-blue-200">
+                  Asignando turnos para: {operadorSeleccionadoData.nombres} {operadorSeleccionadoData.apellidos}
+                </h3>
               </div>
             </div>
+          )}
 
-            {/* Selección de Operador */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Operador</h3>
-              <FormField
-                control={form.control}
-                name="operador_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Seleccionar Operador</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Elegir operador" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {operadores.map((operador) => (
-                          <SelectItem key={operador.id} value={operador.id}>
-                            {operador.nombres} {operador.apellidos}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {/* Tipos de Turno Disponibles */}
+          <div className="space-y-2">
+            <Label>Tipos de Turno Disponibles</Label>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(TIPOS_TURNO).map(([key, turno]) => (
+                <Badge key={key} variant="outline" className={cn("cursor-default", turno.color)}>
+                  {turno.nombre} {turno.horario && `(${turno.horario})`}
+                </Badge>
+              ))}
             </div>
+          </div>
 
-            {/* Tipo de Turno */}
+          {/* Calendario Interactivo */}
+          {fechaInicio && operadorSeleccionado && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Tipo de Turno</h3>
-              <FormField
-                control={form.control}
-                name="tipo_turno"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Horario de Trabajo</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Elegir tipo de turno" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="dia">Día (06:00 - 18:00)</SelectItem>
-                        <SelectItem value="manana">Mañana (06:00 - 14:00)</SelectItem>
-                        <SelectItem value="tarde">Tarde (14:00 - 22:00)</SelectItem>
-                        <SelectItem value="noche">Noche (18:00 - 06:00)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5" />
+                <h3 className="text-lg font-semibold">
+                  Haga clic en los días para asignar turnos
+                </h3>
+              </div>
               
-              {tipoTurno && (
-                <div className="bg-muted/50 p-3 rounded-lg">
-                  <p className="text-sm">
-                    <strong>Horario seleccionado:</strong> {getHorarioTurno(tipoTurno).inicio} - {getHorarioTurno(tipoTurno).fin}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Días de Descanso */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Días de Descanso</h3>
-              <FormField
-                control={form.control}
-                name="dias_descanso"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Seleccionar días de descanso en la semana</FormLabel>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {[
-                        { value: 'lunes', label: 'Lunes' },
-                        { value: 'martes', label: 'Martes' },
-                        { value: 'miercoles', label: 'Miércoles' },
-                        { value: 'jueves', label: 'Jueves' },
-                        { value: 'viernes', label: 'Viernes' },
-                        { value: 'sabado', label: 'Sábado' },
-                        { value: 'domingo', label: 'Domingo' }
-                      ].map((dia) => (
-                        <label
-                          key={dia.value}
-                          className="flex items-center space-x-2 cursor-pointer hover:bg-accent rounded p-2"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={field.value.includes(dia.value)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                field.onChange([...field.value, dia.value]);
-                              } else {
-                                field.onChange(field.value.filter(d => d !== dia.value));
-                              }
-                            }}
-                            className="rounded"
-                          />
-                          <span className="text-sm">{dia.label}</span>
-                        </label>
-                      ))}
+              <div className="grid grid-cols-7 gap-2">
+                {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(dia => (
+                  <div key={dia} className="text-center font-semibold p-2 text-sm">
+                    {dia}
+                  </div>
+                ))}
+                
+                {getDiasDelPeriodo().map((fecha) => {
+                  const turnoAsignado = getTurnoParaFecha(fecha);
+                  const esDomingo = fecha.getDay() === 0;
+                  
+                  return (
+                    <div key={fecha.toISOString()} className="space-y-1">
+                      <div className={cn(
+                        "text-center p-2 border rounded font-medium text-sm",
+                        esDomingo && "bg-blue-50 dark:bg-blue-950/20 border-blue-300"
+                      )}>
+                        {format(fecha, 'dd')}
+                        {esDomingo && <div className="text-xs text-blue-600">Dom</div>}
+                      </div>
+                      
+                      <Select
+                        value={turnoAsignado?.tipo || ''}
+                        onValueChange={(tipo: 'dia' | 'mañana' | 'tarde' | 'noche' | 'descanso') => 
+                          asignarTurno(fecha, tipo)
+                        }
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Turno" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="descanso">Descanso</SelectItem>
+                          <SelectItem value="dia">Día</SelectItem>
+                          <SelectItem value="mañana">Mañana</SelectItem>
+                          <SelectItem value="tarde">Tarde</SelectItem>
+                          <SelectItem value="noche">Noche</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      
+                      {turnoAsignado && turnoAsignado.tipo !== 'descanso' && (
+                        <div className={cn(
+                          "text-xs p-1 rounded text-center border",
+                          TIPOS_TURNO[turnoAsignado.tipo].color
+                        )}>
+                          {TIPOS_TURNO[turnoAsignado.tipo].horario}
+                        </div>
+                      )}
                     </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  );
+                })}
+              </div>
             </div>
+          )}
 
-            {/* Información Importante */}
+          {/* Resumen */}
+          {turnosAsignados.length > 0 && (
             <div className="bg-muted/50 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">Información Importante:</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Los turnos se generarán automáticamente con rotación entre operadores</li>
-                <li>• Horas diurnas: 06:00 - 19:00 | Horas nocturnas: 19:00 - 06:00</li>
-                <li>• Se aplicarán tarifas especiales para domingos y feriados</li>
-                <li>• Los turnos podrán editarse individualmente después de la generación</li>
-              </ul>
+              <h4 className="font-medium mb-2">Resumen de Turnos Asignados:</h4>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
+                {Object.entries(TIPOS_TURNO).map(([key, turno]) => {
+                  const count = turnosAsignados.filter(t => t.tipo === key).length;
+                  return (
+                    <div key={key} className="flex justify-between">
+                      <span>{turno.nombre}:</span>
+                      <span className="font-medium">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+          )}
 
-            <div className="flex justify-end space-x-4 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isGenerating}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isGenerating}>
-                {isGenerating ? 'Generando...' : 'Generar Turnos'}
-              </Button>
-            </div>
-          </form>
-        </Form>
+          <div className="flex justify-end space-x-4 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isGenerating}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleGenerate} 
+              disabled={isGenerating || !operadorSeleccionado || !fechaInicio || turnosAsignados.length === 0}
+            >
+              {isGenerating ? 'Generando...' : 'Generar Turnos'}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
