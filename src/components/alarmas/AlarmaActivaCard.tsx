@@ -22,12 +22,12 @@ interface AlarmaActivaCardProps {
 
 export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
   const [tiempos, setTiempos] = useState({
-    total: '0:00',
-    aceptacionDespachador: '0:00',
-    despachadorEnvio: '0:00',
-    supervisorAceptacion: '0:00',
-    supervisorLlegada: '0:00',
-    supervisorSalida: '0:00'
+    total: { tiempo: '0:00', segundos: 0 },
+    aceptacionDespachador: { tiempo: '0:00', segundos: 0 },
+    despachadorEnvio: { tiempo: '0:00', segundos: 0 },
+    supervisorAceptacion: { tiempo: '0:00', segundos: 0 },
+    supervisorLlegada: { tiempo: '0:00', segundos: 0 },
+    supervisorSalida: { tiempo: '0:00', segundos: 0 }
   });
 
   const calcularTiempo = (inicio: string, fin?: string) => {
@@ -36,7 +36,40 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
     const diff = differenceInSeconds(finDate, inicioDate);
     const min = Math.floor(diff / 60);
     const sec = diff % 60;
-    return `${min}:${sec.toString().padStart(2, '0')}`;
+    return {
+      tiempo: `${min}:${sec.toString().padStart(2, '0')}`,
+      segundos: diff
+    };
+  };
+
+  const getColorPorTiempo = (segundos: number, tipo: string, completado: boolean) => {
+    if (completado) return 'text-green-600';
+    
+    const minutos = segundos / 60;
+    
+    switch (tipo) {
+      case 'aceptacion':
+      case 'envio':
+      case 'aceptacion-supervisor':
+        if (minutos < 2) return 'text-green-600';
+        if (minutos < 4) return 'text-yellow-500';
+        if (minutos < 6) return 'text-orange-500';
+        return 'text-red-600';
+      
+      case 'llegada':
+        if (minutos < 15) return 'text-green-600';
+        if (minutos < 20) return 'text-yellow-500';
+        if (minutos < 25) return 'text-orange-500';
+        return 'text-red-600';
+      
+      case 'salida':
+        if (minutos < 5) return 'text-red-600';
+        if (minutos < 7) return 'text-yellow-500';
+        return 'text-green-600';
+      
+      default:
+        return 'text-gray-600';
+    }
   };
 
   useEffect(() => {
@@ -53,28 +86,28 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
         ? (alarma.tiempo_asignacion_supervisor 
           ? calcularTiempo(alarma.tiempo_toma_despachador, alarma.tiempo_asignacion_supervisor)
           : calcularTiempo(alarma.tiempo_toma_despachador))
-        : '0:00';
+        : { tiempo: '0:00', segundos: 0 };
 
       // Supervisor aceptación - inicia cuando se asigna y se detiene cuando acepta
       const supAceptacion = alarma.tiempo_asignacion_supervisor
         ? (alarma.tiempo_aceptacion_supervisor
           ? calcularTiempo(alarma.tiempo_asignacion_supervisor, alarma.tiempo_aceptacion_supervisor)
           : calcularTiempo(alarma.tiempo_asignacion_supervisor))
-        : '0:00';
+        : { tiempo: '0:00', segundos: 0 };
 
       // Supervisor llegada - inicia cuando acepta y se detiene en primera lectura QR
       const supLlegada = alarma.tiempo_aceptacion_supervisor
         ? (alarma.tiempo_primera_lectura_qr
           ? calcularTiempo(alarma.tiempo_aceptacion_supervisor, alarma.tiempo_primera_lectura_qr)
           : calcularTiempo(alarma.tiempo_aceptacion_supervisor))
-        : '0:00';
+        : { tiempo: '0:00', segundos: 0 };
 
       // Supervisor salida - inicia en primera lectura y se detiene en segunda lectura QR
       const supSalida = alarma.tiempo_primera_lectura_qr
         ? (alarma.tiempo_segunda_lectura_qr
           ? calcularTiempo(alarma.tiempo_primera_lectura_qr, alarma.tiempo_segunda_lectura_qr)
           : calcularTiempo(alarma.tiempo_primera_lectura_qr))
-        : '0:00';
+        : { tiempo: '0:00', segundos: 0 };
 
       setTiempos({
         total: tiempoTotal,
@@ -130,7 +163,7 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
         <div className="flex items-center gap-2 text-right">
           <span className="text-sm text-muted-foreground">Tiempo Total</span>
           <Clock className="h-4 w-4 text-muted-foreground" />
-          <span className="text-2xl font-bold">{tiempos.total}</span>
+          <span className="text-2xl font-bold">{tiempos.total.tiempo}</span>
         </div>
       </div>
 
@@ -142,8 +175,8 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
           </div>
           <div className="flex items-center justify-center">
             <Clock className="h-4 w-4 mr-1 text-blue-500" />
-            <span className={`text-lg font-bold ${alarma.tiempo_toma_despachador ? 'text-green-600' : 'text-blue-600'}`}>
-              {tiempos.aceptacionDespachador}
+            <span className={`text-lg font-bold ${getColorPorTiempo(tiempos.aceptacionDespachador.segundos, 'aceptacion', !!alarma.tiempo_toma_despachador)}`}>
+              {tiempos.aceptacionDespachador.tiempo}
             </span>
           </div>
         </div>
@@ -154,8 +187,8 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
           </div>
           <div className="flex items-center justify-center">
             <Clock className="h-4 w-4 mr-1 text-purple-500" />
-            <span className={`text-lg font-bold ${alarma.tiempo_asignacion_supervisor ? 'text-green-600' : 'text-purple-600'}`}>
-              {tiempos.despachadorEnvio}
+            <span className={`text-lg font-bold ${getColorPorTiempo(tiempos.despachadorEnvio.segundos, 'envio', !!alarma.tiempo_asignacion_supervisor)}`}>
+              {tiempos.despachadorEnvio.tiempo}
             </span>
           </div>
         </div>
@@ -166,8 +199,8 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
           </div>
           <div className="flex items-center justify-center">
             <Clock className="h-4 w-4 mr-1 text-orange-500" />
-            <span className={`text-lg font-bold ${alarma.tiempo_aceptacion_supervisor ? 'text-green-600' : 'text-orange-600'}`}>
-              {tiempos.supervisorAceptacion}
+            <span className={`text-lg font-bold ${getColorPorTiempo(tiempos.supervisorAceptacion.segundos, 'aceptacion-supervisor', !!alarma.tiempo_aceptacion_supervisor)}`}>
+              {tiempos.supervisorAceptacion.tiempo}
             </span>
           </div>
         </div>
@@ -178,8 +211,8 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
           </div>
           <div className="flex items-center justify-center">
             <Clock className="h-4 w-4 mr-1 text-teal-500" />
-            <span className={`text-lg font-bold ${alarma.tiempo_primera_lectura_qr ? 'text-green-600' : 'text-teal-600'}`}>
-              {tiempos.supervisorLlegada}
+            <span className={`text-lg font-bold ${getColorPorTiempo(tiempos.supervisorLlegada.segundos, 'llegada', !!alarma.tiempo_primera_lectura_qr)}`}>
+              {tiempos.supervisorLlegada.tiempo}
             </span>
           </div>
         </div>
@@ -190,8 +223,8 @@ export const AlarmaActivaCard = ({ alarma }: AlarmaActivaCardProps) => {
           </div>
           <div className="flex items-center justify-center">
             <Clock className="h-4 w-4 mr-1 text-cyan-500" />
-            <span className={`text-lg font-bold ${alarma.tiempo_segunda_lectura_qr ? 'text-green-600' : 'text-cyan-600'}`}>
-              {tiempos.supervisorSalida}
+            <span className={`text-lg font-bold ${getColorPorTiempo(tiempos.supervisorSalida.segundos, 'salida', !!alarma.tiempo_segunda_lectura_qr)}`}>
+              {tiempos.supervisorSalida.tiempo}
             </span>
           </div>
         </div>
