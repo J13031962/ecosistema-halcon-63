@@ -152,6 +152,12 @@ export const GeneradorTurnos: React.FC<GeneradorTurnosProps> = ({
       
       // Convertir todos los turnos de todos los operadores al formato esperado
       const todosLosTurnos = operadoresConTurnos.flatMap(operadorData => {
+        // Validar que operadorData.turnos existe y es un array
+        if (!operadorData?.turnos || !Array.isArray(operadorData.turnos)) {
+          console.error('Turnos no válidos para operador:', operadorData);
+          return [];
+        }
+        
         return operadorData.turnos
           .filter(t => t.tipo !== 'descanso' && t.tipo !== 'sin-asignar')
           .map(turno => {
