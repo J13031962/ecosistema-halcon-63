@@ -10,6 +10,7 @@ import { CalendarioTurnosQuincenal } from "@/components/personal/CalendarioTurno
 import { GeneradorTurnos } from "@/components/personal/GeneradorTurnos";
 import { CalendarioTurnosGenerados } from "@/components/personal/CalendarioTurnosGenerados";
 import { FormularioNuevoPersonal } from "@/components/personal/FormularioNuevoPersonal";
+import TurnosCalculadorHoras from "@/components/turnos/TurnosCalculadorHoras";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Users, 
@@ -28,7 +29,7 @@ import {
 
 const Personal = () => {
   const { toast } = useToast();
-  const [vistaActual, setVistaActual] = useState<'personal' | 'turnos' | 'generador'>('personal');
+  const [vistaActual, setVistaActual] = useState<'personal' | 'turnos' | 'generador' | 'calculador'>('personal');
   const [isFormularioOpen, setIsFormularioOpen] = useState(false);
   const [personal] = useState([
     {
@@ -181,6 +182,10 @@ const Personal = () => {
               <Calendar className="h-4 w-4 mr-2" />
               Ver Calendario
             </Button>
+            <Button variant="outline" onClick={() => setVistaActual('calculador')}>
+              <Clock className="h-4 w-4 mr-2" />
+              Calculador de Horas
+            </Button>
             <Button variant="outline" onClick={() => setVistaActual('personal')}>
               <Users className="h-4 w-4 mr-2" />
               Ver Personal
@@ -205,6 +210,10 @@ const Personal = () => {
           <Button variant="outline" onClick={() => setVistaActual('generador')}>
             <Settings className="h-4 w-4 mr-2" />
             Generar Turnos
+          </Button>
+          <Button variant="outline" onClick={() => setVistaActual('calculador')}>
+            <Clock className="h-4 w-4 mr-2" />
+            Calculador de Horas
           </Button>
           <Button variant="outline" onClick={() => setVistaActual('turnos')}>
             <Calendar className="h-4 w-4 mr-2" />
