@@ -10,6 +10,7 @@ export interface CalculoHoras {
   horas_nocturnas_ordinarias: number;
   horas_diurnas_dominicales: number;
   horas_nocturnas_dominicales: number;
+  horas_extras: number;
   total_horas: number;
 }
 
@@ -144,7 +145,39 @@ export const calcularHorasTurno = (turno: TurnoCompleto): CalculoHoras => {
     horas_nocturnas_ordinarias: Math.round(horas_nocturnas_ordinarias * 100) / 100,
     horas_diurnas_dominicales: Math.round(horas_diurnas_dominicales * 100) / 100,
     horas_nocturnas_dominicales: Math.round(horas_nocturnas_dominicales * 100) / 100,
+    horas_extras: 0, // Se calcula a nivel de quincena, no por turno individual
     total_horas
+  };
+};
+
+// Función para calcular horas extras en base a un período
+export const calcularHorasExtras = (turnosOperador: any[]): number => {
+  const totalHorasDiurnasOrdinarias = turnosOperador.reduce((sum, turno) => {
+    return sum + (turno.horas_diurnas_ordinarias || 0);
+  }, 0);
+  
+  const LIMITE_HORAS_ORDINARIAS = 88;
+  return Math.max(0, totalHorasDiurnasOrdinarias - LIMITE_HORAS_ORDINARIAS);
+};
+
+// Función para calcular resumen de horas por operador en un período
+export const calcularResumenOperador = (turnosOperador: any[]) => {
+  const totalHorasDiurnasOrdinarias = turnosOperador.reduce((sum, t) => sum + (t.horas_diurnas_ordinarias || 0), 0);
+  const totalHorasNocturnasOrdinarias = turnosOperador.reduce((sum, t) => sum + (t.horas_nocturnas_ordinarias || 0), 0);
+  const totalHorasDiurnasDOM = turnosOperador.reduce((sum, t) => sum + (t.horas_diurnas_dominicales || 0), 0);
+  const totalHorasNocturnasDOM = turnosOperador.reduce((sum, t) => sum + (t.horas_nocturnas_dominicales || 0), 0);
+  const totalHorasFeriado = turnosOperador.reduce((sum, t) => sum + (t.horas_feriado || 0), 0);
+  
+  const horasExtras = calcularHorasExtras(turnosOperador);
+  
+  return {
+    horas_diurnas_ordinarias: Math.round(totalHorasDiurnasOrdinarias * 100) / 100,
+    horas_nocturnas_ordinarias: Math.round(totalHorasNocturnasOrdinarias * 100) / 100,
+    horas_diurnas_dominicales: Math.round(totalHorasDiurnasDOM * 100) / 100,
+    horas_nocturnas_dominicales: Math.round(totalHorasNocturnasDOM * 100) / 100,
+    horas_feriado: Math.round(totalHorasFeriado * 100) / 100,
+    horas_extras: Math.round(horasExtras * 100) / 100,
+    total_horas: Math.round((totalHorasDiurnasOrdinarias + totalHorasNocturnasOrdinarias + totalHorasDiurnasDOM + totalHorasNocturnasDOM + totalHorasFeriado) * 100) / 100
   };
 };
 
