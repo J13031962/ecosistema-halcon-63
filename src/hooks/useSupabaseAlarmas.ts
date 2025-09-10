@@ -49,6 +49,8 @@ export const useSupabaseAlarmas = () => {
   const fetchAlarmas = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Cargando alarmas...');
+      
       const { data, error } = await supabase
         .from('alarmas')
         .select(`
@@ -62,9 +64,31 @@ export const useSupabaseAlarmas = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error de Supabase:', error);
+        throw error;
+      }
+      
+      console.log('✅ Alarmas cargadas desde BD:', data);
+      console.log('📊 Total de alarmas:', data?.length || 0);
+      
+      // Log de información específica para debugging
+      data?.forEach((alarma, index) => {
+        console.log(`🔍 Alarma ${index + 1}:`, {
+          id: alarma.id,
+          tipo: alarma.tipo,
+          estado: alarma.estado,
+          operador_nombre: alarma.operador_nombre,
+          despachador_nombre: alarma.despachador_nombre,
+          supervisor: alarma.supervisor,
+          patrulla_asignada: alarma.patrulla_asignada,
+          cliente: alarma.clientes?.nombre
+        });
+      });
+      
       setAlarmas(data || []);
     } catch (err: any) {
+      console.error('❌ Error al cargar alarmas:', err);
       setError(err.message);
       toast({
         title: "Error",
