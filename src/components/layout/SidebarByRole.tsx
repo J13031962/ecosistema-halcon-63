@@ -103,7 +103,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
             { title: "Dashboard Despachador", url: "/seccion-despachador", icon: BarChart3 },
             { title: "Patrullas Activas", url: "/patrullas-activas", icon: Car },
             { title: "Todas las Patrullas", url: "/patrullas", icon: Car },
-            { title: "Asignaciones", url: "/asignaciones", icon: MapPin },
             { title: "Gestión Personal Supervisores", url: "/personal-supervisores", icon: UserCheck },
           ]
         },
@@ -240,9 +239,8 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
     case 'supervisor_motorizado':
       return [
         { 
-          category: "🚔 Asignaciones", 
+          category: "🚔 Patrulla", 
           items: [
-            { title: "Mis Asignaciones", url: "/asignaciones", icon: MapPin },
             { title: "Rutas Asignadas", url: "/rutas-asignadas", icon: MapPin },
             { title: "Registro Incidentes", url: "/registro-incidentes", icon: AlertTriangle },
             { title: "Registro Actividades", url: "/registro-actividades", icon: Clock },

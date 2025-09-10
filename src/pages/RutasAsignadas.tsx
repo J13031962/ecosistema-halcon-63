@@ -2,19 +2,36 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Car, Clock, CheckCircle, MapPin, Users, AlertTriangle, Flame, Eye, UserCheck, Shield, Phone } from "lucide-react";
+import { Car, Clock, CheckCircle, MapPin, Users, AlertTriangle, Flame, Eye, UserCheck, Shield, Phone, Camera, Timer, LogOut, Navigation } from "lucide-react";
 import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { format } from "date-fns";
+import { format, differenceInSeconds } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { QRScannerComponent } from "@/components/qr/QRScanner";
 import { supabase } from "@/integrations/supabase/client";
+
+interface QRData {
+  id_cliente: string;
+  coordenadas: {
+    latitud: string;
+    longitud: string;
+  };
+  nombre: string;
+  direccion: string;
+}
 
 const RutasAsignadas = () => {
   const { user } = useAuthConsolidated();
-  const { alarmas, loading } = useSupabaseAlarmas();
+  const { alarmas, loading, refetch } = useSupabaseAlarmas();
   const { toast } = useToast();
   const [routeStates, setRouteStates] = useState<{ [key: string]: string }>({});
+  
+  // QR Scanner states
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+  const [currentScanType, setCurrentScanType] = useState<'arrival' | 'departure' | null>(null);
+  const [selectedAlarmaId, setSelectedAlarmaId] = useState<string>('');
+  const [siteTimes, setSiteTimes] = useState<Record<string, number>>({});
 
   // Filtrar alarmas asignadas al supervisor actual
   const misAsignaciones = alarmas.filter(
@@ -25,6 +42,127 @@ const RutasAsignadas = () => {
       // Si el supervisor está en el campo patrulla_asignada (formato legacy)
       (alarma.patrulla_asignada && alarma.patrulla_asignada.includes(user?.full_name || ''))
   );
+
+  // Update site times every second for active alarms
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newTimes: Record<string, number> = {};
+      misAsignaciones.forEach(alarma => {
+        const extendedAlarma = alarma as any; // Type assertion for new fields
+        if (extendedAlarma.tiempo_llegada_sitio && !extendedAlarma.tiempo_salida_sitio) {
+          const arrivalTime = new Date(extendedAlarma.tiempo_llegada_sitio);
+          const currentTime = new Date();
+          newTimes[alarma.id] = differenceInSeconds(currentTime, arrivalTime);
+        }
+      });
+      setSiteTimes(newTimes);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [misAsignaciones]);
+
+  const handleArrivalScan = (alarmaId: string) => {
+    setSelectedAlarmaId(alarmaId);
+    setCurrentScanType('arrival');
+    setIsQRScannerOpen(true);
+  };
+
+  const handleDepartureScan = (alarmaId: string) => {
+    setSelectedAlarmaId(alarmaId);
+    setCurrentScanType('departure');
+    setIsQRScannerOpen(true);
+  };
+
+  const handleQRScanSuccess = async (qrData: QRData) => {
+    try {
+      const alarma = alarmas.find(a => a.id === selectedAlarmaId);
+      if (!alarma) {
+        toast({
+          title: "Error",
+          description: "No se encontró la alarma seleccionada",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Verify QR matches the client
+      const expectedClientId = alarma.cliente_id;
+      if (qrData.id_cliente !== expectedClientId) {
+        toast({
+          title: "QR Incorrecto",
+          description: "El código QR no corresponde a este cliente",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const now = new Date().toISOString();
+      
+      if (currentScanType === 'arrival') {
+        // Mark arrival at site
+        const { error } = await supabase
+          .from('alarmas')
+          .update({
+            tiempo_llegada_sitio: now,
+            qr_llegada_data: qrData as any,
+            estado: 'en_proceso'
+          })
+          .eq('id', selectedAlarmaId);
+
+        if (error) throw error;
+
+        toast({
+          title: "Llegada Confirmada",
+          description: `Has llegado al sitio de ${qrData.nombre}. El contador de tiempo ha iniciado.`,
+        });
+      } else {
+        // Mark departure from site
+        const { error } = await supabase
+          .from('alarmas')
+          .update({
+            tiempo_salida_sitio: now,
+            qr_salida_data: qrData as any,
+            resolved_at: now,
+            estado: 'resuelta'
+          })
+          .eq('id', selectedAlarmaId);
+
+        if (error) throw error;
+
+        toast({
+          title: "Servicio Finalizado",
+          description: `Has finalizado el servicio en ${qrData.nombre} exitosamente.`,
+        });
+      }
+
+      await refetch();
+      setIsQRScannerOpen(false);
+      setCurrentScanType(null);
+      setSelectedAlarmaId('');
+
+    } catch (error: any) {
+      console.error('Error updating alarm:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo procesar el escaneo QR",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const formatSiteTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    } else {
+      return `${secs}s`;
+    }
+  };
 
   const getAlarmTypeIcon = (tipo: string) => {
     switch (tipo) {
@@ -305,20 +443,98 @@ const RutasAsignadas = () => {
                           </div>
                         </div>
 
+                        {/* Control de Sitio con QR */}
+                        <div className="space-y-3">
+                          {(() => {
+                            const extendedAlarma = alarma as any;
+                            
+                            // Show site timer if supervisor is on-site
+                            if (extendedAlarma.tiempo_llegada_sitio && !extendedAlarma.tiempo_salida_sitio) {
+                              return (
+                                <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                                  <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                                    <Timer className="h-4 w-4" />
+                                    <span className="font-medium">Tiempo en sitio:</span>
+                                    <span className="font-mono text-lg">
+                                      {formatSiteTime(siteTimes[alarma.id] || 0)}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            
+                            // Show total time if completed
+                            if (extendedAlarma.tiempo_llegada_sitio && extendedAlarma.tiempo_salida_sitio) {
+                              return (
+                                <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+                                  <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                                    <CheckCircle className="h-4 w-4" />
+                                    <span className="font-medium">Tiempo total en sitio:</span>
+                                    <span className="font-mono">
+                                      {extendedAlarma.duracion_sitio_segundos ? formatSiteTime(extendedAlarma.duracion_sitio_segundos) : 'Calculando...'}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            
+                            return null;
+                          })()}
+                        </div>
+
                         <div className="flex flex-wrap gap-2 pt-4 border-t">
-                          {estadosDisponibles(getCurrentEstado(alarma)).map((estado) => (
-                            <Button
-                              key={estado}
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleCambiarEstado(alarma.id, estado)}
-                              className="flex items-center gap-1"
-                            >
-                              {estado === 'en_proceso' && <MapPin className="h-4 w-4" />}
-                              {estado === 'resuelta' && <CheckCircle className="h-4 w-4" />}
-                              {getEstadoDisplay(estado)}
-                            </Button>
-                          ))}
+                          {(() => {
+                            const extendedAlarma = alarma as any;
+                            const currentEstado = getCurrentEstado(alarma);
+                            
+                            // Show QR arrival button for in-process alarms without arrival time
+                            if (currentEstado === 'en_proceso' && !extendedAlarma.tiempo_llegada_sitio) {
+                              return (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleArrivalScan(alarma.id)}
+                                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                                >
+                                  <Navigation className="h-4 w-4" />
+                                  Marcar Llegada (Escanear QR)
+                                </Button>
+                              );
+                            }
+                            
+                            // Show QR departure button if arrived but not departed
+                            if (extendedAlarma.tiempo_llegada_sitio && !extendedAlarma.tiempo_salida_sitio) {
+                              return (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleDepartureScan(alarma.id)}
+                                  variant="destructive"
+                                  className="flex items-center gap-2"
+                                >
+                                  <LogOut className="h-4 w-4" />
+                                  Finalizar Servicio (Escanear QR)
+                                </Button>
+                              );
+                            }
+                            
+                            // Show standard state change buttons if no QR process started
+                            if (!extendedAlarma.tiempo_llegada_sitio) {
+                              return estadosDisponibles(currentEstado).map((estado) => (
+                                <Button
+                                  key={estado}
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleCambiarEstado(alarma.id, estado)}
+                                  className="flex items-center gap-1"
+                                >
+                                  {estado === 'en_proceso' && <MapPin className="h-4 w-4" />}
+                                  {estado === 'resuelta' && <CheckCircle className="h-4 w-4" />}
+                                  {getEstadoDisplay(estado)}
+                                </Button>
+                              ));
+                            }
+                            
+                            return null;
+                          })()}
                           
                           <Button size="sm" variant="outline">
                             <Users className="h-4 w-4 mr-1" />
@@ -380,6 +596,17 @@ const RutasAsignadas = () => {
           </CardContent>
         </Card>
       )}
+      
+      {/* QR Scanner Modal */}
+      <QRScannerComponent
+        isOpen={isQRScannerOpen}
+        onClose={() => {
+          setIsQRScannerOpen(false);
+          setCurrentScanType(null);
+          setSelectedAlarmaId('');
+        }}
+        onScanSuccess={handleQRScanSuccess}
+      />
     </div>
   );
 };
