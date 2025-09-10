@@ -58,33 +58,54 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
   };
 
   const startScanner = async () => {
+    console.log('🎬 === INICIANDO SCANNER QR ===');
+    
     if (!videoRef.current) {
       console.error('❌ Video ref no disponible');
       setCameraError('Error: elemento de video no disponible');
+      setIsScanning(false);
       return;
     }
 
     try {
-      console.log('🎥 Iniciando scanner QR...');
+      console.log('🎥 Limpiando estado inicial...');
       setCameraError(null);
       setIsScanning(true);
       
       // Limpiar cualquier scanner previo
       if (qrScanner) {
         console.log('🧹 Limpiando scanner previo...');
-        await qrScanner.destroy();
+        try {
+          qrScanner.stop();
+          qrScanner.destroy();
+        } catch (e) {
+          console.warn('⚠️ Error limpiando scanner previo:', e);
+        }
         setQrScanner(null);
       }
 
       console.log('🔍 Verificando disponibilidad de cámara...');
+      
+      // Primero verificar si hay cámaras disponibles
       const hasCamera = await QrScanner.hasCamera();
+      console.log('📹 Tiene cámara:', hasCamera);
+      
       if (!hasCamera) {
         throw new Error('No hay cámara disponible en este dispositivo');
       }
 
+      // Listar cámaras disponibles para debugging
+      try {
+        const cameras = await QrScanner.listCameras(true);
+        console.log('📱 Cámaras disponibles:', cameras);
+      } catch (e) {
+        console.warn('⚠️ No se pudieron listar las cámaras:', e);
+      }
+
       console.log('✅ Cámara disponible, creando QrScanner...');
+      console.log('📺 Video element:', videoRef.current);
       
-      // Crear el scanner y dejarlo manejar los permisos
+      // Configurar el scanner con configuración más robusta
       const scanner = new QrScanner(
         videoRef.current,
         (result) => {
@@ -127,19 +148,54 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
           returnDetailedScanResult: true,
           highlightScanRegion: true,
           highlightCodeOutline: true,
-          preferredCamera: 'environment',
-          maxScansPerSecond: 1,
+          preferredCamera: 'environment', // Intentar cámara trasera primero
+          maxScansPerSecond: 2,
         }
       );
 
-      console.log('🚀 Iniciando QrScanner...');
-      await scanner.start();
-      console.log('✅ QrScanner iniciado exitosamente');
+      console.log('🎬 Scanner creado, verificando permisos de cámara...');
       
+      // Solicitar permisos explícitamente antes de iniciar el scanner
+      try {
+        console.log('🔐 Solicitando permisos de cámara...');
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          } 
+        });
+        console.log('✅ Permisos concedidos, stream obtenido:', stream);
+        
+        // Detener el stream temporal ya que QrScanner manejará la cámara
+        stream.getTracks().forEach(track => track.stop());
+        console.log('🛑 Stream temporal detenido');
+        
+      } catch (permError: any) {
+        console.error('❌ Error al solicitar permisos:', permError);
+        throw new Error(`Error de permisos: ${permError.message}`);
+      }
+
+      console.log('🚀 Iniciando QrScanner...');
+      
+      // Intentar iniciar el scanner con timeout
+      const startPromise = scanner.start();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: La cámara tardó demasiado en iniciar')), 10000)
+      );
+      
+      await Promise.race([startPromise, timeoutPromise]);
+      
+      console.log('✅ QrScanner iniciado exitosamente');
       setQrScanner(scanner);
+      setIsScanning(true);
       
     } catch (error: any) {
-      console.error('❌ Error completo:', error);
+      console.error('❌ Error completo al iniciar scanner:', error);
+      console.error('❌ Error name:', error.name);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error stack:', error.stack);
+      
       setIsScanning(false);
       
       let errorMessage = "No se pudo acceder a la cámara";
@@ -152,6 +208,10 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
         errorMessage = "Tu navegador no soporta el acceso a la cámara.";
       } else if (error.name === 'NotReadableError') {
         errorMessage = "La cámara está siendo usada por otra aplicación.";
+      } else if (error.message?.includes('Timeout')) {
+        errorMessage = "La cámara tardó demasiado en iniciar. Verifica que no esté siendo usada por otra aplicación.";
+      } else if (error.message?.includes('HTTPS')) {
+        errorMessage = "Se requiere conexión segura (HTTPS) para acceder a la cámara.";
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -215,14 +275,19 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
                     <div className="text-white text-center p-4">
                       <Camera className="h-8 w-8 mx-auto mb-2 text-red-400" />
                       <p className="text-sm mb-3">{cameraError}</p>
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        onClick={retryCamera}
-                        className="bg-white text-black hover:bg-gray-200"
-                      >
-                        Reintentar
-                      </Button>
+                      <div className="space-y-2">
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          onClick={retryCamera}
+                          className="bg-white text-black hover:bg-gray-200 w-full"
+                        >
+                          Reintentar
+                        </Button>
+                        <p className="text-xs text-gray-300">
+                          Asegúrate de permitir el acceso a la cámara cuando tu navegador lo solicite
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ) : isScanning ? (
