@@ -7,13 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
 import { useSupabasePatrullas } from "@/hooks/useSupabasePatrullas";
+import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { Car, MapPin, Clock, Filter, Download, AlertTriangle, Shield, UserCheck, Phone } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import CronometroAlarma from "@/components/alarmas/CronometroAlarma";
 import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorModal";
 
 const Asignaciones = () => {
+  const { user } = useAuthConsolidated();
   const { alarmas, loading: alarmasLoading, assignPatrulla } = useSupabaseAlarmas();
   const { patrullas, updatePatrulla } = useSupabasePatrullas();
   const { toast } = useToast();
@@ -257,133 +258,180 @@ const Asignaciones = () => {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Información de Servicios */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Información de Servicios</CardTitle>
-              <CardDescription>Los servicios activos se muestran en la sección "Patrullas Activas"</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-medium mb-2">Servicios en Patrullas Activas</h3>
-                <p className="mb-4">
-                  Los servicios pendientes y activos se visualizan en la sección "Patrullas Activas"
-                </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => window.location.href = '/patrullas-activas'}
-                >
-                  Ir a Patrullas Activas
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Panel de Asignación */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Información de asignación rápida */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Asignación Rápida
-              </CardTitle>
-              <CardDescription>
-                Selecciona un servicio en "Patrullas Activas" para asignar supervisor
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-4 text-muted-foreground">
-                <UserCheck className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">
-                  Los servicios se gestionan desde la sección "Patrullas Activas"
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Patrullas Disponibles */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Patrullas Disponibles</CardTitle>
-              <CardDescription>
-                Supervisores motorizados disponibles para asignación
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {supervisoresDisponibles.map((patrulla) => (
-                  <div key={patrulla.id} className="p-3 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-medium">{patrulla.numero_patrulla}</h5>
-                      <Badge 
-                        variant={patrulla.estado === 'disponible' ? 'secondary' : 'outline'}
-                      >
-                        {patrulla.estado}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{patrulla.supervisor_nombre}</p>
-                    <p className="text-xs text-muted-foreground">Ubicación: {patrulla.ubicacion}</p>
-                  </div>
-                ))}
-                {supervisoresDisponibles.length === 0 && (
-                  <div className="text-center py-4 text-muted-foreground">
-                    No hay supervisores disponibles
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Crear Nuevo Servicio */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Nuevo Servicio</CardTitle>
-              <CardDescription>Crear una nueva asignación de servicio</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Tipo de Servicio</label>
-                <select className="w-full mt-1 px-3 py-2 border border-border rounded-md">
-                  <option value="">Seleccionar tipo...</option>
-                  <option value="patrullaje">Patrullaje Preventivo</option>
-                  <option value="alarma">Respuesta a Alarma</option>
-                  <option value="emergencia">Emergencia</option>
-                  <option value="investigacion">Investigación</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium">Cliente/Ubicación</label>
-                <Input placeholder="Nombre del cliente o ubicación" className="mt-1" />
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium">Dirección</label>
-                <Textarea placeholder="Dirección completa del servicio" className="mt-1" />
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium">Prioridad</label>
-                <select className="w-full mt-1 px-3 py-2 border border-border rounded-md">
-                  <option value="media">Media</option>
-                  <option value="alta">Alta</option>
-                  <option value="critica">Crítica</option>
-                  <option value="baja">Baja</option>
-                </select>
-              </div>
-              
-              <Button className="w-full">
-                Crear Servicio
+      {/* Lista de Alarmas para Asignación - Solo para Despachadores */}
+      {user?.role === 'despachador_patrullas' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Servicios Pendientes de Asignación</CardTitle>
+            <CardDescription>Selecciona una alarma y asigna un supervisor/patrulla</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Filtros de búsqueda */}
+            <div className="flex gap-4 mb-6">
+              <Input 
+                placeholder="Buscar por cliente o dirección..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
+              <Button variant="outline">
+                <Filter className="h-4 w-4 mr-2" />
+                Filtros
               </Button>
-            </CardContent>
-          </Card>
+              <Button variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
+            </div>
+
+            {/* Lista de Alarmas */}
+            <div className="space-y-3">
+              {serviciosPendientes
+                .filter(alarma => 
+                  searchTerm === '' || 
+                  alarma.clientes?.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  alarma.direccion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  alarma.tipo?.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                .map((alarma) => (
+                <div key={alarma.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                      {/* Cliente */}
+                      <div>
+                        <p className="font-semibold text-sm">
+                          {alarma.clientes?.nombre || 'Cliente no especificado'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(alarma.created_at), 'dd/MM HH:mm')}
+                        </p>
+                      </div>
+                      
+                      {/* Dirección */}
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          {alarma.direccion || 'Sin dirección'}
+                        </span>
+                      </div>
+                      
+                      {/* Tipo de Alarma y Prioridad */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          {getServiceTypeIcon(alarma.tipo)}
+                          <span className="text-sm font-medium">{alarma.tipo}</span>
+                        </div>
+                        <Badge variant={getPriorityColor(alarma.prioridad)}>
+                          {alarma.prioridad}
+                        </Badge>
+                      </div>
+                      
+                      {/* Teléfono y Municipio */}
+                      <div className="text-xs text-muted-foreground">
+                        {alarma.clientes?.telefono && (
+                          <div className="flex items-center gap-1 mb-1">
+                            <Phone className="h-3 w-3" />
+                            <span>{alarma.clientes.telefono}</span>
+                          </div>
+                        )}
+                        {alarma.municipio && (
+                          <div>Municipio: {alarma.municipio}</div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Botón de Asignar */}
+                    <div className="ml-4">
+                      <Button 
+                        size="sm"
+                        onClick={() => handleSelectAlarmaForAssignment(alarma.id)}
+                        disabled={isAssigning}
+                      >
+                        <Shield className="h-4 w-4 mr-1" />
+                        Asignar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {serviciosPendientes.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-lg font-medium mb-2">No hay servicios pendientes</h3>
+                  <p>No hay alarmas esperando asignación de supervisor</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Vista para otros roles */}
+      {user?.role !== 'despachador_patrullas' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Información de Servicios */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Información de Servicios</CardTitle>
+                <CardDescription>Los servicios activos se muestran en la sección "Patrullas Activas"</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-lg font-medium mb-2">Servicios en Patrullas Activas</h3>
+                  <p className="mb-4">
+                    Los servicios pendientes y activos se visualizan en la sección "Patrullas Activas"
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => window.location.href = '/patrullas-activas'}
+                  >
+                    Ir a Patrullas Activas
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Panel de Información */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Patrullas Disponibles */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Patrullas Disponibles</CardTitle>
+                <CardDescription>
+                  Supervisores motorizados disponibles para asignación
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {supervisoresDisponibles.map((patrulla) => (
+                    <div key={patrulla.id} className="p-3 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <h5 className="font-medium">{patrulla.numero_patrulla}</h5>
+                        <Badge 
+                          variant={patrulla.estado === 'disponible' ? 'secondary' : 'outline'}
+                        >
+                          {patrulla.estado}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{patrulla.supervisor_nombre}</p>
+                      <p className="text-xs text-muted-foreground">Ubicación: {patrulla.ubicacion}</p>
+                    </div>
+                  ))}
+                  {supervisoresDisponibles.length === 0 && (
+                    <div className="text-center py-4 text-muted-foreground">
+                      No hay supervisores disponibles
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Modal de Asignación de Supervisor - Solo si hay servicio seleccionado desde Patrullas Activas */}
       {selectedAlarmaId && (
