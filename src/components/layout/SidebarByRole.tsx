@@ -23,6 +23,7 @@ import {
   UserPlus,
   FileSignature,
   Package,
+  History,
   Siren,
   TrendingUp,
   ExternalLink,
@@ -102,6 +103,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           items: [
             { title: "Dashboard Despachador", url: "/seccion-despachador", icon: BarChart3 },
             { title: "Patrullas Activas", url: "/patrullas-activas", icon: Car },
+            { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
             { title: "Todas las Patrullas", url: "/patrullas", icon: Car },
             { title: "Gestión Personal Supervisores", url: "/personal-supervisores", icon: UserCheck },
           ]
@@ -214,6 +216,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           items: [
             { title: "Dashboard Despachador", url: "/seccion-despachador", icon: BarChart3 },
             { title: "Patrullas Activas", url: "/patrullas-activas", icon: Car },
+            { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
             { title: "Asignaciones", url: "/asignaciones", icon: MapPin },
           ]
         },

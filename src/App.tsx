@@ -36,6 +36,7 @@ import CentralAlarmas from "./pages/CentralAlarmas";
 import CentralAlarmasOperador from "./pages/CentralAlarmasOperador";
 
 import PatrullasActivas from "./pages/PatrullasActivas";
+import HistorialServicios from "./pages/HistorialServicios";
 import Asignaciones from "./pages/Asignaciones";
 import MiPatrulla from "./pages/MiPatrulla";
 import MiPatrullaSupervisor from "./pages/MiPatrullaSupervisor";
@@ -188,6 +189,14 @@ const AppContent = () => {
         <ProtectedRoute>
           <MainLayout>
             <PatrullasActivas />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/historial-servicios" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <HistorialServicios />
           </MainLayout>
         </ProtectedRoute>
       } />

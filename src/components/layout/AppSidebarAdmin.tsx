@@ -18,6 +18,7 @@ import {
   Navigation,
   Building,
   Wrench,
+  History,
   DollarSign,
   UserCheck,
   Target,
@@ -153,6 +154,7 @@ const adminMenuItems: MenuCategory[] = [
       ]},
         { title: "Despachador", url: "#", icon: Car, subcategory: [
           { title: "Patrullas Activas", url: "/patrullas-activas", icon: Car },
+          { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
           { title: "Asignaciones", url: "/asignaciones", icon: MapPin },
           { title: "Sección Despachador", url: "/seccion-despachador", icon: Phone },
           { title: "Historial de Patrullas", url: "/historial-patrullas-despachador", icon: Clock },
