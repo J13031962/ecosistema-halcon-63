@@ -6,6 +6,7 @@ import { useAuthConsolidated } from '@/hooks/useAuthConsolidated';
 import { UserRole } from '@/types/auth';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import CreateOperatorUsers from './CreateOperatorUsers';
 
 export const AdminTestPanel: React.FC = () => {
   const { createUser, users, loading, fetchUsers } = useSupabaseUsuarios();
@@ -77,57 +78,62 @@ export const AdminTestPanel: React.FC = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Panel de Pruebas de Administrador</CardTitle>
-        <CardDescription>
-          Pruebas para verificar el funcionamiento del sistema de autenticación
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-col space-y-2">
-          <h3 className="font-semibold">Estado Actual:</h3>
-          <div className="flex items-center space-x-2">
-            <Badge variant={user ? 'default' : 'destructive'}>
-              Usuario: {user?.full_name || 'No autenticado'}
-            </Badge>
-            <Badge variant={hasRole('administrador') ? 'default' : 'destructive'}>
-              Rol: {user?.role || 'Sin rol'}
-            </Badge>
+    <div className="space-y-6">
+      {/* Componente para crear operadores específicos */}
+      <CreateOperatorUsers />
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Panel de Pruebas de Administrador</CardTitle>
+          <CardDescription>
+            Pruebas para verificar el funcionamiento del sistema de autenticación
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col space-y-2">
+            <h3 className="font-semibold">Estado Actual:</h3>
+            <div className="flex items-center space-x-2">
+              <Badge variant={user ? 'default' : 'destructive'}>
+                Usuario: {user?.full_name || 'No autenticado'}
+              </Badge>
+              <Badge variant={hasRole('administrador') ? 'default' : 'destructive'}>
+                Rol: {user?.role || 'Sin rol'}
+              </Badge>
+            </div>
           </div>
-        </div>
 
-        <Button 
-          onClick={runAuthTests} 
-          disabled={loading || !hasRole('administrador')}
-          className="w-full"
-        >
-          {loading ? 'Ejecutando pruebas...' : 'Ejecutar Pruebas de Sistema'}
-        </Button>
+          <Button 
+            onClick={runAuthTests} 
+            disabled={loading || !hasRole('administrador')}
+            className="w-full"
+          >
+            {loading ? 'Ejecutando pruebas...' : 'Ejecutar Pruebas de Sistema'}
+          </Button>
 
-        {testResults.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-semibold">Resultados de las Pruebas:</h3>
-            {testResults.map((result, index) => (
-              <div key={index} className="flex items-start space-x-2 p-3 border rounded-lg">
-                {getStatusIcon(result.status)}
-                <div className="flex-1">
-                  <p className="font-medium">{result.test}</p>
-                  <p className="text-sm text-muted-foreground">{result.details}</p>
+          {testResults.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="font-semibold">Resultados de las Pruebas:</h3>
+              {testResults.map((result, index) => (
+                <div key={index} className="flex items-start space-x-2 p-3 border rounded-lg">
+                  {getStatusIcon(result.status)}
+                  <div className="flex-1">
+                    <p className="font-medium">{result.test}</p>
+                    <p className="text-sm text-muted-foreground">{result.details}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
 
-        {!hasRole('administrador') && (
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-800">
-              ⚠️ Solo los administradores pueden ejecutar estas pruebas.
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          {!hasRole('administrador') && (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-800">
+                ⚠️ Solo los administradores pueden ejecutar estas pruebas.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
