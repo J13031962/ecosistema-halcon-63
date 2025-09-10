@@ -90,29 +90,54 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
 
       if (estado === 'resuelta') {
         nuevoEstado = {
-          segundos: fechaAsignacion ? differenceInSeconds(fechaAsignacion, fechaCreacion) : 0,
+          segundos: fechaSegundaLectura ? differenceInSeconds(fechaSegundaLectura, fechaCreacion) : 0,
           color: 'green',
           fase: 'finalizada'
         };
-      } else if (estado === 'activa') {
-        // Esperando atención del despachador
-        const segundosEspera = differenceInSeconds(ahora, fechaCreacion);
+      } else if (fechaSegundaLectura) {
+        // Servicio completado - mostrar tiempo total
+        nuevoEstado = {
+          segundos: differenceInSeconds(fechaSegundaLectura, fechaCreacion),
+          color: 'green',
+          fase: 'finalizada'
+        };
+      } else if (fechaPrimeraLectura) {
+        // Supervisor en sitio - contar tiempo desde llegada
+        const segundosEnSitio = differenceInSeconds(ahora, fechaPrimeraLectura);
         let color: TiempoEstado['color'] = 'green';
         
-        if (segundosEspera > 240) { // 4+ minutos
-          color = 'red-blink';
-        } else if (segundosEspera > 180) { // 3+ minutos
+        if (segundosEnSitio > 3600) { // 1+ hora
           color = 'red';
-        } else if (segundosEspera > 120) { // 2+ minutos
+        } else if (segundosEnSitio > 2400) { // 40+ minutos
           color = 'orange';
-        } else if (segundosEspera > 60) { // 1+ minuto
+        } else if (segundosEnSitio > 1800) { // 30+ minutos
           color = 'yellow';
         }
 
         nuevoEstado = {
-          segundos: segundosEspera,
+          segundos: segundosEnSitio,
           color,
-          fase: 'espera_despachador'
+          fase: 'en_sitio'
+        };
+      } else if (fechaAsignacion) {
+        // Asignada a supervisor, contando tiempo de desplazamiento
+        const segundosDesplazamiento = differenceInSeconds(ahora, fechaAsignacion);
+        let color: TiempoEstado['color'] = 'green';
+        
+        if (segundosDesplazamiento > 2400) { // 40+ minutos
+          color = 'red-blink';
+        } else if (segundosDesplazamiento > 2100) { // 35+ minutos
+          color = 'red';
+        } else if (segundosDesplazamiento > 1800) { // 30+ minutos
+          color = 'orange';
+        } else if (segundosDesplazamiento > 1200) { // 20+ minutos
+          color = 'yellow';
+        }
+
+        nuevoEstado = {
+          segundos: segundosDesplazamiento,
+          color,
+          fase: 'desplazamiento'
         };
       } else if (estado === 'en_proceso' && fechaAtencion) {
         // Despachador atendió, esperando asignación
@@ -134,31 +159,24 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
           color,
           fase: 'espera_despachador'
         };
-      } else if (estado === 'asignada' && fechaAsignacion) {
-        // Asignada a supervisor, contando tiempo de desplazamiento
-        const segundosDesplazamiento = differenceInSeconds(ahora, fechaAsignacion);
+      } else {
+        // Esperando atención del despachador
+        const segundosEspera = differenceInSeconds(ahora, fechaCreacion);
         let color: TiempoEstado['color'] = 'green';
         
-        // Límites para desplazamiento: 15min base, 20min amarillo, 30min naranja, 35min rojo, 40min+ parpadeo
-        if (segundosDesplazamiento > 2400) { // 40+ minutos
+        if (segundosEspera > 240) { // 4+ minutos
           color = 'red-blink';
-        } else if (segundosDesplazamiento > 2100) { // 35+ minutos
+        } else if (segundosEspera > 180) { // 3+ minutos
           color = 'red';
-        } else if (segundosDesplazamiento > 1800) { // 30+ minutos
+        } else if (segundosEspera > 120) { // 2+ minutos
           color = 'orange';
-        } else if (segundosDesplazamiento > 1200) { // 20+ minutos
+        } else if (segundosEspera > 60) { // 1+ minuto
           color = 'yellow';
         }
 
         nuevoEstado = {
-          segundos: segundosDesplazamiento,
+          segundos: segundosEspera,
           color,
-          fase: 'desplazamiento'
-        };
-      } else {
-        nuevoEstado = {
-          segundos: 0,
-          color: 'green',
           fase: 'espera_despachador'
         };
       }
@@ -309,12 +327,6 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               {prioridad}
             </Badge>
           </div>
-          <div className="text-right">
-            <div className="text-xs text-muted-foreground">Tiempo Total</div>
-            <div className={`text-lg font-bold ${getTiempoColor()}`}>
-              {formatTiempo(tiempoActual.segundos)}
-            </div>
-          </div>
         </div>
 
         {/* Fecha y hora compacta */}
@@ -353,7 +365,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
           
           <div className="flex justify-between items-center mt-1 text-xs text-muted-foreground">
             <span>Supervisor:</span>
-            <span className="font-medium">
+            <span className="font-bold text-base text-foreground">
               {supervisor ? supervisor : "Sin asignar"}
             </span>
           </div>

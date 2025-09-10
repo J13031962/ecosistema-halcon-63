@@ -35,6 +35,11 @@ const PatrullasActivas = () => {
   // Alarmas pendientes ordenadas por tiempo
   const alarmasPendientes = alarmasOrdenadas.filter(a => a.estado === 'activa');
 
+  // Historial de asignaciones completadas
+  const historialAsignaciones = alarmasOrdenadas.filter(a => 
+    a.estado === 'resuelta' && a.supervisor && a.patrulla_asignada
+  );
+
   // Supervisores que están atendiendo alarmas
   const supervisoresConAlarmas = alarmasActivas.map(a => ({
     supervisor: a.supervisor,
@@ -309,6 +314,46 @@ const PatrullasActivas = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Historial de Asignaciones */}
+      {historialAsignaciones.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Historial de Asignaciones
+            </CardTitle>
+            <CardDescription>
+              Servicios completados con información detallada de tiempos y supervisor
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {historialAsignaciones.map((alarma) => (
+                <CronometroAlarma
+                  key={alarma.id}
+                  alarmaId={alarma.id}
+                  tipo={alarma.tipo}
+                  cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
+                  direccion={alarma.direccion}
+                  municipio={alarma.municipio}
+                  telefono={alarma.clientes?.telefono}
+                  prioridad={alarma.prioridad}
+                  estado="resuelta"
+                  created_at={alarma.created_at}
+                  attended_at={alarma.attended_at || undefined}
+                  tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                  tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
+                  tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
+                  supervisor={alarma.supervisor || undefined}
+                  patrulla_asignada={alarma.patrulla_asignada || undefined}
+                  showCancelButton={false}
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
