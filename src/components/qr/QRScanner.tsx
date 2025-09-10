@@ -264,7 +264,13 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
             <div className="space-y-4">
               <div className="relative rounded-lg overflow-hidden bg-black">
                 <video 
-                  ref={videoRef} 
+                  ref={(el) => {
+                    videoRef.current = el;
+                    if (isOpen && el && !qrScanner) {
+                      console.log('📷 Video element mounted, starting scanner...');
+                      setTimeout(() => startScanner(), 0);
+                    }
+                  }} 
                   className="w-full h-64 object-cover"
                   playsInline
                   muted
