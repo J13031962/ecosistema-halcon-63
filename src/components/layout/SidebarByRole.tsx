@@ -216,7 +216,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           items: [
             { title: "Dashboard Despachador", url: "/seccion-despachador", icon: BarChart3 },
             { title: "Patrullas Activas", url: "/patrullas-activas", icon: Car },
-            { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
+            { title: "Historial de Servicios", url: "/historial-servicios", icon: History }, // Nueva opción agregada
             { title: "Asignaciones", url: "/asignaciones", icon: MapPin },
           ]
         },
