@@ -64,6 +64,7 @@ export type Database = {
           despachador_id: string | null
           despachador_nombre: string | null
           direccion: string | null
+          duracion_sitio_segundos: number | null
           estado: string | null
           id: string
           municipio: string | null
@@ -72,6 +73,8 @@ export type Database = {
           operador_nombre: string | null
           patrulla_asignada: string | null
           prioridad: string | null
+          qr_llegada_data: Json | null
+          qr_salida_data: Json | null
           resolved_at: string | null
           supervisor: string | null
           supervisor_id: string | null
@@ -81,8 +84,10 @@ export type Database = {
           tiempo_asignacion: string | null
           tiempo_asignacion_supervisor: string | null
           tiempo_atencion: string | null
+          tiempo_llegada_sitio: string | null
           tiempo_primera_lectura_qr: string | null
           tiempo_respuesta_segundos: number | null
+          tiempo_salida_sitio: string | null
           tiempo_segunda_lectura_qr: string | null
           tiempo_toma_despachador: string | null
           tipo: string
@@ -97,6 +102,7 @@ export type Database = {
           despachador_id?: string | null
           despachador_nombre?: string | null
           direccion?: string | null
+          duracion_sitio_segundos?: number | null
           estado?: string | null
           id?: string
           municipio?: string | null
@@ -105,6 +111,8 @@ export type Database = {
           operador_nombre?: string | null
           patrulla_asignada?: string | null
           prioridad?: string | null
+          qr_llegada_data?: Json | null
+          qr_salida_data?: Json | null
           resolved_at?: string | null
           supervisor?: string | null
           supervisor_id?: string | null
@@ -114,8 +122,10 @@ export type Database = {
           tiempo_asignacion?: string | null
           tiempo_asignacion_supervisor?: string | null
           tiempo_atencion?: string | null
+          tiempo_llegada_sitio?: string | null
           tiempo_primera_lectura_qr?: string | null
           tiempo_respuesta_segundos?: number | null
+          tiempo_salida_sitio?: string | null
           tiempo_segunda_lectura_qr?: string | null
           tiempo_toma_despachador?: string | null
           tipo: string
@@ -130,6 +140,7 @@ export type Database = {
           despachador_id?: string | null
           despachador_nombre?: string | null
           direccion?: string | null
+          duracion_sitio_segundos?: number | null
           estado?: string | null
           id?: string
           municipio?: string | null
@@ -138,6 +149,8 @@ export type Database = {
           operador_nombre?: string | null
           patrulla_asignada?: string | null
           prioridad?: string | null
+          qr_llegada_data?: Json | null
+          qr_salida_data?: Json | null
           resolved_at?: string | null
           supervisor?: string | null
           supervisor_id?: string | null
@@ -147,8 +160,10 @@ export type Database = {
           tiempo_asignacion?: string | null
           tiempo_asignacion_supervisor?: string | null
           tiempo_atencion?: string | null
+          tiempo_llegada_sitio?: string | null
           tiempo_primera_lectura_qr?: string | null
           tiempo_respuesta_segundos?: number | null
+          tiempo_salida_sitio?: string | null
           tiempo_segunda_lectura_qr?: string | null
           tiempo_toma_despachador?: string | null
           tipo?: string
