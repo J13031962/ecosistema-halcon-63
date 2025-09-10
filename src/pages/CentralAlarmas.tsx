@@ -367,7 +367,7 @@ const CentralAlarmas = () => {
       <div>
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <Siren className="h-8 w-8 text-primary" />
-          Central de Alarmas
+          Monitoreo de Alarmas
         </h1>
         <p className="text-muted-foreground">Monitoreo y gestión de alarmas en tiempo real</p>
       </div>

@@ -84,7 +84,7 @@ const CentralAlarmasOperador = () => {
       <div>
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <Phone className="h-8 w-8 text-primary" />
-          Central de Alarmas - Operador
+          Monitoreo de Alarmas - Operador
         </h1>
         <p className="text-muted-foreground">
           Panel de control para: {user?.full_name}
@@ -167,7 +167,7 @@ const CentralAlarmasOperador = () => {
       {/* Todas las alarmas */}
       <Card>
         <CardHeader>
-          <CardTitle>Todas las Alarmas</CardTitle>
+          <CardTitle>Historial de Alarmas</CardTitle>
           <CardDescription>
             Vista completa de todas las alarmas del sistema
           </CardDescription>

@@ -153,7 +153,7 @@ const adminMenuItems: MenuCategory[] = [
         url: "#", 
         icon: Users, 
         subcategory: [
-          { title: "Central de Alarmas", url: "/central-alarmas", icon: AlertTriangle },
+          { title: "Monitoreo de Alarmas", url: "/central-alarmas", icon: AlertTriangle },
           { title: "Gestión de Clientes", url: "/gestion-clientes", icon: Users },
           { title: "Generar Alarma", url: "/generar-alarma", icon: Siren },
           { title: "Historial de Patrullas", url: "/historial-patrullas-operador", icon: Clock },

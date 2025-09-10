@@ -66,15 +66,23 @@ const Personal = () => {
       cargo: 'operador'
     }));
 
+  // Cargar usuarios al montar el componente
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    console.log('📋 Lista de usuarios cargados:', users);
+    console.log('🎯 Operadores filtrados:', personal);
+  }, [users, personal]);
+
   // Cargar turnos desde la BD para que el calendario persista
   useEffect(() => {
     if (turnosOperador && turnosOperador.length > 0) {
       const adaptados = adaptarTurnosBD(turnosOperador);
-      setTurnosGenerados(prev => prev.length > 0 ? prev : adaptados);
+      setTurnosGenerados(adaptados); // Siempre usar datos de BD si existen
     }
   }, [turnosOperador]);
-
-  const handleSubmitPersonal = async (data: any) => {
     try {
       console.log('Creando nuevo operador:', data);
       
