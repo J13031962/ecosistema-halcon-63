@@ -717,7 +717,7 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
             Resumen de Horas por Operador
           </CardTitle>
           {/* Filtros de fecha para el resumen */}
-          <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex flex-wrap gap-4 items-end">
             <div className="space-y-2">
               <Label className="text-sm">Fecha Inicio</Label>
               <Popover>
@@ -783,7 +783,7 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
                 }
               }}
               variant="outline"
-              className="mt-6"
+              className="h-10"
             >
               Restablecer a Período Generado
             </Button>
