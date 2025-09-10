@@ -76,7 +76,7 @@ export const AdminTestPanel: React.FC = () => {
       const turnos = await createTestTurnos();
       toast({
         title: "Éxito",
-        description: `${turnos?.length || 0} turnos de prueba creados para Luis Perez`
+        description: `${turnos?.length || 0} turnos de prueba creados para todos los operadores`
       });
     } catch (error: any) {
       toast({
