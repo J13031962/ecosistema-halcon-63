@@ -288,32 +288,38 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
     <div className={getCardClasses()} onClick={onSelect}>
       <div className="space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <h4 className="font-semibold text-lg">{tipo}</h4>
-            <Badge variant={getPriorityColor(prioridad)}>
-              {prioridad}
-            </Badge>
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm font-medium">{tipo}</span>
+              <Badge variant={getPriorityColor(prioridad)}>{prioridad}</Badge>
+            </div>
+            <div className="text-xs text-muted-foreground mb-1">
+              {format(new Date(created_at), 'dd/MM/yyyy HH:mm:ss')}
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Clock className="h-4 w-4" />
-            <span className={`text-xl font-mono font-bold ${getTiempoColor()}`}>
+          <div className="text-right">
+            <div className="text-xs text-muted-foreground mb-1">Tiempo Total</div>
+            <div className={`text-2xl font-bold ${getTiempoColor()}`}>
               {formatTiempo(tiempoActual.segundos)}
-            </span>
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {getFaseTexto()}
+            </div>
           </div>
         </div>
 
-        {/* Cliente y fase */}
+        {/* Cliente */}
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground font-medium">{cliente}</p>
-          <div className="flex items-center space-x-2">
-            <Badge variant="outline" className={getTiempoColor()}>
-              {getFaseTexto()}
-            </Badge>
-            <span className="text-xs text-muted-foreground">
-              {format(new Date(created_at), 'HH:mm')}
-            </span>
-          </div>
+          {estado === 'activa' && (
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground mb-1">Esperando atención</div>
+              <div className={`text-sm font-bold ${tiempoActual.color === 'red' ? 'text-red-600' : 'text-green-600'}`}>
+                {formatTiempo(tiempoActual.segundos)}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Información de asignación */}
