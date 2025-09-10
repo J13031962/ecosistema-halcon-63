@@ -194,7 +194,9 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           items: [
             { title: "Monitoreo de Alarmas", url: "/central-alarmas", icon: AlertTriangle },
             { title: "Generar Alarma", url: "/generar-alarma", icon: Siren },
+            { title: "Servicios Activos", url: "/patrullas-activas", icon: Car },
             { title: "Historial de Alarmas", url: "/alarmas", icon: AlertTriangle },
+            { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
             { title: "Gestión de Clientes", url: "/gestion-clientes", icon: Users },
             { title: "Mis Turnos", url: "/turnos-operador", icon: Clock },
           ]
