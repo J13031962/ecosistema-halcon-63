@@ -91,7 +91,7 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
 
       console.log('🔍 Verificando disponibilidad de cámara...');
       
-      // Primero verificar si hay cámaras disponibles
+      // Verificar si hay cámaras disponibles
       const hasCamera = await QrScanner.hasCamera();
       console.log('📹 Tiene cámara:', hasCamera);
       
@@ -99,18 +99,9 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
         throw new Error('No hay cámara disponible en este dispositivo');
       }
 
-      // Listar cámaras disponibles para debugging
-      try {
-        const cameras = await QrScanner.listCameras(true);
-        console.log('📱 Cámaras disponibles:', cameras);
-      } catch (e) {
-        console.warn('⚠️ No se pudieron listar las cámaras:', e);
-      }
-
-      console.log('✅ Cámara disponible, creando QrScanner...');
-      console.log('📺 Video element:', videoRef.current);
+      console.log('✅ Creando QrScanner directamente...');
       
-      // Configurar el scanner con configuración más robusta
+      // Crear el scanner con configuración simplificada
       const scanner = new QrScanner(
         videoRef.current,
         (result) => {
@@ -153,43 +144,15 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
           returnDetailedScanResult: true,
           highlightScanRegion: true,
           highlightCodeOutline: true,
-          preferredCamera: 'environment', // Intentar cámara trasera primero
+          preferredCamera: 'environment',
           maxScansPerSecond: 2,
         }
       );
 
-      console.log('🎬 Scanner creado, verificando permisos de cámara...');
+      console.log('🚀 Iniciando QrScanner directamente...');
       
-      // Solicitar permisos explícitamente antes de iniciar el scanner
-      try {
-        console.log('🔐 Solicitando permisos de cámara...');
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          } 
-        });
-        console.log('✅ Permisos concedidos, stream obtenido:', stream);
-        
-        // Detener el stream temporal ya que QrScanner manejará la cámara
-        stream.getTracks().forEach(track => track.stop());
-        console.log('🛑 Stream temporal detenido');
-        
-      } catch (permError: any) {
-        console.error('❌ Error al solicitar permisos:', permError);
-        throw new Error(`Error de permisos: ${permError.message}`);
-      }
-
-      console.log('🚀 Iniciando QrScanner...');
-      
-      // Intentar iniciar el scanner con timeout
-      const startPromise = scanner.start();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout: La cámara tardó demasiado en iniciar')), 10000)
-      );
-      
-      await Promise.race([startPromise, timeoutPromise]);
+      // Iniciar el scanner directamente
+      await scanner.start();
       
       console.log('✅ QrScanner iniciado exitosamente');
       setQrScanner(scanner);
@@ -197,21 +160,12 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
       
     } catch (error: any) {
       console.error('❌ Error completo al iniciar scanner:', error);
-      console.error('❌ Error name:', error.name);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error stack:', error.stack);
       
       setIsScanning(false);
       
       // Don't show error for AbortError as it's normal during initialization
       if (error.name === 'AbortError') {
-        console.log('⚠️ AbortError during initialization - retrying...');
-        // Retry after a short delay
-        setTimeout(() => {
-          if (isOpen && videoRef.current) {
-            startScanner();
-          }
-        }, 500);
+        console.log('⚠️ AbortError during initialization - ignorado');
         return;
       }
       
