@@ -56,13 +56,15 @@ const Personal = () => {
   // Hook para obtener usuarios reales de la BD
   const { users, loading: usersLoading, fetchUsers, createUser } = useSupabaseUsuarios();
   
-  // Filtrar operadores reales de la BD 
-  const personal = users.map(user => ({
-    id: user.id,
-    nombres: user.full_name?.split(' ')[0] || 'Usuario',
-    apellidos: user.full_name?.split(' ').slice(1).join(' ') || '',
-    cargo: 'operador'
-  }));
+  // Filtrar operadores reales de la BD que tienen rol operador_alarmas
+  const personal = users
+    .filter(user => user.user_roles?.some(role => role.role === 'operador_alarmas'))
+    .map(user => ({
+      id: user.id,
+      nombres: user.full_name?.split(' ')[0] || 'Usuario',
+      apellidos: user.full_name?.split(' ').slice(1).join(' ') || '',
+      cargo: 'operador'
+    }));
 
   // Cargar turnos desde la BD para que el calendario persista
   useEffect(() => {
