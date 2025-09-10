@@ -49,6 +49,8 @@ export const useSupabaseAlarmas = () => {
   const fetchAlarmas = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Cargando alarmas...');
+      
       const { data, error } = await supabase
         .from('alarmas')
         .select(`
@@ -62,9 +64,15 @@ export const useSupabaseAlarmas = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error cargando alarmas:', error);
+        throw error;
+      }
+      
+      console.log('✅ Alarmas cargadas:', data?.length || 0);
       setAlarmas(data || []);
     } catch (err: any) {
+      console.error('❌ Error completo:', err);
       setError(err.message);
       toast({
         title: "Error",
@@ -90,7 +98,9 @@ export const useSupabaseAlarmas = () => {
       const alarmaToInsert: any = {
         ...alarmaData,
         estado: 'activa',
-        prioridad: alarmaData.prioridad || 'media'
+        prioridad: alarmaData.prioridad || 'media',
+        operador_id: user?.id,
+        operador_nombre: user?.full_name
       };
       
       console.log('📝 Datos a insertar:', alarmaToInsert);
