@@ -5,9 +5,10 @@ import { useSupabaseUsuarios } from '@/hooks/useSupabaseUsuarios';
 import { useAuthConsolidated } from '@/hooks/useAuthConsolidated';
 import { UserRole } from '@/types/auth';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, AlertTriangle, Calendar, Trash2, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Calendar, Trash2, Loader2, TestTube } from 'lucide-react';
 import CreateOperatorUsers from './CreateOperatorUsers';
 import { createTestTurnos, cleanTestTurnos } from '@/utils/createTestTurnos';
+import { testDirectInsert } from '@/utils/testDirectInsert';
 import { useToast } from '@/hooks/use-toast';
 
 export const AdminTestPanel: React.FC = () => {
@@ -108,6 +109,25 @@ export const AdminTestPanel: React.FC = () => {
     }
   };
 
+  const handleTestDirectInsert = async () => {
+    try {
+      setTurnosLoading(true);
+      const result = await testDirectInsert();
+      toast({
+        title: "Éxito",
+        description: "Turno insertado directamente en la BD"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: `Error en inserción directa: ${error.message}`,
+        variant: "destructive"
+      });
+    } finally {
+      setTurnosLoading(false);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'success':
@@ -144,13 +164,31 @@ export const AdminTestPanel: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Button 
               onClick={runAuthTests} 
               disabled={loading || !hasRole('administrador')}
               className="w-full"
             >
               {loading ? 'Ejecutando pruebas...' : 'Ejecutar Pruebas de Sistema'}
+            </Button>
+
+            <Button 
+              onClick={handleTestDirectInsert}
+              disabled={turnosLoading || !hasRole('administrador')}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {turnosLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Probando...
+                </>
+              ) : (
+                <>
+                  <TestTube className="mr-2 h-4 w-4" />
+                  Test Directo
+                </>
+              )}
             </Button>
 
             <Button 
