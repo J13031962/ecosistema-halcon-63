@@ -31,21 +31,17 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
   const [cameraError, setCameraError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen && videoRef.current && !qrScanner) {
+    if (isOpen && videoRef.current) {
       console.log('🎯 Dialog abierto, iniciando scanner...');
-      // Delay to ensure video element is ready
+      // Delay más largo para asegurar que el elemento está listo
       const timer = setTimeout(() => {
         startScanner();
-      }, 100);
+      }, 300);
       
       return () => clearTimeout(timer);
+    } else if (!isOpen) {
+      cleanupScanner();
     }
-
-    return () => {
-      if (!isOpen) {
-        cleanupScanner();
-      }
-    };
   }, [isOpen]);
 
   const cleanupScanner = () => {
@@ -73,25 +69,16 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
     }
 
     try {
-      console.log('🎥 Limpiando estado inicial...');
+      console.log('🎥 Configurando estado inicial...');
       setCameraError(null);
-      setIsScanning(true);
+      setIsScanning(false); // Empezar en false
       
       // Limpiar cualquier scanner previo
-      if (qrScanner) {
-        console.log('🧹 Limpiando scanner previo...');
-        try {
-          qrScanner.stop();
-          qrScanner.destroy();
-        } catch (e) {
-          console.warn('⚠️ Error limpiando scanner previo:', e);
-        }
-        setQrScanner(null);
-      }
+      cleanupScanner();
 
       console.log('🔍 Verificando disponibilidad de cámara...');
       
-      // Verificar si hay cámaras disponibles
+      // Verificar si hay cámaras disponibles primero
       const hasCamera = await QrScanner.hasCamera();
       console.log('📹 Tiene cámara:', hasCamera);
       
@@ -99,9 +86,12 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
         throw new Error('No hay cámara disponible en este dispositivo');
       }
 
-      console.log('✅ Creando QrScanner directamente...');
+      console.log('✅ Iniciando proceso de escaneo...');
+      setIsScanning(true); // Ahora sí ponemos en true
+
+      console.log('📱 Creando QrScanner...');
       
-      // Crear el scanner con configuración simplificada
+      // Crear el scanner con configuración más básica
       const scanner = new QrScanner(
         videoRef.current,
         (result) => {
@@ -112,7 +102,6 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
             if (data.id_cliente && data.coordenadas && data.nombre) {
               console.log('✅ QR válido:', data);
               setScannedData(data);
-              scanner.stop();
               setIsScanning(false);
               
               toast({
@@ -143,25 +132,28 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
         {
           returnDetailedScanResult: true,
           highlightScanRegion: true,
-          highlightCodeOutline: true,
-          preferredCamera: 'environment',
-          maxScansPerSecond: 2,
+          preferredCamera: 'environment'
         }
       );
 
-      console.log('🚀 Iniciando QrScanner directamente...');
-      
-      // Iniciar el scanner directamente
-      await scanner.start();
-      
-      console.log('✅ QrScanner iniciado exitosamente');
+      console.log('🚀 Iniciando scanner...');
       setQrScanner(scanner);
-      setIsScanning(true);
+      
+      // Usar un timeout para el start
+      await Promise.race([
+        scanner.start(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout iniciando cámara')), 10000)
+        )
+      ]);
+      
+      console.log('✅ Scanner iniciado exitosamente');
       
     } catch (error: any) {
       console.error('❌ Error completo al iniciar scanner:', error);
       
       setIsScanning(false);
+      cleanupScanner();
       
       // Don't show error for AbortError as it's normal during initialization
       if (error.name === 'AbortError') {
