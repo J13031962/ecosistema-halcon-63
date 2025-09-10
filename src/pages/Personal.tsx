@@ -28,6 +28,19 @@ const Personal = () => {
   // Hook para manejar turnos en Supabase
   const { turnosOperador, addTurnoOperador, addTurnoSupervisor, refetch } = useSupabaseTurnos();
   
+  // Hook para obtener usuarios reales de la BD
+  const { users, loading: usersLoading, fetchUsers, createUser } = useSupabaseUsuarios();
+  
+  // Filtrar operadores reales de la BD que tienen rol operador_alarmas
+  const personal = users
+    .filter(user => user.user_roles?.some(role => role.role === 'operador_alarmas'))
+    .map(user => ({
+      id: user.id,
+      nombres: user.full_name?.split(' ')[0] || 'Usuario',
+      apellidos: user.full_name?.split(' ').slice(1).join(' ') || '',
+      cargo: 'operador'
+    }));
+  
   // Adaptador: convierte turnos de BD al formato del calendario local
   const adaptarTurnosBD = (turnosBD: any[]) => {
     return (turnosBD || []).map((t) => ({
@@ -53,36 +66,21 @@ const Personal = () => {
       total_horas: 12,
     }));
   };
-  // Hook para obtener usuarios reales de la BD
-  const { users, loading: usersLoading, fetchUsers, createUser } = useSupabaseUsuarios();
-  
-  // Filtrar operadores reales de la BD que tienen rol operador_alarmas
-  const personal = users
-    .filter(user => user.user_roles?.some(role => role.role === 'operador_alarmas'))
-    .map(user => ({
-      id: user.id,
-      nombres: user.full_name?.split(' ')[0] || 'Usuario',
-      apellidos: user.full_name?.split(' ').slice(1).join(' ') || '',
-      cargo: 'operador'
-    }));
 
   // Cargar usuarios al montar el componente
   useEffect(() => {
     fetchUsers();
   }, []);
 
-  useEffect(() => {
-    console.log('📋 Lista de usuarios cargados:', users);
-    console.log('🎯 Operadores filtrados:', personal);
-  }, [users, personal]);
-
   // Cargar turnos desde la BD para que el calendario persista
   useEffect(() => {
     if (turnosOperador && turnosOperador.length > 0) {
       const adaptados = adaptarTurnosBD(turnosOperador);
-      setTurnosGenerados(adaptados); // Siempre usar datos de BD si existen
+      setTurnosGenerados(adaptados);
     }
   }, [turnosOperador]);
+
+  const handleSubmitPersonal = async (data: any) => {
     try {
       console.log('Creando nuevo operador:', data);
       
@@ -329,8 +327,6 @@ const Personal = () => {
     } catch (e) {
       console.warn('No se pudo refetch turnos después de guardar');
     }
-    // Si hay datos en BD, preferir mostrarlos
-    setTurnosGenerados(prev => prev.length > 0 ? prev : adaptarTurnosBD(turnosOperador));
 
     if (ok > 0 && fail === 0) {
       toast.success('Todos los turnos guardados exitosamente');
@@ -361,7 +357,6 @@ const Personal = () => {
         await addTurnoOperador(turnoData);
         // Refrescar y sincronizar
         await refetch();
-        setTurnosGenerados(prev => prev.length > 0 ? prev : adaptarTurnosBD(turnosOperador));
         toast.success(`Turno guardado para ${operador.nombres}`);
       }
     } catch (error: any) {
@@ -470,7 +465,7 @@ const Personal = () => {
           </Button>
           <Button onClick={() => setIsFormOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Ingresar Personal
+            Ingresar Operador
           </Button>
         </div>
       </div>
@@ -484,7 +479,7 @@ const Personal = () => {
               Calendario de Turnos Generados
             </CardTitle>
             <CardDescription>
-              Vista semanal de los turnos asignados. Haz clic en un día para modificar turnos.
+              Vista semanal de los turnos asignados al personal
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -493,141 +488,61 @@ const Personal = () => {
               onEditTurno={handleEditTurno}
               selectedWeek={selectedWeek}
               onWeekChange={setSelectedWeek}
-              onChangeTurno={handleChangeTurno}
             />
           </CardContent>
         </Card>
       )}
 
-      {/* Vista de bienvenida cuando no hay turnos */}
-      {turnosGenerados.length === 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Gestión de Personal
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center py-8">
-              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Registrar Nuevo Personal</h3>
-              <p className="text-muted-foreground mb-4">
-                Comienza registrando el personal de la empresa
-              </p>
-          <Button onClick={() => setIsFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Ingresar Operador
-          </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Sistema de Turnos
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center py-8">
-              <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Generar Turnos Automáticamente</h3>
-              <p className="text-muted-foreground mb-4">
-                Crea horarios flexibles con cálculo automático de horas
-              </p>
-              <Button onClick={() => setIsTurnosOpen(true)} variant="outline">
-                <Clock className="h-4 w-4 mr-2" />
-                Generar Turnos
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Personal registrado */}
-      {personal.length > 0 && (
+      {/* Grid de información */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Personal Registrado</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Personal Activo</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {personal.map((persona) => (
-                <div key={persona.id} className="p-4 border rounded-lg">
-                  <h4 className="font-medium">{persona.nombres} {persona.apellidos}</h4>
-                  <p className="text-sm text-muted-foreground capitalize">{persona.cargo}</p>
-                </div>
-              ))}
-            </div>
+            <div className="text-2xl font-bold">{personal.length}</div>
+            <p className="text-xs text-muted-foreground">
+              Operadores registrados
+            </p>
           </CardContent>
         </Card>
-      )}
 
-      {/* Modal de edición */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Asignar Turno - {selectedDate}</DialogTitle>
-            <DialogDescription>
-              Selecciona el operador y el tipo de turno para este día.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">Operador:</label>
-                <Select
-                  value={newTurno.operador_id}
-                  onValueChange={(value) => setNewTurno({ ...newTurno, operador_id: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar operador" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {personal.filter(p => p.cargo === 'operador').map((operador) => (
-                      <SelectItem key={operador.id} value={operador.id}>
-                        {operador.nombres} {operador.apellidos}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Turno:</label>
-                <Select
-                  value={newTurno.tipo}
-                  onValueChange={(value) => setNewTurno({ ...newTurno, tipo: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar turno" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tiposTurnos.filter(t => t.value !== 'sin_asignar').map((tipo) => (
-                      <SelectItem key={tipo.value} value={tipo.value}>
-                        {tipo.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleGuardarTurno}>
-                Guardar Cambios
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Turnos Generados</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{turnosGenerados.length}</div>
+            <p className="text-xs text-muted-foreground">
+              Turnos asignados
+            </p>
+          </CardContent>
+        </Card>
 
-        <FormularioOperador
-          isOpen={isFormOpen}
-          onClose={() => setIsFormOpen(false)}
-          onSubmit={handleSubmitPersonal}
-        />
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Operadores con Turnos</CardTitle>
+            <Edit2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {new Set(turnosGenerados.map(t => t.operador_id)).size}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Con horarios asignados
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Modales */}
+      <FormularioOperador
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSubmit={handleSubmitPersonal}
+      />
 
       <GeneradorTurnos
         isOpen={isTurnosOpen}
@@ -637,5 +552,6 @@ const Personal = () => {
       />
     </div>
   );
+};
 
 export default Personal;
