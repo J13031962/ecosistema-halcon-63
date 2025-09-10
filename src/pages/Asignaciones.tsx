@@ -11,6 +11,7 @@ import { Car, MapPin, Clock, Filter, Download, AlertTriangle, Shield, UserCheck,
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import CronometroAlarma from "@/components/alarmas/CronometroAlarma";
+import CronometrosEspecificos from "@/components/alarmas/CronometrosEspecificos";
 import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorModal";
 
 const Asignaciones = () => {
@@ -268,21 +269,34 @@ const Asignaciones = () => {
             <CardContent>
               <div className="space-y-4">
                 {todosLosServicios.map((servicio) => (
-                  <CronometroAlarma
-                    key={servicio.id}
-                    alarmaId={servicio.id}
-                    tipo={servicio.tipo}
-                    cliente={servicio.clientes?.nombre || 'Cliente no especificado'}
-                    prioridad={servicio.prioridad}
-                    estado={servicio.estado as any}
-                    created_at={servicio.created_at}
-                    attended_at={servicio.attended_at || undefined}
-                    tiempo_asignacion={undefined}
-                    supervisor={servicio.supervisor || undefined}
-                    patrulla_asignada={servicio.patrulla_asignada || undefined}
-                    onSelect={() => handleSelectAlarmaForAssignment(servicio.id)}
-                    isSelected={selectedAlarmaId === servicio.id}
-                  />
+                  <div key={servicio.id} className="space-y-3">
+                    <CronometroAlarma
+                      alarmaId={servicio.id}
+                      tipo={servicio.tipo}
+                      cliente={servicio.clientes?.nombre || 'Cliente no especificado'}
+                      prioridad={servicio.prioridad}
+                      estado={servicio.estado as any}
+                      created_at={servicio.created_at}
+                      attended_at={servicio.attended_at || undefined}
+                      tiempo_asignacion={undefined}
+                      supervisor={servicio.supervisor || undefined}
+                      patrulla_asignada={servicio.patrulla_asignada || undefined}
+                      onSelect={() => handleSelectAlarmaForAssignment(servicio.id)}
+                      isSelected={selectedAlarmaId === servicio.id}
+                    />
+                    {/* Cronómetros específicos */}
+                    <CronometrosEspecificos
+                      alarma={{
+                        id: servicio.id,
+                        created_at: servicio.created_at,
+                        attended_at: servicio.attended_at || undefined,
+                        tiempo_asignacion: servicio.tiempo_asignacion || undefined,
+                        supervisor_llegada: servicio.supervisor_llegada || undefined,
+                        supervisor_salida: servicio.supervisor_salida || undefined,
+                        estado: servicio.estado
+                      }}
+                    />
+                  </div>
                 ))}
                 {todosLosServicios.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
