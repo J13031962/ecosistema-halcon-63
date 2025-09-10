@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar, Search, Filter, Users, Clock, Download, Trash2 } from 'lucide-react';
 import { useSupabaseTurnos } from '@/hooks/useSupabaseTurnos';
 import { useSupabaseUsuarios } from '@/hooks/useSupabaseUsuarios';
+import { calcularHorasTurno, calcularResumenOperador, esDomingo, esFeriado } from '@/components/personal/TurnosCalculadorHoras';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -68,6 +69,45 @@ export const HistorialTurnos: React.FC<HistorialTurnosProps> = ({ onClose }) => 
 
     return matchesSearch && matchesOperador && matchesTipoTurno && matchesTipoPersonal && matchesFechas;
   });
+
+  // Calcular resumen de horas por operador
+  const resumenHorasPorOperador = useMemo(() => {
+    const operadores = users.filter(u => 
+      u.user_roles?.some(r => r.role === 'operador_alarmas') &&
+      turnosFiltrados.some(t => t.persona_id === u.id)
+    );
+
+    return operadores.map(operador => {
+      const turnosOperador = turnosFiltrados
+        .filter(t => t.persona_id === operador.id && t.tipo_personal === 'operador')
+        .map(turno => {
+          const fecha = parseISO(turno.fecha);
+          const [horaInicio, horaFin] = [turno.horario_inicio || '06:00', turno.horario_fin || '18:00'];
+          
+          const calculo = calcularHorasTurno({
+            fecha,
+            hora_inicio: horaInicio,
+            hora_fin: horaFin,
+            es_domingo: esDomingo(fecha),
+            es_feriado: esFeriado(fecha)
+          });
+
+          return {
+            ...turno,
+            ...calculo
+          };
+        });
+
+      const resumen = calcularResumenOperador(turnosOperador);
+      
+      return {
+        operador: operador.full_name,
+        id: operador.id,
+        turnos: turnosOperador.length,
+        ...resumen
+      };
+    });
+  }, [turnosFiltrados, users]);
 
   // Estadísticas
   const stats = {
@@ -284,6 +324,87 @@ export const HistorialTurnos: React.FC<HistorialTurnosProps> = ({ onClose }) => 
           </div>
         </CardContent>
       </Card>
+
+      {/* Resumen de Horas por Operador */}
+      {resumenHorasPorOperador.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Resumen de Horas por Operador
+            </CardTitle>
+            <CardDescription>
+              Cálculo detallado de horas según las reglas laborales
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {resumenHorasPorOperador.map(operador => (
+                <div key={operador.id} className="border rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="font-semibold text-lg">{operador.operador}</h3>
+                      <p className="text-sm text-muted-foreground">{operador.turnos} turnos trabajados</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      Total: {operador.total_horas}h
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
+                    <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded">
+                      <p className="font-medium text-blue-700 dark:text-blue-300">Diurnas Ordinarias</p>
+                      <p className="text-lg font-bold text-blue-800 dark:text-blue-200">
+                        {operador.horas_diurnas_ordinarias}h
+                      </p>
+                    </div>
+                    
+                    <div className="bg-purple-50 dark:bg-purple-950 p-2 rounded">
+                      <p className="font-medium text-purple-700 dark:text-purple-300">Nocturnas Ordinarias</p>
+                      <p className="text-lg font-bold text-purple-800 dark:text-purple-200">
+                        {operador.horas_nocturnas_ordinarias}h
+                      </p>
+                    </div>
+                    
+                    <div className="bg-green-50 dark:bg-green-950 p-2 rounded">
+                      <p className="font-medium text-green-700 dark:text-green-300">Diurnas Dominicales</p>
+                      <p className="text-lg font-bold text-green-800 dark:text-green-200">
+                        {operador.horas_diurnas_dominicales}h
+                      </p>
+                    </div>
+                    
+                    <div className="bg-orange-50 dark:bg-orange-950 p-2 rounded">
+                      <p className="font-medium text-orange-700 dark:text-orange-300">Nocturnas Dominicales</p>
+                      <p className="text-lg font-bold text-orange-800 dark:text-orange-200">
+                        {operador.horas_nocturnas_dominicales}h
+                      </p>
+                    </div>
+                    
+                    <div className="bg-yellow-50 dark:bg-yellow-950 p-2 rounded">
+                      <p className="font-medium text-yellow-700 dark:text-yellow-300">Feriados</p>
+                      <p className="text-lg font-bold text-yellow-800 dark:text-yellow-200">
+                        {operador.horas_feriado}h
+                      </p>
+                    </div>
+                    
+                    <div className="bg-red-50 dark:bg-red-950 p-2 rounded">
+                      <p className="font-medium text-red-700 dark:text-red-300">Horas Extras</p>
+                      <p className="text-lg font-bold text-red-800 dark:text-red-200">
+                        {operador.horas_extras}h
+                      </p>
+                      {operador.horas_extras > 0 && (
+                        <p className="text-xs text-red-600 dark:text-red-400">
+                          (&gt;88h diurnas ord.)
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Lista de Turnos */}
       <Card>
