@@ -59,39 +59,47 @@ const TurnosOperador = () => {
         </TabsList>
         
         <TabsContent value="calendar" className="mt-6">
-          {/* Calendario de Turnos Principal */}
-          {turnosAdaptados.length > 0 ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Calendario de Turnos Asignados</CardTitle>
-                <CardDescription>
-                  Vista semanal de tus turnos asignados. Los cambios realizados por dirección central se reflejan automáticamente aquí.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CalendarioTurnosPersonal
-                  turnos={turnosAdaptados}
-                  onEditTurno={(turno) => {
-                    console.log('Ver detalles del turno:', turno);
-                  }}
-                  selectedWeek={selectedWeek}
-                  onWeekChange={setSelectedWeek}
-                />
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Calendario de Turnos</CardTitle>
-                <CardDescription>
-                  {loading ? 'Cargando turnos...' : 'No hay turnos asignados. Los turnos aparecerán aquí una vez generados desde la gestión de personal.'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CalendarioTurnosQuincenal />
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Mis Turnos
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <p>Cargando...</p>
+              ) : turnosAdaptados.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Tienes {turnosAdaptados.length} turnos programados en total.
+                    </p>
+                    <div className="text-xs text-muted-foreground">
+                      Próximo turno: {turnosAdaptados.length > 0 ? 
+                        new Date(Math.min(...turnosAdaptados.map(t => new Date(t.fecha).getTime()))).toLocaleDateString() : 
+                        'No programado'
+                      }
+                    </div>
+                  </div>
+                  <CalendarioTurnosPersonal
+                    turnos={turnosAdaptados}
+                    onEditTurno={(turno) => {
+                      console.log('Ver detalles del turno:', turno);
+                    }}
+                    selectedWeek={selectedWeek}
+                    onWeekChange={setSelectedWeek}
+                  />
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No tienes turnos asignados actualmente.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="summary" className="mt-6">

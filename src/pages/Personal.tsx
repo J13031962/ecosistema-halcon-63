@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users, Plus, Clock, Calendar, Download, Edit2 } from 'lucide-react';
-import { FormularioNuevoPersonal } from '@/components/personal/FormularioNuevoPersonal';
+import { FormularioOperador } from '@/components/personal/FormularioOperador';
 import { GeneradorTurnos } from '@/components/personal/GeneradorTurnos';
 import { CalendarioTurnos } from '@/components/personal/CalendarioTurnos';
 import { generarTurnosAutomaticos, calcularHorasTurno, esDomingo as esDomingoUtil, esFeriado as esFeriadoUtil } from '@/components/personal/TurnosCalculadorHoras';
 import { useSupabaseTurnos } from '@/hooks/useSupabaseTurnos';
+import { useSupabaseUsuarios } from '@/hooks/useSupabaseUsuarios';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -52,12 +53,16 @@ const Personal = () => {
       total_horas: 12,
     }));
   };
-  const [personal] = useState([
-    { id: '550e8400-e29b-41d4-a716-446655440001', nombres: 'Juan Carlos', apellidos: 'Pérez García', cargo: 'operador' },
-    { id: '550e8400-e29b-41d4-a716-446655440002', nombres: 'María Elena', apellidos: 'Rodríguez López', cargo: 'operador' },
-    { id: '550e8400-e29b-41d4-a716-446655440003', nombres: 'Carlos Alberto', apellidos: 'González Ruiz', cargo: 'operador' },
-    { id: '550e8400-e29b-41d4-a716-446655440004', nombres: 'Ana Sofia', apellidos: 'Martínez Vega', cargo: 'supervisor' },
-  ]);
+  // Hook para obtener usuarios reales de la BD
+  const { users, loading: usersLoading, fetchUsers, createUser } = useSupabaseUsuarios();
+  
+  // Filtrar operadores reales de la BD 
+  const personal = users.map(user => ({
+    id: user.id,
+    nombres: user.full_name?.split(' ')[0] || 'Usuario',
+    apellidos: user.full_name?.split(' ').slice(1).join(' ') || '',
+    cargo: 'operador'
+  }));
 
   // Cargar turnos desde la BD para que el calendario persista
   useEffect(() => {
@@ -68,9 +73,30 @@ const Personal = () => {
   }, [turnosOperador]);
 
   const handleSubmitPersonal = async (data: any) => {
-    console.log('Datos del personal:', data);
-    // Aquí se implementará la lógica para guardar en la base de datos
-    toast.success('Personal registrado exitosamente');
+    try {
+      console.log('Creando nuevo operador:', data);
+      
+      // Crear email basado en nombres y apellidos
+      const email = `${data.nombres.toLowerCase().replace(/\s+/g, '')}.${data.apellidos.toLowerCase().replace(/\s+/g, '')}@teleguardia.com`;
+      
+      // Crear usuario con rol de operador
+      await createUser({
+        email,
+        password: data.numero_identificacion, // Usar número de identificación como password inicial
+        fullName: `${data.nombres} ${data.apellidos}`,
+        role: 'operador_alarmas',
+        numeroDocumento: data.numero_identificacion
+      });
+      
+      // Refrescar lista de usuarios
+      await fetchUsers();
+      
+      toast.success(`Operador ${data.nombres} ${data.apellidos} creado exitosamente. Email: ${email}, Password inicial: ${data.numero_identificacion}`);
+      setIsFormOpen(false);
+    } catch (error: any) {
+      console.error('Error al crear operador:', error);
+      toast.error(`Error al crear el operador: ${error.message || 'Error desconocido'}`);
+    }
   };
 
   const handleGenerarTurnos = async (data: any) => {
@@ -479,10 +505,10 @@ const Personal = () => {
               <p className="text-muted-foreground mb-4">
                 Comienza registrando el personal de la empresa
               </p>
-              <Button onClick={() => setIsFormOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Ingresar Personal
-              </Button>
+          <Button onClick={() => setIsFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Ingresar Operador
+          </Button>
             </CardContent>
           </Card>
 
@@ -587,11 +613,11 @@ const Personal = () => {
         </DialogContent>
       </Dialog>
 
-      <FormularioNuevoPersonal
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        onSubmit={handleSubmitPersonal}
-      />
+        <FormularioOperador
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+          onSubmit={handleSubmitPersonal}
+        />
 
       <GeneradorTurnos
         isOpen={isTurnosOpen}
