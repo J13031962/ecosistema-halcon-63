@@ -175,6 +175,19 @@ const MisAsignaciones = () => {
       } else {
         // Mark departure from site
         console.log('🏁 Marking departure for alarm:', selectedAlarmaId);
+        
+        // También actualizar el estado de la patrulla a disponible
+        const { data: patrullaData, error: patrullaError } = await supabase
+          .from('patrullas')
+          .update({
+            estado: 'disponible'
+          })
+          .eq('numero_patrulla', alarma.patrulla_asignada);
+
+        if (patrullaError) {
+          console.warn('⚠️ Warning updating patrol status:', patrullaError);
+        }
+
         const { data, error } = await supabase
           .from('alarmas')
           .update({
