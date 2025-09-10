@@ -503,6 +503,15 @@ const CentralAlarmas = () => {
                             <p className="text-sm text-muted-foreground">
                               <span className="font-medium">Dirección:</span> {alarma.direccion || 'No especificada'}
                             </p>
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium">Supervisor:</span> {
+                                alarma.supervisor ? (
+                                  <span className="text-green-600 font-medium">{alarma.supervisor}</span>
+                                ) : (
+                                  <span className="text-orange-600 font-medium">Sin asignar</span>
+                                )
+                              }
+                            </p>
                           </div>
 
                           {/* Botones de acción según el rol y estado */}
