@@ -12,7 +12,9 @@ interface CronometroAlarmaProps {
   estado: 'activa' | 'asignada' | 'en_proceso' | 'resuelta';
   created_at: string;
   attended_at?: string;
-  tiempo_asignacion?: string;
+  tiempo_asignacion_supervisor?: string;
+  tiempo_primera_lectura_qr?: string;
+  tiempo_segunda_lectura_qr?: string;
   supervisor?: string;
   patrulla_asignada?: string;
   onSelect?: () => void;
@@ -33,7 +35,9 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
   estado,
   created_at,
   attended_at,
-  tiempo_asignacion,
+  tiempo_asignacion_supervisor,
+  tiempo_primera_lectura_qr,
+  tiempo_segunda_lectura_qr,
   supervisor,
   patrulla_asignada,
   onSelect,
@@ -47,12 +51,29 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
 
   const [parpadeo, setParpadeo] = useState(false);
 
+  // Estados para cronómetros específicos
+  const [cronometrosEspecificos, setCronometrosEspecificos] = useState<{
+    aceptacion_despachador: { tiempo: number; color: 'green' | 'red' };
+    despachador_envio: { tiempo: number; color: 'green' | 'red' };
+    supervisor_aceptacion: { tiempo: number; color: 'green' | 'red' };
+    supervisor_llegada: { tiempo: number; color: 'green' | 'red' };
+    supervisor_salida: { tiempo: number; color: 'green' | 'red' };
+  }>({
+    aceptacion_despachador: { tiempo: 0, color: 'green' },
+    despachador_envio: { tiempo: 0, color: 'green' },
+    supervisor_aceptacion: { tiempo: 0, color: 'green' },
+    supervisor_llegada: { tiempo: 0, color: 'green' },
+    supervisor_salida: { tiempo: 0, color: 'green' }
+  });
+
   useEffect(() => {
     const interval = setInterval(() => {
       const ahora = new Date();
       const fechaCreacion = new Date(created_at);
       const fechaAtencion = attended_at ? new Date(attended_at) : null;
-      const fechaAsignacion = tiempo_asignacion ? new Date(tiempo_asignacion) : null;
+      const fechaAsignacion = tiempo_asignacion_supervisor ? new Date(tiempo_asignacion_supervisor) : null;
+      const fechaPrimeraLectura = tiempo_primera_lectura_qr ? new Date(tiempo_primera_lectura_qr) : null;
+      const fechaSegundaLectura = tiempo_segunda_lectura_qr ? new Date(tiempo_segunda_lectura_qr) : null;
 
       let nuevoEstado: TiempoEstado;
 
@@ -133,6 +154,42 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
 
       setTiempoActual(nuevoEstado);
       
+      // Calcular cronómetros específicos
+      const nuevosCronometros = {
+        aceptacion_despachador: {
+          tiempo: fechaAtencion 
+            ? differenceInSeconds(fechaAtencion, fechaCreacion)
+            : differenceInSeconds(ahora, fechaCreacion),
+          color: (!fechaAtencion && differenceInSeconds(ahora, fechaCreacion) > 300) ? 'red' : 'green' as 'green' | 'red'
+        },
+        despachador_envio: {
+          tiempo: fechaAtencion && fechaAsignacion 
+            ? differenceInSeconds(fechaAsignacion, fechaAtencion)
+            : fechaAtencion ? differenceInSeconds(ahora, fechaAtencion) : 0,
+          color: (fechaAtencion && !fechaAsignacion && differenceInSeconds(ahora, fechaAtencion) > 180) ? 'red' : 'green' as 'green' | 'red'
+        },
+        supervisor_aceptacion: {
+          tiempo: fechaAsignacion && fechaPrimeraLectura 
+            ? differenceInSeconds(fechaPrimeraLectura, fechaAsignacion)
+            : fechaAsignacion ? differenceInSeconds(ahora, fechaAsignacion) : 0,
+          color: (fechaAsignacion && !fechaPrimeraLectura && differenceInSeconds(ahora, fechaAsignacion) > 1200) ? 'red' : 'green' as 'green' | 'red'
+        },
+        supervisor_llegada: {
+          tiempo: fechaPrimeraLectura && fechaSegundaLectura 
+            ? differenceInSeconds(fechaSegundaLectura, fechaPrimeraLectura)
+            : fechaPrimeraLectura ? differenceInSeconds(ahora, fechaPrimeraLectura) : 0,
+          color: (fechaPrimeraLectura && !fechaSegundaLectura && differenceInSeconds(ahora, fechaPrimeraLectura) > 3600) ? 'red' : 'green' as 'green' | 'red'
+        },
+        supervisor_salida: {
+          tiempo: fechaSegundaLectura 
+            ? differenceInSeconds(fechaSegundaLectura, fechaCreacion)
+            : estado === 'resuelta' ? differenceInSeconds(ahora, fechaCreacion) : 0,
+          color: (!fechaSegundaLectura && estado !== 'resuelta' && differenceInSeconds(ahora, fechaCreacion) > 7200) ? 'red' : 'green' as 'green' | 'red'
+        }
+      };
+
+      setCronometrosEspecificos(nuevosCronometros);
+      
       // Controlar parpadeo
       if (nuevoEstado.color === 'red-blink') {
         setParpadeo(prev => !prev);
@@ -142,7 +199,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [created_at, attended_at, tiempo_asignacion, estado]);
+  }, [created_at, attended_at, tiempo_asignacion_supervisor, tiempo_primera_lectura_qr, tiempo_segunda_lectura_qr, estado]);
 
   const formatTiempo = (segundos: number) => {
     const horas = Math.floor(segundos / 3600);
@@ -223,9 +280,13 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
     }
   };
 
+  const getColorClassForTimer = (color: 'green' | 'red') => {
+    return color === 'red' ? 'text-red-600 font-bold' : 'text-green-600';
+  };
+
   return (
     <div className={getCardClasses()} onClick={onSelect}>
-      <div className="space-y-3">
+      <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -276,6 +337,51 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
             <span className="text-sm font-medium">Servicio completado</span>
           </div>
         )}
+
+        {/* Cronómetros específicos */}
+        <div className="bg-muted/30 rounded-lg p-3 border-t">
+          <div className="grid grid-cols-5 gap-3 text-center">
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Aceptación</div>
+              <div className="text-xs text-muted-foreground mb-2">Despachador</div>
+              <div className={`text-sm font-mono ${getColorClassForTimer(cronometrosEspecificos.aceptacion_despachador.color)}`}>
+                {formatTiempo(cronometrosEspecificos.aceptacion_despachador.tiempo)}
+              </div>
+            </div>
+            
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Despachador</div>
+              <div className="text-xs text-muted-foreground mb-2">envío</div>
+              <div className={`text-sm font-mono ${getColorClassForTimer(cronometrosEspecificos.despachador_envio.color)}`}>
+                {formatTiempo(cronometrosEspecificos.despachador_envio.tiempo)}
+              </div>
+            </div>
+            
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Supervisor</div>
+              <div className="text-xs text-muted-foreground mb-2">aceptación</div>
+              <div className={`text-sm font-mono ${getColorClassForTimer(cronometrosEspecificos.supervisor_aceptacion.color)}`}>
+                {formatTiempo(cronometrosEspecificos.supervisor_aceptacion.tiempo)}
+              </div>
+            </div>
+            
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Supervisor</div>
+              <div className="text-xs text-muted-foreground mb-2">llegada</div>
+              <div className={`text-sm font-mono ${getColorClassForTimer(cronometrosEspecificos.supervisor_llegada.color)}`}>
+                {formatTiempo(cronometrosEspecificos.supervisor_llegada.tiempo)}
+              </div>
+            </div>
+            
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Supervisor</div>
+              <div className="text-xs text-muted-foreground mb-2">salida</div>
+              <div className={`text-sm font-mono ${getColorClassForTimer(cronometrosEspecificos.supervisor_salida.color)}`}>
+                {formatTiempo(cronometrosEspecificos.supervisor_salida.tiempo)}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
