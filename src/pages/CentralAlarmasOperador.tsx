@@ -23,6 +23,9 @@ import {
   Timer
 } from "lucide-react";
 import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
+import { useSupabaseAlarmasEnhanced } from "@/hooks/useSupabaseAlarmasEnhanced";
+import { useSupabasePatrullas } from "@/hooks/useSupabasePatrullas";
+import CronometroAlarma from "@/components/alarmas/CronometroAlarma";
 
 const CentralAlarmasOperador = () => {
   const { user } = useAuthConsolidated();
@@ -34,8 +37,32 @@ const CentralAlarmasOperador = () => {
   // Cargar todas las alarmas para que los operadores vean lo mismo que el admin
   const { alarmas: todasAlarmas, loading: loadingAll, cancelAlarma } = useSupabaseAlarmas();
 
+  // Hook para servicios activos (alarmas enhanced)
+  const { 
+    alarmas: alarmasEnhanced, 
+    loading: loadingEnhanced
+  } = useSupabaseAlarmasEnhanced();
+
+  // Hook para patrullas
+  const { patrullas, loading: loadingPatrullas } = useSupabasePatrullas();
+
   // Todos los usuarios (incluyendo operadores) ahora ven todas las alarmas
   const fuenteAlarmas = todasAlarmas || [];
+
+  // Filtrar alarmas para servicios activos
+  const alarmasActivas = fuenteAlarmas.filter(a => a.estado === 'activa');
+  const alarmasResueltas = fuenteAlarmas.filter(a => a.estado === 'resuelta');
+  
+  // Servicios activos (alarmas en proceso o asignadas)
+  const alarmasActivasServicios = alarmasEnhanced.filter(a => 
+    a.estado === 'en_proceso' || a.estado === 'asignada'
+  );
+  const alarmasPendientes = alarmasEnhanced.filter(a => 
+    a.estado === 'activa' && !a.supervisor_id
+  );
+  const historialAsignaciones = alarmasEnhanced.filter(a => 
+    a.estado === 'resuelta' && a.tiempo_salida_sitio
+  );
 
   // Obtener turnos del operador
   const { data: misTurnos, loading: turnosLoading } = useUserSpecificData({
@@ -43,8 +70,6 @@ const CentralAlarmasOperador = () => {
     enabled: !!user?.id && user?.role === 'operador_alarmas'
   });
 
-  const alarmasActivas = fuenteAlarmas.filter(a => a.estado === 'activa');
-  const alarmasResueltas = fuenteAlarmas.filter(a => a.estado === 'resuelta');
   const turnosHoy = misTurnos?.filter(t => 
     new Date(t.fecha).toDateString() === new Date().toDateString()
   ) || [];
@@ -190,6 +215,126 @@ const CentralAlarmasOperador = () => {
               {alarmasActivas.map((alarma) => (
                 <AlarmaActivaCard key={alarma.id} alarma={alarma} onCancelar={cancelAlarma} />
               ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Servicios Activos */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Servicios Activos</CardTitle>
+          <CardDescription>
+            Servicios asignados y en proceso
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingEnhanced ? (
+            <div className="animate-pulse space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-32 bg-muted rounded"></div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Servicios Pendientes de Asignación */}
+              {alarmasPendientes.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Servicios Pendientes de Asignación</h3>
+                  <div className="space-y-4">
+                    {alarmasPendientes.map((alarma) => (
+                      <CronometroAlarma
+                        key={`pendiente-${alarma.id}`}
+                        alarmaId={alarma.id}
+                        tipo={alarma.tipo}
+                        cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
+                        direccion={alarma.direccion || 'Sin dirección'}
+                        telefono={alarma.clientes?.telefono || 'Sin teléfono'}
+                        prioridad={alarma.prioridad}
+                        estado={alarma.estado as 'activa' | 'asignada' | 'en_proceso' | 'resuelta'}
+                        created_at={alarma.created_at}
+                        attended_at={alarma.attended_at || undefined}
+                        tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                        tiempo_primera_lectura_qr={alarma.tiempo_llegada_sitio || undefined}
+                        tiempo_segunda_lectura_qr={alarma.tiempo_salida_sitio || undefined}
+                        supervisor={alarma.supervisor || undefined}
+                        patrulla_asignada={alarma.patrulla_asignada || undefined}
+                        onCancel={() => console.log('Cancelar alarma:', alarma.id)}
+                        showCancelButton={false}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Servicios Activos */}
+              {alarmasActivasServicios.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Servicios Activos</h3>
+                  <div className="space-y-4">
+                    {alarmasActivasServicios.map((alarma) => (
+                      <CronometroAlarma
+                        key={`activa-${alarma.id}`}
+                        alarmaId={alarma.id}
+                        tipo={alarma.tipo}
+                        cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
+                        direccion={alarma.direccion || 'Sin dirección'}
+                        telefono={alarma.clientes?.telefono || 'Sin teléfono'}
+                        prioridad={alarma.prioridad}
+                        estado={alarma.estado as 'activa' | 'asignada' | 'en_proceso' | 'resuelta'}
+                        created_at={alarma.created_at}
+                        attended_at={alarma.attended_at || undefined}
+                        tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                        tiempo_primera_lectura_qr={alarma.tiempo_llegada_sitio || undefined}
+                        tiempo_segunda_lectura_qr={alarma.tiempo_salida_sitio || undefined}
+                        supervisor={alarma.supervisor || undefined}
+                        patrulla_asignada={alarma.patrulla_asignada || undefined}
+                        onCancel={() => console.log('Cancelar alarma:', alarma.id)}
+                        showCancelButton={false}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Historial de Asignaciones */}
+              {historialAsignaciones.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Historial de Asignaciones</h3>
+                  <div className="space-y-4">
+                    {historialAsignaciones.slice(0, 5).map((alarma) => (
+                      <CronometroAlarma
+                        key={`historial-${alarma.id}`}
+                        alarmaId={alarma.id}
+                        tipo={alarma.tipo}
+                        cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
+                        direccion={alarma.direccion || 'Sin dirección'}
+                        telefono={alarma.clientes?.telefono || 'Sin teléfono'}
+                        prioridad={alarma.prioridad}
+                        estado={alarma.estado as 'activa' | 'asignada' | 'en_proceso' | 'resuelta'}
+                        created_at={alarma.created_at}
+                        attended_at={alarma.attended_at || undefined}
+                        tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                        tiempo_primera_lectura_qr={alarma.tiempo_llegada_sitio || undefined}
+                        tiempo_segunda_lectura_qr={alarma.tiempo_salida_sitio || undefined}
+                        supervisor={alarma.supervisor || undefined}
+                        patrulla_asignada={alarma.patrulla_asignada || undefined}
+                        onCancel={() => console.log('Cancelar alarma:', alarma.id)}
+                        showCancelButton={false}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mensaje cuando no hay servicios */}
+              {alarmasPendientes.length === 0 && alarmasActivasServicios.length === 0 && historialAsignaciones.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+                  <p>No hay servicios activos en este momento</p>
+                  <p className="text-sm">Los servicios aparecerán aquí cuando se asignen supervisores</p>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
