@@ -49,7 +49,7 @@ export const useSupabaseAlarmas = () => {
   const fetchAlarmas = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Cargando alarmas...');
+      console.log('🔄 Cargando todas las alarmas...');
       
       const { data, error } = await supabase
         .from('alarmas')
@@ -69,8 +69,9 @@ export const useSupabaseAlarmas = () => {
         throw error;
       }
       
-      console.log('✅ Alarmas cargadas:', data?.length || 0);
+      console.log('✅ Alarmas cargadas exitosamente:', data?.length || 0);
       setAlarmas(data || []);
+      setError(null);
     } catch (err: any) {
       console.error('❌ Error completo:', err);
       setError(err.message);
