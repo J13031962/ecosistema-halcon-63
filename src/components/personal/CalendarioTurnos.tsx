@@ -216,7 +216,9 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
       t.horas_diurnas_ordinarias !== undefined ||
       t.horas_nocturnas_ordinarias !== undefined ||
       t.horas_diurnas_dominicales !== undefined ||
-      t.horas_nocturnas_dominicales !== undefined
+      t.horas_nocturnas_dominicales !== undefined ||
+      t.horas_diurnas_festivos !== undefined ||
+      t.horas_nocturnas_festivos !== undefined
     );
 
     if (hasDetalle) {
@@ -224,8 +226,10 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
       const hno = turnosOperador.reduce((s, t: any) => s + (t.horas_nocturnas_ordinarias || 0), 0);
       const hdd = turnosOperador.reduce((s, t: any) => s + (t.horas_diurnas_dominicales || 0), 0);
       const hnd = turnosOperador.reduce((s, t: any) => s + (t.horas_nocturnas_dominicales || 0), 0);
+      const hdf = turnosOperador.reduce((s, t: any) => s + (t.horas_diurnas_festivos || 0), 0);
+      const hnf = turnosOperador.reduce((s, t: any) => s + (t.horas_nocturnas_festivos || 0), 0);
 
-      const total = hdo + hno + hdd + hnd;
+      const total = hdo + hno + hdd + hnd + hdf + hnf;
       const diurnasExtras = Math.max(0, hdo - 88);
       const diurnasOrdinariasLimitadas = Math.min(hdo, 88);
 
@@ -235,16 +239,16 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
         nocturnasOrdinarias: hno,
         dominicalesDiurnas: hdd,
         dominicalesNocturnas: hnd,
-        festivasDiurnas: 0,
-        festivasNocturnas: 0,
+        festivasDiurnas: hdf,
+        festivasNocturnas: hnf,
         total,
       };
     }
 
-    // Fallback: lógica anterior (si no hay desglose)
+    // Fallback: lógica anterior usando los campos base del turno
     const horasDiurnasOrdinarias = turnosOperador.reduce((sum, t) => {
       if (!t.es_domingo && !t.es_feriado) {
-        return sum + t.horas_diurnas;
+        return sum + (t.horas_diurnas || (t.tipo === 'diurno' ? 12 : 0));
       }
       return sum;
     }, 0);
@@ -254,40 +258,46 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
     
     const horasNocturnasOrdinarias = turnosOperador.reduce((sum, t) => {
       if (!t.es_domingo && !t.es_feriado) {
-        return sum + t.horas_nocturnas;
+        return sum + (t.horas_nocturnas || (t.tipo === 'nocturno' ? 12 : 0));
       }
       return sum;
     }, 0);
     
     const horasDominicalesDiurnas = turnosOperador.reduce((sum, t) => {
-      if (t.es_domingo) {
-        return sum + t.horas_diurnas;
+      if (t.es_domingo || t.fecha.getDay() === 0) {
+        return sum + (t.horas_diurnas || (t.tipo === 'diurno' ? 12 : 0));
       }
       return sum;
     }, 0);
     
     const horasDominicalesNocturnas = turnosOperador.reduce((sum, t) => {
-      if (t.es_domingo) {
-        return sum + t.horas_nocturnas;
+      if (t.es_domingo || t.fecha.getDay() === 0) {
+        return sum + (t.horas_nocturnas || (t.tipo === 'nocturno' ? 12 : 0));
       }
       return sum;
     }, 0);
     
     const horasFestivasDiurnas = turnosOperador.reduce((sum, t) => {
       if (t.es_feriado) {
-        return sum + t.horas_diurnas;
+        return sum + (t.horas_diurnas || (t.tipo === 'diurno' ? 12 : 0));
       }
       return sum;
     }, 0);
     
     const horasFestivasNocturnas = turnosOperador.reduce((sum, t) => {
       if (t.es_feriado) {
-        return sum + t.horas_nocturnas;
+        return sum + (t.horas_nocturnas || (t.tipo === 'nocturno' ? 12 : 0));
       }
       return sum;
     }, 0);
     
-    const total = turnosOperador.reduce((sum, t) => sum + t.horas_diurnas + t.horas_nocturnas, 0);
+    const total = turnosOperador.reduce((sum, t) => {
+      if (t.tipo === 'descanso') return sum;
+      const horas = t.total_horas || 
+                   (t.horas_diurnas || 0) + (t.horas_nocturnas || 0) || 
+                   (t.tipo === 'diurno' || t.tipo === 'nocturno' ? 12 : 0);
+      return sum + horas;
+    }, 0);
     
     return {
       diurnasOrdinarias: horasDiurnasOrdinariasLimitadas,
