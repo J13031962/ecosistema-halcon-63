@@ -127,7 +127,7 @@ const CentralAlarmasOperador = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Mi Turno</CardTitle>
+            <CardTitle className="text-sm font-medium">Mis Turnos</CardTitle>
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
@@ -140,6 +140,11 @@ const CentralAlarmasOperador = () => {
                 'No programado'
               }
             </p>
+            {turnosOperador.length > 0 && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                Total turnos programados: {turnosOperador.length}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -158,6 +163,87 @@ const CentralAlarmasOperador = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Todas las alarmas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Todas las Alarmas</CardTitle>
+          <CardDescription>
+            Vista completa de todas las alarmas del sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingAlarmasVista ? (
+            <div className="animate-pulse space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-16 bg-muted rounded"></div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {fuenteAlarmas.map((alarma) => (
+                <div key={alarma.id} className={`p-4 border rounded-lg ${
+                  alarma.estado === 'activa' ? 'bg-red-50 border-red-200' :
+                  alarma.estado === 'resuelta' ? 'bg-green-50 border-green-200' :
+                  'bg-gray-50 border-gray-200'
+                }`}>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <h5 className="font-medium text-sm">{alarma.tipo}</h5>
+                      <p className="text-xs text-muted-foreground">
+                        {alarma.direccion}, {alarma.municipio}
+                      </p>
+                      <Badge variant={getStatusColor(alarma.estado)} className="mt-1">
+                        {alarma.estado}
+                      </Badge>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Operador</p>
+                      <p className="text-sm font-medium">
+                        {alarma.operador_nombre || 'Sin asignar'}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Supervisor/Patrulla</p>
+                      <p className="text-sm font-medium">
+                        {alarma.supervisor || 'Sin asignar'}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Tiempos</p>
+                      <div className="text-xs space-y-1">
+                        {alarma.estado === 'activa' && (
+                          <p className="text-red-600">
+                            Activa: {calcularDuracion(alarma.created_at)}
+                          </p>
+                        )}
+                        {alarma.tiempo_toma_despachador && (
+                          <p className="text-blue-600">
+                            Respuesta: {calcularDuracion(alarma.created_at, alarma.tiempo_toma_despachador)}
+                          </p>
+                        )}
+                        {alarma.tiempo_aceptacion_supervisor && (
+                          <p className="text-green-600">
+                            Aceptado: {calcularDuracion(alarma.tiempo_asignacion_supervisor || alarma.created_at, alarma.tiempo_aceptacion_supervisor)}
+                          </p>
+                        )}
+                        {alarma.resolved_at && (
+                          <p className="text-gray-600">
+                            Total: {calcularDuracion(alarma.created_at, alarma.resolved_at)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Alarmas activas */}
       <Card>
@@ -214,12 +300,19 @@ const CentralAlarmasOperador = () => {
                 .slice(0, 5)
                 .map((alarma) => (
                 <div key={alarma.id} className="p-3 border rounded-lg bg-green-50 border-green-200">
-                  <div className="flex items-center justify-between">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <h5 className="font-medium">{alarma.tipo}</h5>
                       <p className="text-sm text-muted-foreground">
                         {alarma.direccion}, {alarma.municipio}
                       </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Operador: {alarma.operador_nombre || 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Supervisor/Patrulla</p>
+                      <p className="text-sm font-medium">{alarma.supervisor || 'Sin asignar'}</p>
                     </div>
                     <div className="text-right">
                       <Badge variant="outline" className="text-green-600 mb-1">
@@ -228,6 +321,9 @@ const CentralAlarmasOperador = () => {
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(alarma.resolved_at || alarma.created_at), 'HH:mm')}
                       </p>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Duración total: {alarma.resolved_at ? calcularDuracion(alarma.created_at, alarma.resolved_at) : 'N/A'}
+                      </div>
                     </div>
                   </div>
                 </div>
