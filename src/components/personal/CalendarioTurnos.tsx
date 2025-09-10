@@ -341,19 +341,25 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
       </div>
 
       {viewMode === 'semanal' ? (
-        /* Vista semanal original */
+        /* Vista semanal estilo imagen con separación de turnos */
         <div className="grid grid-cols-7 gap-3">
           {weekDays.map((day, index) => {
             const turnosDelDia = getTurnosForDay(day);
             const esDomingo = isWeekend(day) && day.getDay() === 0;
             
+            // Separar turnos por tipo
+            const turnosDiurnos = turnosDelDia.filter(t => t.tipo === 'diurno');
+            const turnosNocturnos = turnosDelDia.filter(t => t.tipo === 'nocturno');
+            const operadoresConDescanso = operadoresUnicos.filter(op => 
+              !turnosDelDia.some(t => t.operador_id === op.id)
+            );
+            
             return (
               <Card 
                 key={format(day, 'yyyy-MM-dd')}
-                className={cn("min-h-[180px] cursor-pointer hover:shadow-md transition-shadow", esDomingo && "bg-blue-50 dark:bg-blue-950/20")}
-                onClick={() => onChangeTurno && onChangeTurno(day, turnosDelDia)}
+                className={cn("min-h-[300px]", esDomingo && "bg-blue-50 dark:bg-blue-950/20")}
               >
-                <CardHeader className="p-2">
+                <CardHeader className="p-3 pb-2">
                   <CardTitle className="text-sm">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-base">{format(day, 'EEE', { locale: es })}</span>
@@ -372,67 +378,144 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
                     </div>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-2 space-y-2">
-                  {turnosDelDia.map((turno) => {
+                <CardContent className="p-3 space-y-3">
+                  {/* Turnos Diurnos */}
+                  {turnosDiurnos.map((turno) => {
                     const operadorColor = getOperadorColor(turno.operador_id);
                     return (
                       <div
                         key={turno.id}
                         className={cn(
-                          "p-3 rounded-lg border cursor-pointer hover:shadow-md transition-shadow group",
-                          operadorColor.bg,
-                          operadorColor.border
+                          "p-2 rounded border cursor-pointer hover:shadow-md transition-shadow group relative",
+                          "bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-600"
                         )}
                         onClick={(e) => {
                           e.stopPropagation();
-                          onEditTurno(turno);
+                          handleEditClick(day, turno.operador_id);
                         }}
                       >
-                        <div className="space-y-2">
-                          <div className={cn("font-bold text-base truncate", operadorColor.text)}>
-                            {turno.operador_nombre}
+                        <div className="space-y-1">
+                          <div className="font-medium text-xs text-green-800 dark:text-green-200 truncate">
+                            {turno.operador_nombre.split(' ')[0]}...
                           </div>
-                          
-                          <div className="flex items-center justify-between gap-1">
-                            <div className="flex items-center gap-1">
-                              {getTipoIcon(turno.tipo)}
-                              <span className={cn("font-semibold text-xs", operadorColor.text)}>
-                                {turno.hora_inicio}-{turno.hora_fin}
-                              </span>
-                            </div>
-                            <Badge 
-                              variant={turno.tipo === 'diurno' ? 'default' : turno.tipo === 'nocturno' ? 'secondary' : 'outline'} 
-                              className="text-xs px-2"
-                            >
-                              {turno.tipo === 'diurno' ? 'D' : turno.tipo === 'nocturno' ? 'N' : 'Desc'}
-                            </Badge>
+                          <div className="flex items-center gap-1">
+                            <Sun className="h-3 w-3 text-green-700 dark:text-green-300" />
+                            <span className="text-xs font-medium text-green-700 dark:text-green-300">
+                              {turno.hora_inicio}-{turno.hora_fin}
+                            </span>
                           </div>
-                          
-                          <div className={cn("text-xs font-medium text-center", operadorColor.text)}>
-                            {(turno.horas_diurnas + turno.horas_nocturnas).toFixed(1)}h
+                          <div className="text-xs text-center text-green-700 dark:text-green-300 font-medium">
+                            {turno.total_horas || 12}.0h
                           </div>
-
-                          {/* Botón de edición visible en hover */}
-                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 w-6 p-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditClick(day, turno.operador_id);
-                              }}
-                            >
-                              <Edit2 className="h-3 w-3" />
-                            </Button>
-                          </div>
+                        </div>
+                        
+                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-4 w-4 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClick(day, turno.operador_id);
+                            }}
+                          >
+                            <Edit2 className="h-2 w-2" />
+                          </Button>
                         </div>
                       </div>
                     );
                   })}
-                  {turnosDelDia.length === 0 && (
+
+                  {/* Turnos Nocturnos */}
+                  {turnosNocturnos.map((turno) => {
+                    return (
+                      <div
+                        key={turno.id}
+                        className={cn(
+                          "p-2 rounded border cursor-pointer hover:shadow-md transition-shadow group relative",
+                          "bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600"
+                        )}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditClick(day, turno.operador_id);
+                        }}
+                      >
+                        <div className="space-y-1">
+                          <div className="font-medium text-xs text-blue-800 dark:text-blue-200 truncate">
+                            {turno.operador_nombre.split(' ')[0]}...
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Moon className="h-3 w-3 text-blue-700 dark:text-blue-300" />
+                            <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                              {turno.hora_inicio}-{turno.hora_fin}
+                            </span>
+                          </div>
+                          <div className="text-xs text-center text-blue-700 dark:text-blue-300 font-medium">
+                            {turno.total_horas || 12}.0h
+                          </div>
+                        </div>
+                        
+                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-4 w-4 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClick(day, turno.operador_id);
+                            }}
+                          >
+                            <Edit2 className="h-2 w-2" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Operadores con Descanso */}
+                  {operadoresConDescanso.map((operador) => (
+                    <div
+                      key={`descanso-${operador.id}`}
+                      className={cn(
+                        "p-2 rounded border cursor-pointer hover:shadow-md transition-shadow group relative",
+                        "bg-orange-100 dark:bg-orange-900/30 border-orange-300 dark:border-orange-600"
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditClick(day, operador.id);
+                      }}
+                    >
+                      <div className="space-y-1">
+                        <div className="font-medium text-xs text-orange-800 dark:text-orange-200 truncate">
+                          {operador.nombre.split(' ')[0]}...
+                        </div>
+                        <div className="text-xs text-center text-orange-700 dark:text-orange-300 font-medium">
+                          Descanso
+                        </div>
+                        <div className="text-xs text-center text-orange-600 dark:text-orange-400">
+                          .0h
+                        </div>
+                      </div>
+                      
+                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-4 w-4 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditClick(day, operador.id);
+                          }}
+                        >
+                          <Edit2 className="h-2 w-2" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {turnosDelDia.length === 0 && operadoresConDescanso.length === 0 && (
                     <div className="text-xs text-muted-foreground text-center py-4">
-                      Sin turnos
+                      Sin asignaciones
                     </div>
                   )}
                 </CardContent>
@@ -469,8 +552,19 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
                     </div>
                     {weekDays.map((dia) => {
                       const fechaKey = format(dia, 'yyyy-MM-dd');
-                      const turno = turnosCompletos[fechaKey]?.[operador.id];
-                      const color = getColorForTipo(turno?.tipo || 'descanso');
+                      const turnoAsignado = turnos.find(t => 
+                        isSameDay(new Date(t.fecha), dia) && t.operador_id === operador.id
+                      );
+                      
+                      // Si hay turno asignado, mostrar los detalles reales
+                      const turno = turnoAsignado || {
+                        tipo: 'descanso',
+                        hora_inicio: '00:00',
+                        hora_fin: '00:00',
+                        total_horas: 0
+                      };
+                      
+                      const color = getColorForTipo(turno.tipo);
                       
                       return (
                         <div 
@@ -478,22 +572,28 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
                           className="min-h-[80px] border rounded p-2 hover:bg-muted/50 cursor-pointer group relative"
                           onClick={() => handleEditClick(dia, operador.id)}
                         >
-                          {turno && (
-                            <div className="space-y-1">
-                              <Badge
-                                variant="outline"
-                                className={`${color} text-xs w-full justify-center`}
-                              >
-                                {turno.tipo === 'descanso' ? 'Desc.' : 
-                                 turno.tipo === 'diurno' ? 'Día' : 'Noche'}
-                              </Badge>
-                              {turno.total_horas && turno.total_horas > 0 && (
-                                <div className="text-xs text-center text-muted-foreground">
-                                  {turno.total_horas}h
-                                </div>
-                              )}
-                            </div>
-                          )}
+                          <div className="space-y-1">
+                            <Badge
+                              variant="outline"
+                              className={`${color} text-xs w-full justify-center`}
+                            >
+                              {turno.tipo === 'descanso' ? 'Descanso' : 
+                               turno.tipo === 'diurno' ? `${turno.hora_inicio}-${turno.hora_fin}` : 
+                               `${turno.hora_inicio}-${turno.hora_fin}`}
+                            </Badge>
+                            
+                            {turnoAsignado && (
+                              <div className="text-xs text-center text-muted-foreground">
+                                {turnoAsignado.total_horas || (turnoAsignado.horas_diurnas + turnoAsignado.horas_nocturnas)}h
+                              </div>
+                            )}
+                            
+                            {!turnoAsignado && (
+                              <div className="text-xs text-center text-muted-foreground">
+                                0h
+                              </div>
+                            )}
+                          </div>
                           
                           {/* Botón de edición en hover */}
                           <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -522,25 +622,26 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
               <h4 className="font-medium mb-3">Resumen por Día</h4>
               <div className="grid grid-cols-7 gap-4">
                 {weekDays.map((dia) => {
-                  const fechaKey = format(dia, 'yyyy-MM-dd');
-                  const turnosDelDia = Object.values(turnosCompletos[fechaKey] || {});
+                  const turnosDelDia = getTurnosForDay(dia);
                   const turnoDia = turnosDelDia.filter(t => t.tipo === 'diurno').length;
                   const turnoNoche = turnosDelDia.filter(t => t.tipo === 'nocturno').length;
-                  const descansos = turnosDelDia.filter(t => t.tipo === 'descanso').length;
+                  const totalOperadores = operadoresUnicos.length;
+                  const operadoresConTurno = turnosDelDia.length;
+                  const descansos = totalOperadores - operadoresConTurno;
                   
                   return (
-                    <div key={fechaKey} className="text-center p-3 border rounded">
+                    <div key={format(dia, 'yyyy-MM-dd')} className="text-center p-3 border rounded">
                       <div className="font-medium text-sm mb-2">
                         {format(dia, 'EEE dd', { locale: es })}
                       </div>
                       <div className="space-y-1 text-xs">
                         <div className="flex items-center justify-center gap-1">
-                          <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+                          <Badge variant="outline" className="bg-green-100 text-green-800">
                             {turnoDia} Día
                           </Badge>
                         </div>
                         <div className="flex items-center justify-center gap-1">
-                          <Badge variant="outline" className="bg-purple-100 text-purple-800">
+                          <Badge variant="outline" className="bg-blue-100 text-blue-800">
                             {turnoNoche} Noche
                           </Badge>
                         </div>
