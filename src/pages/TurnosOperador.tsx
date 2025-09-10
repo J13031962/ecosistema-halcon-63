@@ -1,20 +1,86 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { GeneradorTurnosAvanzado } from "@/components/turnos/GeneradorTurnosAvanzado";
 import { VisualizadorTurnosOperador } from "@/components/turnos/VisualizadorTurnosOperador";
 import { CalendarTurnos } from "@/components/turnos/CalendarTurnos";
 import { CalendarioTurnosQuincenal } from "@/components/personal/CalendarioTurnosQuincenal";
 import { CalendarioTurnos as CalendarioTurnosPersonal } from "@/components/personal/CalendarioTurnos";
-import { useSupabaseTurnos } from "@/hooks/useSupabaseTurnos";
-import { Plus, Calendar, Users, Clock, Settings, Eye } from "lucide-react";
+import { useSupabaseTurnos, TurnoOperador } from "@/hooks/useSupabaseTurnos";
+import { Plus, Calendar, Users, Clock, Settings, Eye, AlertCircle, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const TurnosOperador = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState(new Date());
-  const { turnosOperador, loading, error } = useSupabaseTurnos();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [misTurnos, setMisTurnos] = useState<TurnoOperador[]>([]);
+  const { turnosOperador, loading, error, refetch } = useSupabaseTurnos();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        console.log('👤 Usuario actual:', user.id, user.email);
+        setCurrentUser(user);
+        
+        // Refrescar los datos de turnos
+        await refetch();
+      }
+    };
+    
+    getCurrentUser();
+  }, [refetch]);
+
+  useEffect(() => {
+    if (currentUser && turnosOperador.length >= 0) {
+      console.log('📊 Total turnos operador en BD:', turnosOperador.length);
+      console.log('📊 Turnos operador completos:', turnosOperador);
+      
+      // Filtrar turnos del usuario actual - múltiples criterios
+      const userTurnos = turnosOperador.filter(turno => {
+        const matchesUserId = turno.operador_id === currentUser.id;
+        const matchesEmail = turno.operador_nombre?.toLowerCase().includes(currentUser.email?.split('@')[0] || '');
+        const emailName = currentUser.email?.split('@')[0]?.toLowerCase();
+        const turnoName = turno.operador_nombre?.toLowerCase();
+        const matchesPartialName = emailName && turnoName && (
+          turnoName.includes(emailName) || 
+          emailName.includes(turnoName.split(' ')[0]) ||
+          turnoName.includes('luis') && emailName.includes('luis')
+        );
+        
+        console.log(`🔍 Evaluando turno ${turno.id}:`, {
+          operador_id: turno.operador_id,
+          operador_nombre: turno.operador_nombre,
+          user_id: currentUser.id,
+          user_email: currentUser.email,
+          matchesUserId,
+          matchesEmail,
+          matchesPartialName
+        });
+        
+        return matchesUserId || matchesEmail || matchesPartialName;
+      });
+      
+      console.log('✅ Turnos filtrados para el usuario:', userTurnos);
+      setMisTurnos(userTurnos);
+      
+      // Si no hay turnos, mostrar mensaje de debug
+      if (userTurnos.length === 0 && turnosOperador.length > 0) {
+        toast({
+          title: "Debug - Turnos no encontrados",
+          description: `No se encontraron turnos para ${currentUser.email}. Total turnos en BD: ${turnosOperador.length}`,
+          variant: "destructive"
+        });
+      }
+    }
+  }, [currentUser, turnosOperador, toast]);
 
   // Convertir TurnoOperador a formato Turno para el calendario
   const turnosAdaptados = turnosOperador.map(turno => ({
@@ -43,8 +109,31 @@ const TurnosOperador = () => {
           <p className="text-sm text-muted-foreground">
             Consulta y visualización de tus turnos asignados
           </p>
+          {currentUser && (
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="secondary">
+                <User className="w-3 h-3 mr-1" />
+                {currentUser.email}
+              </Badge>
+              <Badge variant="outline">
+                {misTurnos.length} turnos encontrados
+              </Badge>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Debug info */}
+      {process.env.NODE_ENV === 'development' && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Debug:</strong> Total turnos en BD: {turnosOperador.length} | 
+            Mis turnos: {misTurnos.length} | 
+            Usuario: {currentUser?.email || 'No autenticado'}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Tabs defaultValue="calendar" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -70,22 +159,45 @@ const TurnosOperador = () => {
             </CardHeader>
             <CardContent>
               {loading ? (
-                <p>Cargando...</p>
-              ) : turnosAdaptados.length > 0 ? (
+                <p>Cargando turnos...</p>
+              ) : error ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Error al cargar turnos: {error}
+                  </AlertDescription>
+                </Alert>
+              ) : misTurnos.length > 0 ? (
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">
-                      Tienes {turnosAdaptados.length} turnos programados en total.
+                      Tienes {misTurnos.length} turnos programados en total.
                     </p>
                     <div className="text-xs text-muted-foreground">
-                      Próximo turno: {turnosAdaptados.length > 0 ? 
-                        new Date(Math.min(...turnosAdaptados.map(t => new Date(t.fecha).getTime()))).toLocaleDateString() : 
+                      Próximo turno: {misTurnos.length > 0 ? 
+                        new Date(Math.min(...misTurnos.map(t => new Date(t.fecha).getTime()))).toLocaleDateString() : 
                         'No programado'
                       }
                     </div>
                   </div>
                   <CalendarioTurnosPersonal
-                    turnos={turnosAdaptados}
+                    turnos={misTurnos.map(turno => ({
+                      id: turno.id?.toString() || '',
+                      fecha: new Date(turno.fecha),
+                      operador_id: turno.operador_id || '',
+                      operador_nombre: turno.operador_nombre || `Operador ${turno.operador_id}`,
+                      hora_inicio: turno.horario_inicio || '08:00',
+                      hora_fin: turno.horario_fin || '16:00',
+                      tipo: (turno.turno === 'nocturno' ? 'nocturno' : 'diurno') as 'diurno' | 'nocturno',
+                      horas_diurnas: 8,
+                      horas_nocturnas: turno.turno === 'nocturno' ? 8 : 0,
+                      horas_domingo: 0,
+                      horas_feriado: 0,
+                      horas_extra: 0,
+                      total_horas: 8,
+                      es_domingo: false,
+                      es_feriado: false
+                    }))}
                     onEditTurno={(turno) => {
                       console.log('Ver detalles del turno:', turno);
                     }}
@@ -94,9 +206,18 @@ const TurnosOperador = () => {
                   />
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  No tienes turnos asignados actualmente.
-                </p>
+                <div className="text-center py-8">
+                  <AlertCircle className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                  <p className="text-gray-500 font-medium">No tienes turnos asignados</p>
+                  <p className="text-sm text-gray-400 mt-2">
+                    Los turnos aparecerán aquí cuando sean asignados por el administrador.
+                  </p>
+                  {currentUser && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Usuario actual: {currentUser.email}
+                    </p>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>
@@ -111,7 +232,7 @@ const TurnosOperador = () => {
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{turnosOperador.length}</div>
+                <div className="text-2xl font-bold">{misTurnos.length}</div>
                 <p className="text-xs text-muted-foreground">Turnos asignados</p>
               </CardContent>
             </Card>
@@ -154,7 +275,7 @@ const TurnosOperador = () => {
                 </div>
                 <div>
                   <span className="text-muted-foreground block">Turnos Asignados:</span>
-                  <span className="font-medium text-lg">{turnosOperador.length}</span>
+                  <span className="font-medium text-lg">{misTurnos.length}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground block">Próximo Turno:</span>

@@ -5,13 +5,17 @@ import { useSupabaseUsuarios } from '@/hooks/useSupabaseUsuarios';
 import { useAuthConsolidated } from '@/hooks/useAuthConsolidated';
 import { UserRole } from '@/types/auth';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Calendar, Trash2, Loader2 } from 'lucide-react';
 import CreateOperatorUsers from './CreateOperatorUsers';
+import { createTestTurnos, cleanTestTurnos } from '@/utils/createTestTurnos';
+import { useToast } from '@/hooks/use-toast';
 
 export const AdminTestPanel: React.FC = () => {
   const { createUser, users, loading, fetchUsers } = useSupabaseUsuarios();
   const { user, hasRole } = useAuthConsolidated();
   const [testResults, setTestResults] = useState<any[]>([]);
+  const [turnosLoading, setTurnosLoading] = useState(false);
+  const { toast } = useToast();
 
   const runAuthTests = async () => {
     const results = [];
@@ -66,6 +70,44 @@ export const AdminTestPanel: React.FC = () => {
     setTestResults(results);
   };
 
+  const handleCreateTestTurnos = async () => {
+    try {
+      setTurnosLoading(true);
+      const turnos = await createTestTurnos();
+      toast({
+        title: "Éxito",
+        description: `${turnos?.length || 0} turnos de prueba creados para Luis Perez`
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setTurnosLoading(false);
+    }
+  };
+
+  const handleCleanTestTurnos = async () => {
+    try {
+      setTurnosLoading(true);
+      await cleanTestTurnos();
+      toast({
+        title: "Éxito",
+        description: "Turnos de prueba eliminados"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setTurnosLoading(false);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'success':
@@ -102,13 +144,51 @@ export const AdminTestPanel: React.FC = () => {
             </div>
           </div>
 
-          <Button 
-            onClick={runAuthTests} 
-            disabled={loading || !hasRole('administrador')}
-            className="w-full"
-          >
-            {loading ? 'Ejecutando pruebas...' : 'Ejecutar Pruebas de Sistema'}
-          </Button>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button 
+              onClick={runAuthTests} 
+              disabled={loading || !hasRole('administrador')}
+              className="w-full"
+            >
+              {loading ? 'Ejecutando pruebas...' : 'Ejecutar Pruebas de Sistema'}
+            </Button>
+
+            <Button 
+              onClick={handleCreateTestTurnos}
+              disabled={turnosLoading || !hasRole('administrador')}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {turnosLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creando...
+                </>
+              ) : (
+                <>
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Crear Turnos (Luis)
+                </>
+              )}
+            </Button>
+
+            <Button 
+              onClick={handleCleanTestTurnos}
+              disabled={turnosLoading || !hasRole('administrador')}
+              variant="destructive"
+            >
+              {turnosLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Limpiar Turnos
+                </>
+              )}
+            </Button>
+          </div>
 
           {testResults.length > 0 && (
             <div className="space-y-2">

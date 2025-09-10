@@ -189,6 +189,61 @@ export const useSupabaseTurnos = () => {
 
   useEffect(() => {
     fetchTurnos();
+
+    // Configurar tiempo real para turnos_operador
+    const turnosOperadorChannel = supabase
+      .channel('turnos_operador_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'turnos_operador'
+        },
+        (payload) => {
+          console.log('Cambio en turnos_operador:', payload);
+          if (payload.eventType === 'INSERT') {
+            setTurnosOperador(prev => [...prev, payload.new as TurnoOperador]);
+          } else if (payload.eventType === 'UPDATE') {
+            setTurnosOperador(prev => prev.map(turno => 
+              turno.id === payload.new.id ? payload.new as TurnoOperador : turno
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setTurnosOperador(prev => prev.filter(turno => turno.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    // Configurar tiempo real para turnos_supervisor
+    const turnosSupervisorChannel = supabase
+      .channel('turnos_supervisor_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'turnos_supervisor'
+        },
+        (payload) => {
+          console.log('Cambio en turnos_supervisor:', payload);
+          if (payload.eventType === 'INSERT') {
+            setTurnosSupervisor(prev => [...prev, payload.new as TurnoSupervisor]);
+          } else if (payload.eventType === 'UPDATE') {
+            setTurnosSupervisor(prev => prev.map(turno => 
+              turno.id === payload.new.id ? payload.new as TurnoSupervisor : turno
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setTurnosSupervisor(prev => prev.filter(turno => turno.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(turnosOperadorChannel);
+      supabase.removeChannel(turnosSupervisorChannel);
+    };
   }, []);
 
   return {
