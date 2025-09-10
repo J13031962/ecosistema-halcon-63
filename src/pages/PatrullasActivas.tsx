@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,19 +9,31 @@ import CronometroAlarma from "@/components/alarmas/CronometroAlarma";
 import { useToast } from "@/hooks/use-toast";
 import { Car, MapPin, Clock, Search, Filter, Download, Shield, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 const PatrullasActivas = () => {
   const { patrullas, loading: patrullasLoading, updatePatrulla } = useSupabasePatrullas();
   const { alarmas, resolverAlarma } = useSupabaseAlarmasEnhanced();
   const { toast } = useToast();
+  const [realtimeAlarmas, setRealtimeAlarmas] = useState(alarmas);
   
   // Filtrar solo supervisores (que tienen patrullas asignadas)
   const supervisores = patrullas.filter(p => p.supervisor_nombre);
   
+  // Alarmas ordenadas por hora de creación (más recientes primero)
+  const alarmasOrdenadas = React.useMemo(() => {
+    return [...realtimeAlarmas].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }, [realtimeAlarmas]);
+  
   // Alarmas asignadas y en proceso para mostrar en patrullas activas
-  const alarmasActivas = alarmas.filter(a => 
+  const alarmasActivas = alarmasOrdenadas.filter(a => 
     ['asignada', 'en_proceso'].includes(a.estado) && a.supervisor && a.patrulla_asignada
   );
+
+  // Alarmas pendientes ordenadas por tiempo
+  const alarmasPendientes = alarmasOrdenadas.filter(a => a.estado === 'activa');
 
   // Supervisores que están atendiendo alarmas
   const supervisoresConAlarmas = alarmasActivas.map(a => ({
@@ -30,6 +42,48 @@ const PatrullasActivas = () => {
     tiempo_respuesta: a.attended_at ? 
       Math.floor((new Date().getTime() - new Date(a.attended_at).getTime()) / 60000) : 0
   }));
+
+  // Configurar actualizaciones en tiempo real
+  useEffect(() => {
+    setRealtimeAlarmas(alarmas);
+  }, [alarmas]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('alarmas_patrullas_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'alarmas'
+        },
+        (payload) => {
+          console.log('🔄 Actualización en tiempo real de alarmas:', payload);
+          
+          if (payload.eventType === 'UPDATE') {
+            setRealtimeAlarmas(prev => 
+              prev.map(alarma => 
+                alarma.id === payload.new.id 
+                  ? { ...alarma, ...payload.new }
+                  : alarma
+              )
+            );
+          } else if (payload.eventType === 'INSERT') {
+            setRealtimeAlarmas(prev => [payload.new as any, ...prev]);
+          } else if (payload.eventType === 'DELETE') {
+            setRealtimeAlarmas(prev => 
+              prev.filter(alarma => alarma.id !== payload.old.id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Función para verificar si un supervisor está disponible
   const isSupervisorAvailable = (supervisor: string, patrulla: string, tiempoAsignacion?: string) => {
@@ -181,33 +235,34 @@ const PatrullasActivas = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {alarmas.filter(a => a.estado === 'activa').map((alarma) => (
-              <CronometroAlarma
-                key={alarma.id}
-                alarmaId={alarma.id}
-                tipo={alarma.tipo}
-                cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
-                direccion={alarma.direccion}
-                municipio={alarma.municipio}
-                telefono={alarma.clientes?.telefono}
-                prioridad={alarma.prioridad}
-                estado={alarma.estado as any}
-                created_at={alarma.created_at}
-                attended_at={alarma.attended_at || undefined}
-                tiempo_asignacion_supervisor={alarma.tiempo_asignacion || undefined}
-                tiempo_primera_lectura_qr={undefined}
-                tiempo_segunda_lectura_qr={undefined}
-                supervisor={alarma.supervisor || undefined}
-                patrulla_asignada={alarma.patrulla_asignada || undefined}
-                showCancelButton={false}
-              />
-            ))}
-            {alarmas.filter(a => a.estado === 'activa').length === 0 && (
+            {alarmasPendientes.length === 0 ? (
               <div className="col-span-full text-center py-8 text-muted-foreground">
                 <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <h3 className="text-lg font-medium mb-2">No hay servicios pendientes</h3>
                 <p>Los servicios pendientes de asignación aparecerán aquí</p>
               </div>
+            ) : (
+              alarmasPendientes.map((alarma) => (
+                <CronometroAlarma
+                  key={alarma.id}
+                  alarmaId={alarma.id}
+                  tipo={alarma.tipo}
+                  cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
+                  direccion={alarma.direccion}
+                  municipio={alarma.municipio}
+                  telefono={alarma.clientes?.telefono}
+                  prioridad={alarma.prioridad}
+                  estado={alarma.estado as any}
+                  created_at={alarma.created_at}
+                  attended_at={alarma.attended_at || undefined}
+                  tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                  tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
+                  tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
+                  supervisor={alarma.supervisor || undefined}
+                  patrulla_asignada={alarma.patrulla_asignada || undefined}
+                  showCancelButton={false}
+                />
+              ))
             )}
           </div>
         </CardContent>
@@ -241,9 +296,9 @@ const PatrullasActivas = () => {
                   estado={alarma.estado as any}
                   created_at={alarma.created_at}
                   attended_at={alarma.attended_at || undefined}
-                  tiempo_asignacion_supervisor={alarma.tiempo_asignacion || undefined}
-                  tiempo_primera_lectura_qr={undefined}
-                  tiempo_segunda_lectura_qr={undefined}
+                  tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                  tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
+                  tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
                   supervisor={alarma.supervisor || undefined}
                   patrulla_asignada={alarma.patrulla_asignada || undefined}
                   showCancelButton={true}
