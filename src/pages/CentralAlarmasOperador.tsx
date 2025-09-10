@@ -195,76 +195,14 @@ const CentralAlarmasOperador = () => {
         </CardContent>
       </Card>
 
-      {/* Historial de mis alarmas resueltas */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Mis Alarmas Resueltas Hoy</CardTitle>
-          <CardDescription>
-            Alarmas que has procesado exitosamente
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loadingAlarmasVista ? (
-            <div className="animate-pulse space-y-4">
-              {[1, 2].map(i => (
-                <div key={i} className="h-12 bg-muted rounded"></div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {alarmasResueltas
-                .filter(a => 
-                  new Date(a.resolved_at || a.created_at).toDateString() === new Date().toDateString()
-                )
-                .slice(0, 5)
-                .map((alarma) => (
-                <div key={alarma.id} className="p-3 border rounded-lg bg-green-50 border-green-200">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <h5 className="font-medium">{alarma.tipo}</h5>
-                      <p className="text-sm text-muted-foreground">
-                        {alarma.direccion}, {alarma.municipio}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Operador: {alarma.operador_nombre || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Supervisor/Patrulla</p>
-                      <p className="text-sm font-medium">{alarma.supervisor || 'Sin asignar'}</p>
-                    </div>
-                    <div className="text-right">
-                      <Badge variant="outline" className="text-green-600 mb-1">
-                        Resuelta
-                      </Badge>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(alarma.resolved_at || alarma.created_at), 'HH:mm')}
-                      </p>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Duración total: {alarma.resolved_at ? calcularDuracion(alarma.created_at, alarma.resolved_at) : 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )) || (
-                <div className="text-center py-4 text-muted-foreground">
-                  <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-                  <p>No has resuelto alarmas hoy aún</p>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Alarmas canceladas */}
+      {/* Calendario de turnos */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Alarmas Canceladas</CardTitle>
+              <CardTitle>Calendario de Turnos</CardTitle>
               <CardDescription>
-                Alarmas que fueron canceladas en el sistema
+                Gestión de turnos del operador
               </CardDescription>
             </div>
             <Button 
@@ -278,64 +216,9 @@ const CentralAlarmasOperador = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {loadingAlarmasVista ? (
-            <div className="animate-pulse space-y-4">
-              {[1, 2].map(i => (
-                <div key={i} className="h-12 bg-muted rounded"></div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {fuenteAlarmas
-                .filter(a => a.estado === 'cancelada')
-                .slice(0, 5)
-                .map((alarma) => (
-                <div key={alarma.id} className="p-3 border rounded-lg bg-red-50 border-red-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h5 className="font-medium">{alarma.tipo}</h5>
-                      <p className="text-sm text-muted-foreground">
-                        {alarma.direccion}, {alarma.municipio}
-                      </p>
-                      <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-green-600">Generada:</span>
-                          <span>
-                            {alarma.created_at && isValid(new Date(alarma.created_at)) 
-                              ? format(new Date(alarma.created_at), 'dd/MM/yyyy HH:mm')
-                              : 'Fecha no válida'
-                            }
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-red-600">Cancelada:</span>
-                          <span>
-                            {alarma.created_at && isValid(new Date(alarma.created_at)) 
-                              ? format(new Date(alarma.created_at), 'dd/MM/yyyy HH:mm')
-                              : 'Fecha no válida'
-                            }
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <Badge variant="outline" className="text-red-600 mb-1">
-                        Cancelada
-                      </Badge>
-                      <p className="text-xs text-muted-foreground">
-                        Duración: calculando...
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )) || (
-                <div className="text-center py-4 text-muted-foreground">
-                  <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-                  <p>No hay alarmas canceladas</p>
-                </div>
-              )}
-            </div>
-          )}
+          <p className="text-sm text-muted-foreground mb-4">
+            Haz clic en "Ver Calendario" para consultar los turnos programados del equipo.
+          </p>
         </CardContent>
       </Card>
 
