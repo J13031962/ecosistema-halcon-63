@@ -4,12 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Car, MapPin, Clock, Battery, Fuel, Navigation, AlertTriangle, Camera } from "lucide-react";
+import { Car, MapPin, Clock, Battery, Fuel, Navigation, AlertTriangle, Camera, Phone, Flame, Eye, UserCheck, Shield } from "lucide-react";
+import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
+import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
+import { format } from "date-fns";
 
 const MiPatrulla = () => {
+  const { user } = useAuthConsolidated();
+  const { alarmas, loading } = useSupabaseAlarmas();
+  
   const [patrullaInfo] = useState({
     unit: "Patrulla 05",
-    officer: "Juan Carlos Morales",
+    officer: user?.full_name || "Supervisor Motorizado",
     vehicleModel: "Chevrolet Aveo 2020",
     licensePlate: "ABC-123",
     status: "En Servicio",
@@ -22,29 +28,25 @@ const MiPatrulla = () => {
     nextMaintenance: "2024-02-15"
   });
 
-  const [actividades] = useState([
-    {
-      time: "14:35:22",
-      type: "Punto de Control",
-      location: "Checkpoint Norte #3",
-      status: "Completado",
-      notes: "Todo en orden"
-    },
-    {
-      time: "14:20:15",
-      type: "Patrullaje",
-      location: "Ronda Sector Norte",
-      status: "En Proceso",
-      notes: "Iniciando recorrido rutinario"
-    },
-    {
-      time: "14:05:30",
-      type: "Reporte",
-      location: "Base Central",
-      status: "Completado", 
-      notes: "Inicio de turno registrado"
+  // Historial completo de alarmas atendidas por el supervisor desde el inicio
+  const historialCompleto = alarmas.filter(
+    alarma => 
+      // Supervisor específico por ID o nombre
+      alarma.supervisor_id === user?.id || 
+      (alarma.supervisor && alarma.supervisor === user?.full_name) ||
+      // Si el supervisor está en el campo patrulla_asignada (formato legacy)
+      (alarma.patrulla_asignada && alarma.patrulla_asignada.includes(user?.full_name || ''))
+  ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); // Más recientes primero
+
+  const getAlarmTypeIcon = (tipo: string) => {
+    switch (tipo) {
+      case "Fuego": return <Flame className="h-4 w-4" />;
+      case "Pánico": return <Shield className="h-4 w-4" />;
+      case "Revisión": return <Eye className="h-4 w-4" />;
+      case "Acompañamiento": return <UserCheck className="h-4 w-4" />;
+      default: return <AlertTriangle className="h-4 w-4" />;
     }
-  ]);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -52,6 +54,35 @@ const MiPatrulla = () => {
       case "Disponible": return "secondary";
       case "Fuera de Servicio": return "outline";
       case "Emergencia": return "destructive";
+      default: return "outline";
+    }
+  };
+
+  const getEstadoColor = (estado: string) => {
+    switch (estado) {
+      case "asignada": return "default";
+      case "en_proceso": return "secondary";
+      case "resuelta": return "outline";
+      case "activa": return "destructive";
+      default: return "outline";
+    }
+  };
+
+  const getEstadoDisplay = (estado: string) => {
+    switch (estado) {
+      case 'asignada': return 'Asignada';
+      case 'en_proceso': return 'En Proceso';
+      case 'resuelta': return 'Finalizada';
+      case 'activa': return 'Pendiente';
+      default: return estado;
+    }
+  };
+
+  const getPriorityColor = (prioridad: string) => {
+    switch (prioridad) {
+      case "alta": return "destructive";
+      case "media": return "default";
+      case "baja": return "secondary";
       default: return "outline";
     }
   };
@@ -68,11 +99,92 @@ const MiPatrulla = () => {
     return "text-red-600";
   };
 
+  const calcularTiempoRespuesta = (createdAt: string, resolvedAt?: string) => {
+    const inicio = new Date(createdAt);
+    const fin = resolvedAt ? new Date(resolvedAt) : new Date();
+    const diferencia = Math.floor((fin.getTime() - inicio.getTime()) / 60000); // en minutos
+    
+    if (diferencia < 60) {
+      return `${diferencia}min`;
+    } else {
+      const horas = Math.floor(diferencia / 60);
+      const minutos = diferencia % 60;
+      return `${horas}h ${minutos}min`;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-1/3"></div>
+          <div className="h-4 bg-muted rounded w-2/3"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="h-96 bg-muted rounded"></div>
+            <div className="lg:col-span-2 space-y-6">
+              <div className="h-32 bg-muted rounded"></div>
+              <div className="h-64 bg-muted rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Mi Patrulla</h1>
-        <p className="text-muted-foreground">Estado y control de mi unidad asignada</p>
+        <p className="text-muted-foreground">Estado y control de mi unidad asignada - Historial completo de servicios</p>
+      </div>
+
+      {/* Estadísticas del Supervisor */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Atendidas</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{historialCompleto.length}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Finalizadas</CardTitle>
+            <Shield className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {historialCompleto.filter(a => a.estado === 'resuelta').length}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">En Proceso</CardTitle>
+            <Clock className="h-4 w-4 text-orange-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              {historialCompleto.filter(a => ['asignada', 'en_proceso'].includes(a.estado)).length}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Alta Prioridad</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {historialCompleto.filter(a => a.prioridad === 'alta').length}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -155,7 +267,7 @@ const MiPatrulla = () => {
           </Card>
         </div>
 
-        {/* Estado y Controles */}
+        {/* Historial de Servicios */}
         <div className="lg:col-span-2 space-y-6">
           {/* Ubicación Actual */}
           <Card>
@@ -211,73 +323,80 @@ const MiPatrulla = () => {
             </CardContent>
           </Card>
 
-          {/* Registro de Actividades */}
+          {/* Historial Completo de Servicios */}
           <Card>
             <CardHeader>
-              <CardTitle>Actividades del Turno</CardTitle>
-              <CardDescription>Registro de actividades realizadas hoy</CardDescription>
+              <CardTitle>Historial Completo de Servicios</CardTitle>
+              <CardDescription>Todas las alarmas atendidas desde el inicio de la cuenta</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {actividades.map((actividad, index) => (
-                  <div key={index} className="flex items-start space-x-4 p-3 border rounded-lg">
-                    <div className="text-sm text-muted-foreground min-w-[80px]">
-                      {actividad.time}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h5 className="font-medium">{actividad.type}</h5>
-                        <Badge variant={actividad.status === 'Completado' ? 'secondary' : 'default'}>
-                          {actividad.status}
+              <div className="space-y-3">
+                {historialCompleto.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <h3 className="text-lg font-medium mb-2">No hay servicios registrados</h3>
+                    <p>Los servicios asignados aparecerán aquí</p>
+                  </div>
+                ) : (
+                  historialCompleto.map((alarma, index) => (
+                    <div key={alarma.id} className="flex items-start space-x-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="flex flex-col items-center min-w-[60px]">
+                        <div className="flex items-center justify-center p-2 rounded-full bg-muted mb-1">
+                          {getAlarmTypeIcon(alarma.tipo)}
+                        </div>
+                        <Badge variant={getEstadoColor(alarma.estado)} className="text-xs">
+                          {getEstadoDisplay(alarma.estado)}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">{actividad.location}</p>
-                      {actividad.notes && (
-                        <p className="text-sm mt-1">{actividad.notes}</p>
-                      )}
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <h5 className="font-semibold truncate">{alarma.clientes?.nombre || 'Cliente no especificado'}</h5>
+                            <Badge variant={getPriorityColor(alarma.prioridad)} className="text-xs">
+                              {alarma.prioridad}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(alarma.created_at), 'dd/MM/yyyy HH:mm')}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-1 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Tipo:</span>
+                            <span>{alarma.tipo}</span>
+                          </div>
+                          
+                          {alarma.direccion && (
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-3 w-3 text-muted-foreground" />
+                              <span className="truncate">{alarma.direccion}</span>
+                              {alarma.municipio && <span className="text-muted-foreground">• {alarma.municipio}</span>}
+                            </div>
+                          )}
+                          
+                          {alarma.clientes?.telefono && (
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-3 w-3 text-muted-foreground" />
+                              <span>{alarma.clientes.telefono}</span>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-xs text-muted-foreground">
+                              Patrulla: {alarma.patrulla_asignada || 'No asignada'}
+                            </span>
+                            <span className="text-xs font-mono text-blue-600">
+                              Duración: {calcularTiempoRespuesta(alarma.created_at, alarma.resolved_at)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Nuevo Reporte */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Registrar Actividad</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Tipo de Actividad</label>
-                  <select className="w-full mt-1 px-3 py-2 border border-border rounded-md">
-                    <option value="">Seleccionar...</option>
-                    <option value="patrullaje">Patrullaje</option>
-                    <option value="punto-control">Punto de Control</option>
-                    <option value="incidente">Incidente</option>
-                    <option value="reporte">Reporte</option>
-                    <option value="mantenimiento">Mantenimiento</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Ubicación</label>
-                  <Input placeholder="Ubicación de la actividad" />
-                </div>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium">Notas</label>
-                <Textarea 
-                  placeholder="Descripción detallada de la actividad..."
-                  className="mt-1"
-                />
-              </div>
-              
-              <Button className="w-full">
-                Registrar Actividad
-              </Button>
             </CardContent>
           </Card>
         </div>
