@@ -40,10 +40,33 @@ const MisAsignaciones = () => {
   const [siteTimes, setSiteTimes] = useState<Record<string, number>>({});
 
   // Filtrar alarmas asignadas al supervisor actual
-  const misAsignaciones = alarmas.filter(
-    alarma => alarma.supervisor_id === user?.id || 
-    (alarma.supervisor && alarma.supervisor.includes(user?.full_name || ''))
-  );
+  const misAsignaciones = alarmas.filter(alarma => {
+    // Debug: log all alarms and supervisor info
+    console.log('🔍 Checking alarm:', {
+      alarmaId: alarma.id,
+      supervisor_id: alarma.supervisor_id,
+      supervisor: alarma.supervisor,
+      currentUserId: user?.id,
+      currentUserName: user?.full_name,
+      currentUserEmail: user?.email
+    });
+    
+    return alarma.supervisor_id === user?.id || 
+           (alarma.supervisor && alarma.supervisor.includes(user?.full_name || '')) ||
+           (alarma.supervisor && alarma.supervisor.includes(user?.email || ''));
+  });
+
+  console.log('👥 Current user:', user);
+  console.log('📋 Total alarms:', alarmas.length);
+  console.log('🎯 My assignments:', misAsignaciones.length);
+
+  // Force refresh when component mounts or user changes
+  useEffect(() => {
+    if (user?.id) {
+      console.log('🔄 Force refreshing alarms for supervisor:', user.email);
+      refetch();
+    }
+  }, [user?.id, refetch]);
 
   
   // Update site times every second for active alarms

@@ -105,7 +105,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
             { title: "Todas las Patrullas", url: "/patrullas", icon: Car },
             { title: "Asignaciones", url: "/asignaciones", icon: MapPin },
             { title: "Gestión Personal Supervisores", url: "/personal-supervisores", icon: UserCheck },
-            { title: "Mi Patrulla", url: "/mi-patrulla", icon: Car },
           ]
         },
         { 
@@ -241,9 +240,9 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
     case 'supervisor_motorizado':
       return [
         { 
-          category: "🚔 Mi Patrulla", 
+          category: "🚔 Asignaciones", 
           items: [
-            { title: "Mi Patrulla", url: "/mi-patrulla", icon: Car },
+            { title: "Mis Asignaciones", url: "/asignaciones", icon: MapPin },
             { title: "Rutas Asignadas", url: "/rutas-asignadas", icon: MapPin },
             { title: "Registro Incidentes", url: "/registro-incidentes", icon: AlertTriangle },
             { title: "Registro Actividades", url: "/registro-actividades", icon: Clock },

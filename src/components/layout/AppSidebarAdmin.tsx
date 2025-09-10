@@ -159,7 +159,7 @@ const adminMenuItems: MenuCategory[] = [
           { title: "Turnos Supervisor", url: "/turnos-supervisor", icon: Clock },
         ]},
       { title: "Supervisor", url: "#", icon: Shield, subcategory: [
-        { title: "Mi Patrulla", url: "/mi-patrulla", icon: Car },
+        { title: "Mis Asignaciones", url: "/asignaciones", icon: MapPin },
         { title: "Rutas Asignadas", url: "/rutas-asignadas", icon: MapPin },
         { title: "Registro Incidentes", url: "/registro-incidentes", icon: AlertTriangle },
         { title: "Registro Actividades", url: "/registro-actividades", icon: Clock },
