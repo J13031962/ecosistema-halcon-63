@@ -5,7 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Calendar, Clock, Edit, User, Sun, Moon, Edit2, Users } from 'lucide-react';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar, Clock, Edit, User, Sun, Moon, Edit2, Users, CalendarIcon } from 'lucide-react';
 import { format, addDays, startOfWeek, isSameDay, isWeekend } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -71,6 +73,8 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
   } | null>(null);
   const [selectedOperadorId, setSelectedOperadorId] = useState('');
   const [selectedTurnoTipo, setSelectedTurnoTipo] = useState('');
+  const [fechaInicioResumen, setFechaInicioResumen] = useState<Date | undefined>();
+  const [fechaFinResumen, setFechaFinResumen] = useState<Date | undefined>();
 
   const startWeek = startOfWeek(selectedWeek, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startWeek, i));
@@ -209,7 +213,15 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
   };
 
   const getTotalHorasOperador = (operadorId: string) => {
-    const turnosOperador = turnos.filter(t => t.operador_id === operadorId);
+    // Filtrar turnos por operador y fechas si están definidas
+    let turnosOperador = turnos.filter(t => t.operador_id === operadorId);
+    
+    if (fechaInicioResumen && fechaFinResumen) {
+      turnosOperador = turnosOperador.filter(t => {
+        const fechaTurno = new Date(t.fecha);
+        return fechaTurno >= fechaInicioResumen && fechaTurno <= fechaFinResumen;
+      });
+    }
 
     // Calcular desglose detallado si existen valores reales (>0)
     const hdo = turnosOperador.reduce((s, t: any) => s + (t.horas_diurnas_ordinarias || 0), 0);
@@ -683,13 +695,86 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
             <Clock className="h-5 w-5" />
             Resumen de Horas por Operador
           </CardTitle>
+          {/* Filtros de fecha para el resumen */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="space-y-2">
+              <Label className="text-sm">Fecha Inicio</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[180px] justify-start text-left font-normal",
+                      !fechaInicioResumen && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {fechaInicioResumen ? format(fechaInicioResumen, "dd/MM/yyyy") : "Seleccionar"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={fechaInicioResumen}
+                    onSelect={setFechaInicioResumen}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm">Fecha Final</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[180px] justify-start text-left font-normal",
+                      !fechaFinResumen && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {fechaFinResumen ? format(fechaFinResumen, "dd/MM/yyyy") : "Seleccionar"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={fechaFinResumen}
+                    onSelect={setFechaFinResumen}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <Button 
+              onClick={() => {
+                setFechaInicioResumen(undefined);
+                setFechaFinResumen(undefined);
+              }}
+              variant="outline"
+              className="mt-6"
+            >
+              Limpiar Filtros
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {operadoresUnicos.map((operador) => {
-              const horas = getTotalHorasOperador(operador.id);
-              const operadorColor = getOperadorColor(operador.id);
-              return (
+            {operadoresUnicos
+              .filter((operador) => {
+                // Solo mostrar operadores que tengan turnos en el período filtrado
+                const horas = getTotalHorasOperador(operador.id);
+                return horas.total > 0;
+              })
+              .map((operador) => {
+                const horas = getTotalHorasOperador(operador.id);
+                const operadorColor = getOperadorColor(operador.id);
+                return (
                 <div key={operador.id} className={cn("p-4 border rounded-lg", operadorColor.bg, operadorColor.border)}>
                   <h4 className={cn("font-bold mb-3 text-base", operadorColor.text)}>{operador.nombre}</h4>
                   <div className="space-y-2 text-sm">
