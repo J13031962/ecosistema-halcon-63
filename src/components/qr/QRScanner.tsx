@@ -58,27 +58,28 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
     if (!videoRef.current) return;
 
     try {
-      setIsScanning(true);
+      setIsScanning(false);
       setCameraError(null);
+      
+      console.log('🎥 Iniciando scanner QR...');
       
       // Verificar disponibilidad de cámara
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Camera API not supported');
       }
 
-      // Solicitar permisos de cámara primero
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'environment' // Preferir cámara trasera
-        } 
-      });
-      
-      // Detener el stream inmediatamente ya que QrScanner manejará su propio stream
-      stream.getTracks().forEach(track => track.stop());
+      // Verificar permisos de cámara disponibles
+      const hasCamera = await QrScanner.hasCamera();
+      if (!hasCamera) {
+        throw new Error('No camera found');
+      }
+
+      console.log('🎥 Cámara encontrada, creando scanner...');
       
       const scanner = new QrScanner(
         videoRef.current,
         (result) => {
+          console.log('✅ QR escaneado:', result.data);
           try {
             const data = JSON.parse(result.data) as QRData;
             
@@ -104,6 +105,7 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
               });
             }
           } catch (error) {
+            console.error('❌ Error parsing QR:', error);
             toast({
               title: "Error",
               description: "No se pudo leer la información del QR",
@@ -115,12 +117,15 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
           returnDetailedScanResult: true,
           highlightScanRegion: true,
           highlightCodeOutline: true,
-          preferredCamera: 'environment', // Preferir cámara trasera
-          maxScansPerSecond: 5,
+          preferredCamera: 'environment',
+          maxScansPerSecond: 3,
         }
       );
 
+      console.log('🎥 Iniciando scanner...');
       await scanner.start();
+      console.log('✅ Scanner iniciado correctamente');
+      
       setQrScanner(scanner);
       setIsScanning(true);
       
