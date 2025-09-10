@@ -180,7 +180,7 @@ const PatrullasActivas = () => {
           <CardDescription>Servicios que requieren asignación de supervisor</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-4">
             {alarmas.filter(a => a.estado === 'activa').map((alarma) => (
               <CronometroAlarma
                 key={alarma.id}
@@ -220,7 +220,7 @@ const PatrullasActivas = () => {
           <CardDescription>Servicios asignados y en proceso</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-4">
             {alarmasActivas.length === 0 ? (
               <div className="col-span-full text-center py-8 text-muted-foreground">
                 <Car className="h-12 w-12 mx-auto mb-4 opacity-50" />
