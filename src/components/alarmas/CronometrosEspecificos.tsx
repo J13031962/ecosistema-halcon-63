@@ -6,9 +6,9 @@ interface CronometrosEspecificosProps {
     id: string;
     created_at: string;
     attended_at?: string;
-    tiempo_asignacion?: string;
-    supervisor_llegada?: string;
-    supervisor_salida?: string;
+    tiempo_asignacion_supervisor?: string;
+    tiempo_primera_lectura_qr?: string;
+    tiempo_segunda_lectura_qr?: string;
     estado: string;
   };
 }
@@ -38,9 +38,9 @@ const CronometrosEspecificos: React.FC<CronometrosEspecificosProps> = ({ alarma 
       const ahora = new Date();
       const fechaCreacion = new Date(alarma.created_at);
       const fechaAtencion = alarma.attended_at ? new Date(alarma.attended_at) : null;
-      const fechaAsignacion = alarma.tiempo_asignacion ? new Date(alarma.tiempo_asignacion) : null;
-      const fechaLlegada = alarma.supervisor_llegada ? new Date(alarma.supervisor_llegada) : null;
-      const fechaSalida = alarma.supervisor_salida ? new Date(alarma.supervisor_salida) : null;
+      const fechaAsignacion = alarma.tiempo_asignacion_supervisor ? new Date(alarma.tiempo_asignacion_supervisor) : null;
+      const fechaPrimeraLectura = alarma.tiempo_primera_lectura_qr ? new Date(alarma.tiempo_primera_lectura_qr) : null;
+      const fechaSegundaLectura = alarma.tiempo_segunda_lectura_qr ? new Date(alarma.tiempo_segunda_lectura_qr) : null;
 
       const nuevosCronometros = {
         // Aceptación Despachador: desde creación hasta atención (o actual si no hay atención)
@@ -59,28 +59,28 @@ const CronometrosEspecificos: React.FC<CronometrosEspecificosProps> = ({ alarma 
           color: (fechaAtencion && !fechaAsignacion && differenceInSeconds(ahora, fechaAtencion) > 180) ? 'red' : 'green' as 'green' | 'red'
         },
         
-        // Supervisor aceptación: desde asignación hasta llegada (o actual si hay asignación)
+        // Supervisor aceptación: desde asignación hasta primera lectura QR (o actual si hay asignación)
         supervisor_aceptacion: {
-          tiempo: fechaAsignacion && fechaLlegada 
-            ? differenceInSeconds(fechaLlegada, fechaAsignacion)
+          tiempo: fechaAsignacion && fechaPrimeraLectura 
+            ? differenceInSeconds(fechaPrimeraLectura, fechaAsignacion)
             : fechaAsignacion ? differenceInSeconds(ahora, fechaAsignacion) : 0,
-          color: (fechaAsignacion && !fechaLlegada && differenceInSeconds(ahora, fechaAsignacion) > 1200) ? 'red' : 'green' as 'green' | 'red'
+          color: (fechaAsignacion && !fechaPrimeraLectura && differenceInSeconds(ahora, fechaAsignacion) > 1200) ? 'red' : 'green' as 'green' | 'red'
         },
         
-        // Supervisor llegada: tiempo de permanencia en sitio
+        // Supervisor llegada: tiempo entre primera y segunda lectura QR (tiempo en sitio)
         supervisor_llegada: {
-          tiempo: fechaLlegada && fechaSalida 
-            ? differenceInSeconds(fechaSalida, fechaLlegada)
-            : fechaLlegada ? differenceInSeconds(ahora, fechaLlegada) : 0,
-          color: (fechaLlegada && !fechaSalida && differenceInSeconds(ahora, fechaLlegada) > 3600) ? 'red' : 'green' as 'green' | 'red'
+          tiempo: fechaPrimeraLectura && fechaSegundaLectura 
+            ? differenceInSeconds(fechaSegundaLectura, fechaPrimeraLectura)
+            : fechaPrimeraLectura ? differenceInSeconds(ahora, fechaPrimeraLectura) : 0,
+          color: (fechaPrimeraLectura && !fechaSegundaLectura && differenceInSeconds(ahora, fechaPrimeraLectura) > 3600) ? 'red' : 'green' as 'green' | 'red'
         },
         
         // Supervisor salida: tiempo total del servicio
         supervisor_salida: {
-          tiempo: fechaSalida 
-            ? differenceInSeconds(fechaSalida, fechaCreacion)
+          tiempo: fechaSegundaLectura 
+            ? differenceInSeconds(fechaSegundaLectura, fechaCreacion)
             : alarma.estado === 'resuelta' ? differenceInSeconds(ahora, fechaCreacion) : 0,
-          color: (!fechaSalida && alarma.estado !== 'resuelta' && differenceInSeconds(ahora, fechaCreacion) > 7200) ? 'red' : 'green' as 'green' | 'red'
+          color: (!fechaSegundaLectura && alarma.estado !== 'resuelta' && differenceInSeconds(ahora, fechaCreacion) > 7200) ? 'red' : 'green' as 'green' | 'red'
         }
       };
 

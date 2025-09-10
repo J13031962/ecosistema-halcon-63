@@ -290,9 +290,9 @@ const Asignaciones = () => {
                         id: servicio.id,
                         created_at: servicio.created_at,
                         attended_at: servicio.attended_at || undefined,
-                        tiempo_asignacion: servicio.tiempo_asignacion || undefined,
-                        supervisor_llegada: servicio.supervisor_llegada || undefined,
-                        supervisor_salida: servicio.supervisor_salida || undefined,
+                        tiempo_asignacion_supervisor: servicio.tiempo_asignacion_supervisor || undefined,
+                        tiempo_primera_lectura_qr: servicio.tiempo_primera_lectura_qr || undefined,
+                        tiempo_segunda_lectura_qr: servicio.tiempo_segunda_lectura_qr || undefined,
                         estado: servicio.estado
                       }}
                     />

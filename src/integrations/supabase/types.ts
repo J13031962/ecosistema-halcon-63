@@ -75,6 +75,8 @@ export type Database = {
           resolved_at: string | null
           supervisor: string | null
           supervisor_id: string | null
+          supervisor_llegada: string | null
+          supervisor_salida: string | null
           tiempo_aceptacion_supervisor: string | null
           tiempo_asignacion: string | null
           tiempo_asignacion_supervisor: string | null
@@ -106,6 +108,8 @@ export type Database = {
           resolved_at?: string | null
           supervisor?: string | null
           supervisor_id?: string | null
+          supervisor_llegada?: string | null
+          supervisor_salida?: string | null
           tiempo_aceptacion_supervisor?: string | null
           tiempo_asignacion?: string | null
           tiempo_asignacion_supervisor?: string | null
@@ -137,6 +141,8 @@ export type Database = {
           resolved_at?: string | null
           supervisor?: string | null
           supervisor_id?: string | null
+          supervisor_llegada?: string | null
+          supervisor_salida?: string | null
           tiempo_aceptacion_supervisor?: string | null
           tiempo_asignacion?: string | null
           tiempo_asignacion_supervisor?: string | null
