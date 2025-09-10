@@ -31,22 +31,17 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
   const [cameraError, setCameraError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen && videoRef.current) {
-      // Pequeño delay para asegurar que el DOM esté listo
-      const timer = setTimeout(() => {
-        startScanner();
-      }, 300);
-      
-      return () => {
-        clearTimeout(timer);
-        cleanupScanner();
-      };
+    if (isOpen && videoRef.current && !qrScanner) {
+      console.log('🎯 Dialog abierto, iniciando scanner...');
+      startScanner();
     }
 
     return () => {
-      cleanupScanner();
+      if (!isOpen) {
+        cleanupScanner();
+      }
     };
-  }, [isOpen]);
+  }, [isOpen, qrScanner]);
 
   const cleanupScanner = () => {
     if (qrScanner) {
@@ -65,67 +60,40 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
   const startScanner = async () => {
     if (!videoRef.current) {
       console.error('❌ Video ref no disponible');
+      setCameraError('Error: elemento de video no disponible');
       return;
     }
 
     try {
-      setCameraError(null);
-      setIsScanning(false);
-      
       console.log('🎥 Iniciando scanner QR...');
-      
-      // Verificar soporte del navegador
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Camera API not supported in this browser');
-      }
-
-      // Primero solicitar permisos explícitamente
-      console.log('🔐 Solicitando permisos de cámara...');
-      
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        });
-        
-        console.log('✅ Permisos de cámara obtenidos');
-        
-        // Detener el stream temporal
-        stream.getTracks().forEach(track => {
-          track.stop();
-          console.log('🛑 Track detenido:', track.label);
-        });
-        
-      } catch (permissionError) {
-        console.error('❌ Error de permisos:', permissionError);
-        throw permissionError;
-      }
-
-      // Ahora verificar si hay cámaras disponibles
-      const hasCamera = await QrScanner.hasCamera();
-      if (!hasCamera) {
-        throw new Error('No camera found on device');
-      }
-
-      console.log('🎥 Cámara disponible, creando scanner...');
+      setCameraError(null);
+      setIsScanning(true);
       
       // Limpiar cualquier scanner previo
       if (qrScanner) {
+        console.log('🧹 Limpiando scanner previo...');
         await qrScanner.destroy();
         setQrScanner(null);
       }
+
+      console.log('🔍 Verificando disponibilidad de cámara...');
+      const hasCamera = await QrScanner.hasCamera();
+      if (!hasCamera) {
+        throw new Error('No hay cámara disponible en este dispositivo');
+      }
+
+      console.log('✅ Cámara disponible, creando QrScanner...');
       
+      // Crear el scanner y dejarlo manejar los permisos
       const scanner = new QrScanner(
         videoRef.current,
         (result) => {
-          console.log('✅ QR escaneado:', result.data);
+          console.log('🎯 QR detectado:', result.data);
           try {
             const data = JSON.parse(result.data) as QRData;
             
             if (data.id_cliente && data.coordenadas && data.nombre) {
+              console.log('✅ QR válido:', data);
               setScannedData(data);
               scanner.stop();
               setIsScanning(false);
@@ -139,6 +107,7 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
                 onScanSuccess(data);
               }
             } else {
+              console.warn('⚠️ QR inválido:', data);
               toast({
                 title: "QR Inválido",
                 description: "El código QR no contiene información válida de cliente",
@@ -159,31 +128,32 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
           highlightScanRegion: true,
           highlightCodeOutline: true,
           preferredCamera: 'environment',
-          maxScansPerSecond: 2,
+          maxScansPerSecond: 1,
         }
       );
 
-      console.log('🎥 Iniciando scanner con QrScanner...');
+      console.log('🚀 Iniciando QrScanner...');
       await scanner.start();
-      console.log('✅ Scanner iniciado correctamente');
+      console.log('✅ QrScanner iniciado exitosamente');
       
       setQrScanner(scanner);
-      setIsScanning(true);
       
     } catch (error: any) {
-      console.error('Error starting scanner:', error);
+      console.error('❌ Error completo:', error);
       setIsScanning(false);
       
-      let errorMessage = "No se pudo acceder a la cámara.";
+      let errorMessage = "No se pudo acceder a la cámara";
       
-      if (error.name === 'NotAllowedError') {
-        errorMessage = "Permisos de cámara denegados. Por favor, permite el acceso a la cámara.";
-      } else if (error.name === 'NotFoundError') {
-        errorMessage = "No se encontró ninguna cámara disponible.";
+      if (error.name === 'NotAllowedError' || error.message?.includes('Permission')) {
+        errorMessage = "Permisos de cámara denegados. Permite el acceso a la cámara en tu navegador.";
+      } else if (error.name === 'NotFoundError' || error.message?.includes('camera')) {
+        errorMessage = "No se encontró cámara en este dispositivo.";
       } else if (error.name === 'NotSupportedError') {
-        errorMessage = "La cámara no es compatible con este navegador.";
+        errorMessage = "Tu navegador no soporta el acceso a la cámara.";
       } else if (error.name === 'NotReadableError') {
         errorMessage = "La cámara está siendo usada por otra aplicación.";
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
       setCameraError(errorMessage);
@@ -197,13 +167,13 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
   };
 
   const retryCamera = () => {
+    console.log('🔄 Reintentando acceso a cámara...');
     setCameraError(null);
+    setIsScanning(false);
     cleanupScanner();
     setTimeout(() => {
-      if (videoRef.current) {
-        startScanner();
-      }
-    }, 100);
+      startScanner();
+    }, 500);
   };
 
   const handleClose = () => {
