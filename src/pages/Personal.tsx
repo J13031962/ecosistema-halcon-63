@@ -286,34 +286,47 @@ const Personal = () => {
     let ok = 0, fail = 0;
     for (const turno of turnos) {
       try {
-        const operador = personal.find(p => p.id === turno.operador_id);
-        console.log('Operador encontrado:', operador, 'para ID:', turno.operador_id);
-        if (!operador) { fail++; continue; }
+        // Buscar en usuarios ya que 'personal' es una tabla diferente
+        const operadorUser = users.find(u => u.id === turno.operador_id);
+        console.log('Operador encontrado en users:', operadorUser, 'para ID:', turno.operador_id);
+        
+        if (!operadorUser) {
+          console.log('No se encontró operador con ID:', turno.operador_id);
+          fail++; 
+          continue; 
+        }
 
-        if (operador.cargo === 'operador') {
+        // Verificar si es operador por rol
+        const isOperador = operadorUser.user_roles?.some(r => r.role === 'operador_alarmas');
+        const isSupervisor = operadorUser.user_roles?.some(r => r.role === 'supervisor_motorizado');
+
+        if (isOperador) {
           const turnoData = {
-            fecha: turno.fecha.toISOString().split('T')[0], // YYYY-MM-DD
-            turno: `${turno.hora_inicio}-${turno.hora_fin}`,
+            fecha: turno.fecha instanceof Date ? turno.fecha.toISOString().split('T')[0] : turno.fecha,
+            turno: turno.tipo || `${turno.hora_inicio}-${turno.hora_fin}`,
             operador_id: turno.operador_id,
-            operador_nombre: turno.operador_nombre,
+            operador_nombre: turno.operador_nombre || operadorUser.full_name,
             horario_inicio: turno.hora_inicio,
             horario_fin: turno.hora_fin,
           };
           console.log('Datos del turno operador:', turnoData);
           await addTurnoOperador(turnoData);
           ok++;
-        } else if (operador.cargo === 'supervisor') {
+        } else if (isSupervisor) {
           const turnoData = {
-            fecha: turno.fecha.toISOString().split('T')[0],
-            turno: `${turno.hora_inicio}-${turno.hora_fin}`,
+            fecha: turno.fecha instanceof Date ? turno.fecha.toISOString().split('T')[0] : turno.fecha,
+            turno: turno.tipo || `${turno.hora_inicio}-${turno.hora_fin}`,
             supervisor_id: turno.operador_id,
-            supervisor_nombre: turno.operador_nombre,
+            supervisor_nombre: turno.operador_nombre || operadorUser.full_name,
             horario_inicio: turno.hora_inicio,
             horario_fin: turno.hora_fin,
           };
           console.log('Datos del turno supervisor:', turnoData);
           await addTurnoSupervisor(turnoData);
           ok++;
+        } else {
+          console.log('Usuario no es operador ni supervisor:', operadorUser);
+          fail++;
         }
       } catch (e: any) {
         console.error('Fallo guardando turno:', e?.message || e);

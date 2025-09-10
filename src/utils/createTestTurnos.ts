@@ -23,45 +23,40 @@ export const createTestTurnos = async () => {
       throw new Error('No se encontraron operadores');
     }
 
-    // Crear turnos para los próximos 7 días
+    // Crear turnos para los próximos 7 días - para TODOS los operadores disponibles
     const fechaInicio = new Date();
-    const turnosAPruebasParaLuis = [];
+    const turnosAPruebas = [];
 
     for (let i = 0; i < 7; i++) {
       const fecha = new Date(fechaInicio);
       fecha.setDate(fecha.getDate() + i);
       
-      // Buscar específicamente a Luis
-      const luisOperador = operadores.find(op => 
-        op.email?.includes('luis.perez') || 
-        op.full_name?.toLowerCase().includes('luis')
-      );
-
-      if (luisOperador) {
-        const tipoTurno = i % 3 === 0 ? 'mañana' : i % 3 === 1 ? 'tarde' : 'noche';
+      // Crear turnos para todos los operadores disponibles
+      operadores.forEach((operador, index) => {
+        const tipoTurno = (i + index) % 3 === 0 ? 'mañana' : (i + index) % 3 === 1 ? 'tarde' : 'noche';
         const horarios = {
           'mañana': { inicio: '06:00', fin: '14:00' },
           'tarde': { inicio: '14:00', fin: '22:00' },
           'noche': { inicio: '22:00', fin: '06:00' }
         };
 
-        turnosAPruebasParaLuis.push({
+        turnosAPruebas.push({
           fecha: fecha.toISOString().split('T')[0],
           turno: tipoTurno,
-          operador_id: luisOperador.id,
-          operador_nombre: luisOperador.full_name || luisOperador.email?.split('@')[0] || 'Luis Perez',
+          operador_id: operador.id,
+          operador_nombre: operador.full_name || operador.email?.split('@')[0] || 'Operador',
           horario_inicio: horarios[tipoTurno].inicio,
           horario_fin: horarios[tipoTurno].fin
         });
-      }
+      });
     }
 
-    console.log('📅 Turnos a insertar para Luis:', turnosAPruebasParaLuis);
+    console.log('📅 Turnos a insertar para todos los operadores:', turnosAPruebas);
 
-    if (turnosAPruebasParaLuis.length > 0) {
+    if (turnosAPruebas.length > 0) {
       const { data: nuevosTurnos, error: turnosError } = await supabase
         .from('turnos_operador')
-        .insert(turnosAPruebasParaLuis)
+        .insert(turnosAPruebas)
         .select();
 
       if (turnosError) throw turnosError;
@@ -69,7 +64,7 @@ export const createTestTurnos = async () => {
       console.log('✅ Turnos creados exitosamente:', nuevosTurnos);
       return nuevosTurnos;
     } else {
-      throw new Error('No se pudo encontrar a Luis para asignar turnos');
+      throw new Error('No se pudieron crear turnos - no hay operadores disponibles');
     }
 
   } catch (error: any) {
