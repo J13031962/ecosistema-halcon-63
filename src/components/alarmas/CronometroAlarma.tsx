@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, User, MapPin, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Clock, User, MapPin, CheckCircle, X, Phone } from 'lucide-react';
 import { format, differenceInSeconds } from 'date-fns';
 
 interface CronometroAlarmaProps {
   alarmaId: string;
   tipo: string;
   cliente: string;
+  direccion?: string;
+  municipio?: string;
+  telefono?: string;
   prioridad: string;
   estado: 'activa' | 'asignada' | 'en_proceso' | 'resuelta';
   created_at: string;
@@ -18,7 +22,9 @@ interface CronometroAlarmaProps {
   supervisor?: string;
   patrulla_asignada?: string;
   onSelect?: () => void;
+  onCancel?: () => void;
   isSelected?: boolean;
+  showCancelButton?: boolean;
 }
 
 interface TiempoEstado {
@@ -31,6 +37,9 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
   alarmaId,
   tipo,
   cliente,
+  direccion,
+  municipio,
+  telefono,
   prioridad,
   estado,
   created_at,
@@ -41,7 +50,9 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
   supervisor,
   patrulla_asignada,
   onSelect,
-  isSelected
+  onCancel,
+  isSelected,
+  showCancelButton
 }) => {
   const [tiempoActual, setTiempoActual] = useState<TiempoEstado>({
     segundos: 0,
@@ -310,13 +321,33 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
         </div>
 
         {/* Cliente */}
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground font-medium">{cliente}</p>
+        <div className="space-y-3">
+          <div>
+            <p className="text-lg font-semibold">{cliente}</p>
+            {direccion && (
+              <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                <MapPin className="h-3 w-3" />
+                <span>{direccion}</span>
+              </div>
+            )}
+            {municipio && (
+              <p className="text-sm text-muted-foreground">
+                Municipio: {municipio}
+              </p>
+            )}
+            {telefono && (
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Phone className="h-3 w-3" />
+                <span>{telefono}</span>
+              </div>
+            )}
+          </div>
+          
           {estado === 'activa' && (
-            <div className="text-center">
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
               <div className="text-xs text-muted-foreground mb-1">Esperando atención</div>
-              <div className={`text-sm font-bold ${tiempoActual.color === 'red' ? 'text-red-600' : 'text-green-600'}`}>
-                {formatTiempo(tiempoActual.segundos)}
+              <div className={`text-lg font-bold ${getColorClassForTimer(cronometrosEspecificos.aceptacion_despachador.color)}`}>
+                {formatTiempo(cronometrosEspecificos.aceptacion_despachador.tiempo)}
               </div>
             </div>
           )}
@@ -336,13 +367,30 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
           </div>
         )}
 
-        {/* Estado finalizada */}
-        {estado === 'resuelta' && (
-          <div className="flex items-center space-x-2 text-green-600">
-            <CheckCircle className="h-4 w-4" />
-            <span className="text-sm font-medium">Servicio completado</span>
-          </div>
-        )}
+        {/* Botón de cancelar y estado finalizada */}
+        <div className="flex items-center justify-between">
+          {estado === 'resuelta' && (
+            <div className="flex items-center space-x-2 text-green-600">
+              <CheckCircle className="h-4 w-4" />
+              <span className="text-sm font-medium">Servicio completado</span>
+            </div>
+          )}
+          
+          {showCancelButton && estado !== 'resuelta' && onCancel && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCancel();
+              }}
+              className="ml-auto text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Cancelar
+            </Button>
+          )}
+        </div>
 
         {/* Cronómetros específicos */}
         <div className="bg-muted/30 rounded-lg p-3 border-t">

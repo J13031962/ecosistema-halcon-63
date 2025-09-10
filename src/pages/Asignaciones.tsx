@@ -258,21 +258,24 @@ const Asignaciones = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Servicios Pendientes */}
+        {/* Servicios Pendientes de Asignación */}
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Servicios Activos</CardTitle>
-              <CardDescription>Servicios que requieren asignación o están en proceso</CardDescription>
+              <CardTitle>Servicios Pendientes</CardTitle>
+              <CardDescription>Servicios que requieren asignación de supervisor</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {todosLosServicios.map((servicio) => (
+                {serviciosPendientes.map((servicio) => (
                   <CronometroAlarma
                     key={servicio.id}
                     alarmaId={servicio.id}
                     tipo={servicio.tipo}
                     cliente={servicio.clientes?.nombre || 'Cliente no especificado'}
+                    direccion={servicio.direccion}
+                    municipio={servicio.municipio}
+                    telefono={undefined}
                     prioridad={servicio.prioridad}
                     estado={servicio.estado as any}
                     created_at={servicio.created_at}
@@ -286,9 +289,9 @@ const Asignaciones = () => {
                     isSelected={selectedAlarmaId === servicio.id}
                   />
                 ))}
-                {todosLosServicios.length === 0 && (
+                {serviciosPendientes.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
-                    No hay servicios disponibles en este momento
+                    No hay servicios pendientes de asignación
                   </div>
                 )}
               </div>

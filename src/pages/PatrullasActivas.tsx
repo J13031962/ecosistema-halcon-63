@@ -1,29 +1,70 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSupabasePatrullas } from "@/hooks/useSupabasePatrullas";
-import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
+import { useSupabaseAlarmasEnhanced } from "@/hooks/useSupabaseAlarmasEnhanced";
+import CronometroAlarma from "@/components/alarmas/CronometroAlarma";
+import { useToast } from "@/hooks/use-toast";
 import { Car, MapPin, Clock, Search, Filter, Download, Shield, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 
 const PatrullasActivas = () => {
-  const { patrullas, loading: patrullasLoading } = useSupabasePatrullas();
-  const { alarmas } = useSupabaseAlarmas();
+  const { patrullas, loading: patrullasLoading, updatePatrulla } = useSupabasePatrullas();
+  const { alarmas, resolverAlarma } = useSupabaseAlarmasEnhanced();
+  const { toast } = useToast();
   
   // Filtrar solo supervisores (que tienen patrullas asignadas)
   const supervisores = patrullas.filter(p => p.supervisor_nombre);
   
+  // Alarmas asignadas y en proceso para mostrar en patrullas activas
+  const alarmasActivas = alarmas.filter(a => 
+    ['asignada', 'en_proceso'].includes(a.estado) && a.supervisor && a.patrulla_asignada
+  );
+
   // Supervisores que están atendiendo alarmas
-  const supervisoresConAlarmas = alarmas
-    .filter(a => a.estado === 'asignada' && a.supervisor && a.patrulla_asignada)
-    .map(a => ({
-      supervisor: a.supervisor,
-      patrulla: a.patrulla_asignada,
-      tiempo_respuesta: a.attended_at ? 
-        Math.floor((new Date().getTime() - new Date(a.attended_at).getTime()) / 60000) : 0
-    }));
+  const supervisoresConAlarmas = alarmasActivas.map(a => ({
+    supervisor: a.supervisor,
+    patrulla: a.patrulla_asignada,
+    tiempo_respuesta: a.attended_at ? 
+      Math.floor((new Date().getTime() - new Date(a.attended_at).getTime()) / 60000) : 0
+  }));
+
+  // Función para verificar si un supervisor está disponible
+  const isSupervisorAvailable = (supervisor: string, patrulla: string, tiempoAsignacion?: string) => {
+    if (!tiempoAsignacion) return true;
+    
+    const tiempoTranscurrido = Math.floor((new Date().getTime() - new Date(tiempoAsignacion).getTime()) / 60000);
+    return tiempoTranscurrido >= 10; // Disponible después de 10 minutos
+  };
+
+  // Función para cancelar una alarma
+  const handleCancelAlarma = async (alarmaId: string) => {
+    try {
+      // Encontrar la alarma para liberar la patrulla
+      const alarma = alarmas.find(a => a.id === alarmaId);
+      if (alarma?.patrulla_asignada) {
+        const patrulla = patrullas.find(p => p.numero_patrulla === alarma.patrulla_asignada);
+        if (patrulla) {
+          await updatePatrulla(patrulla.id, { estado: 'disponible' });
+        }
+      }
+      
+      await resolverAlarma(alarmaId);
+      
+      toast({
+        title: "Alarma cancelada",
+        description: "La alarma ha sido cancelada y la patrulla liberada",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo cancelar la alarma",
+        variant: "destructive"
+      });
+    }
+  };
 
   const getStatusColor = (estado: string) => {
     switch (estado?.toLowerCase()) {
@@ -132,68 +173,47 @@ const PatrullasActivas = () => {
         </CardContent>
       </Card>
 
-      {/* Lista de supervisores */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {supervisores.length === 0 ? (
-          <div className="col-span-full">
-            <Card>
-              <CardContent className="py-8 text-center">
-                <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">No hay supervisores registrados</h3>
-                <p className="text-muted-foreground">
-                  Los supervisores con patrullas asignadas aparecerán aquí.
-                </p>
-              </CardContent>
-            </Card>
+      {/* Alarmas Activas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Servicios Activos</CardTitle>
+          <CardDescription>Servicios asignados y en proceso</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {alarmasActivas.length === 0 ? (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                <Car className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">No hay servicios activos</h3>
+                <p>Los servicios asignados aparecerán aquí</p>
+              </div>
+            ) : (
+              alarmasActivas.map((alarma) => (
+                <CronometroAlarma
+                  key={alarma.id}
+                  alarmaId={alarma.id}
+                  tipo={alarma.tipo}
+                  cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
+                  direccion={alarma.direccion}
+                  municipio={alarma.municipio}
+                  telefono={alarma.clientes?.telefono}
+                  prioridad={alarma.prioridad}
+                  estado={alarma.estado as any}
+                  created_at={alarma.created_at}
+                  attended_at={alarma.attended_at || undefined}
+                  tiempo_asignacion_supervisor={alarma.tiempo_asignacion || undefined}
+                  tiempo_primera_lectura_qr={undefined}
+                  tiempo_segunda_lectura_qr={undefined}
+                  supervisor={alarma.supervisor || undefined}
+                  patrulla_asignada={alarma.patrulla_asignada || undefined}
+                  showCancelButton={true}
+                  onCancel={() => handleCancelAlarma(alarma.id)}
+                />
+              ))
+            )}
           </div>
-        ) : (
-          supervisores.map((supervisor) => (
-            <Card key={supervisor.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{supervisor.numero_patrulla}</CardTitle>
-                  <Badge variant={getStatusColor(supervisor.estado)}>
-                    {supervisor.estado || 'Sin estado'}
-                  </Badge>
-                </div>
-                <p className="text-muted-foreground">
-                  Supervisor: {supervisor.supervisor_nombre}
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Información básica */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Estado:</p>
-                    <p className="font-medium">{supervisor.estado || 'No especificado'}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Ubicación:</p>
-                    <p className="font-medium">{supervisor.ubicacion || 'No especificada'}</p>
-                  </div>
-                </div>
-
-                {/* Si está atendiendo una alarma */}
-                {supervisoresConAlarmas.find(s => s.supervisor === supervisor.supervisor_nombre) && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-center gap-2 text-red-800">
-                      <AlertTriangle className="h-4 w-4" />
-                      <span className="font-medium">Atendiendo Alarma</span>
-                    </div>
-                    <p className="text-sm text-red-600 mt-1">
-                      Tiempo: {supervisoresConAlarmas.find(s => s.supervisor === supervisor.supervisor_nombre)?.tiempo_respuesta || 0} min
-                    </p>
-                  </div>
-                )}
-
-                <div className="text-xs text-muted-foreground">
-                  <p>Actualizado: {format(new Date(supervisor.updated_at), 'dd/MM/yyyy HH:mm')}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
