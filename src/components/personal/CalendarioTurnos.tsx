@@ -73,8 +73,29 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
   } | null>(null);
   const [selectedOperadorId, setSelectedOperadorId] = useState('');
   const [selectedTurnoTipo, setSelectedTurnoTipo] = useState('');
-  const [fechaInicioResumen, setFechaInicioResumen] = useState<Date | undefined>();
-  const [fechaFinResumen, setFechaFinResumen] = useState<Date | undefined>();
+  
+  // Calcular rango de fechas por defecto basado en turnos existentes
+  const rangoFechasTurnos = useMemo(() => {
+    if (turnos.length === 0) return { inicio: undefined, fin: undefined };
+    
+    const fechas = turnos.map(t => new Date(t.fecha));
+    const fechaMinima = new Date(Math.min(...fechas.map(f => f.getTime())));
+    const fechaMaxima = new Date(Math.max(...fechas.map(f => f.getTime())));
+    
+    return { inicio: fechaMinima, fin: fechaMaxima };
+  }, [turnos]);
+
+  // Establecer fechas por defecto del resumen
+  const [fechaInicioResumen, setFechaInicioResumen] = useState<Date | undefined>(() => rangoFechasTurnos.inicio);
+  const [fechaFinResumen, setFechaFinResumen] = useState<Date | undefined>(() => rangoFechasTurnos.fin);
+
+  // Actualizar fechas cuando cambien los turnos
+  React.useEffect(() => {
+    if (rangoFechasTurnos.inicio && rangoFechasTurnos.fin) {
+      setFechaInicioResumen(rangoFechasTurnos.inicio);
+      setFechaFinResumen(rangoFechasTurnos.fin);
+    }
+  }, [rangoFechasTurnos.inicio, rangoFechasTurnos.fin]);
 
   const startWeek = startOfWeek(selectedWeek, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startWeek, i));
@@ -753,13 +774,18 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
 
             <Button 
               onClick={() => {
-                setFechaInicioResumen(undefined);
-                setFechaFinResumen(undefined);
+                if (rangoFechasTurnos.inicio && rangoFechasTurnos.fin) {
+                  setFechaInicioResumen(rangoFechasTurnos.inicio);
+                  setFechaFinResumen(rangoFechasTurnos.fin);
+                } else {
+                  setFechaInicioResumen(undefined);
+                  setFechaFinResumen(undefined);
+                }
               }}
               variant="outline"
               className="mt-6"
             >
-              Limpiar Filtros
+              Restablecer a Período Generado
             </Button>
           </div>
         </CardHeader>
