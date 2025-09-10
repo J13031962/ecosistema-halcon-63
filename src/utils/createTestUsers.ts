@@ -30,13 +30,31 @@ const testUsers: TestUser[] = [
     email: 'director@teleguardia.com',
     password: 'director123',
     fullName: 'Director Central',
-    role: 'director_central'
+    role: 'director'
   },
   {
     email: 'asesor@teleguardia.com',
     password: 'asesor123',
     fullName: 'Asesor de Ventas',
     role: 'asesor_ventas'
+  },
+  {
+    email: 'luis.perez@teleguardia.com',
+    password: 'Perez2025*',
+    fullName: 'Luis Perez',
+    role: 'operador_alarmas'
+  },
+  {
+    email: 'jaime.alvarez@teleguardia.com',
+    password: 'Alvarez2025*',
+    fullName: 'Jaime Alvarez',
+    role: 'operador_alarmas'
+  },
+  {
+    email: 'carlos.betancur@teleguardia.com',
+    password: 'Betancur2025*',
+    fullName: 'Carlos Betancur',
+    role: 'operador_alarmas'
   }
 ];
 
