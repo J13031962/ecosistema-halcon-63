@@ -126,7 +126,7 @@ const adminMenuItems: MenuCategory[] = [
   { 
     category: "📊 Monitoreo General", 
     items: [
-      { title: "Todas las Alarmas", url: "/alarmas", icon: AlertTriangle },
+      { title: "Historial de Alarmas", url: "/alarmas", icon: AlertTriangle },
       { title: "Todas las Patrullas", url: "/patrullas", icon: Car },
       { title: "Todas las Ubicaciones", url: "/ubicaciones", icon: MapPin },
       { title: "Reportes Generales", url: "/reportes", icon: FileText },
