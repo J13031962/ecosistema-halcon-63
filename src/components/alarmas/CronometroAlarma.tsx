@@ -297,8 +297,8 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
 
   return (
     <div className={getCardClasses()} onClick={onSelect}>
-      <div className="space-y-3">
-        {/* Header - Compact */}
+      <div className="space-y-2">
+        {/* Header - Extra Compact */}
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
@@ -311,34 +311,36 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
           </div>
           <div className="text-right">
             <div className="text-xs text-muted-foreground">Tiempo Total</div>
-            <div className={`text-xl font-bold ${getTiempoColor()}`}>
+            <div className={`text-lg font-bold ${getTiempoColor()}`}>
               {formatTiempo(tiempoActual.segundos)}
             </div>
           </div>
         </div>
 
-        {/* Cliente - Compact */}
-        <div className="space-y-2">
+        {/* Cliente - Extra Compact */}
+        <div className="space-y-1">
           <div>
-            <p className="text-base font-semibold">{cliente}</p>
-            {direccion && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                <MapPin className="h-3 w-3" />
-                <span>{direccion}</span>
-                {municipio && <span>• {municipio}</span>}
-              </div>
-            )}
-            {telefono && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Phone className="h-3 w-3" />
-                <span>{telefono}</span>
-              </div>
-            )}
+            <p className="text-sm font-semibold leading-tight">{cliente}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              {direccion && (
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{direccion}</span>
+                  {municipio && <span>• {municipio}</span>}
+                </div>
+              )}
+              {telefono && (
+                <div className="flex items-center gap-1">
+                  <Phone className="h-3 w-3 flex-shrink-0" />
+                  <span>{telefono}</span>
+                </div>
+              )}
+            </div>
           </div>
           
           {estado === 'activa' && (
-            <div className="text-center p-2 bg-muted/50 rounded">
-              <div className="text-xs text-muted-foreground mb-1">Esperando atención</div>
+            <div className="text-center p-1.5 bg-muted/50 rounded">
+              <div className="text-xs text-muted-foreground">Esperando atención</div>
               <div className={`text-sm font-bold ${getColorClassForTimer(cronometrosEspecificos.aceptacion_despachador.color)}`}>
                 {formatTiempo(cronometrosEspecificos.aceptacion_despachador.tiempo)}
               </div>
@@ -346,9 +348,9 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
           )}
         </div>
 
-        {/* Información de asignación - Compact */}
+        {/* Información de asignación - Extra Compact */}
         {supervisor && patrulla_asignada && (
-          <div className="flex items-center space-x-3 text-xs">
+          <div className="flex items-center space-x-2 text-xs">
             <div className="flex items-center space-x-1">
               <User className="h-3 w-3" />
               <span>{supervisor}</span>
@@ -363,7 +365,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
         {/* Botón de cancelar y estado finalizada */}
         <div className="flex items-center justify-between">
           {estado === 'resuelta' && (
-            <div className="flex items-center space-x-2 text-green-600">
+            <div className="flex items-center space-x-1 text-green-600">
               <CheckCircle className="h-3 w-3" />
               <span className="text-xs font-medium">Servicio completado</span>
             </div>
@@ -377,7 +379,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
                 e.stopPropagation();
                 onCancel();
               }}
-              className="ml-auto text-red-600 hover:text-red-700 hover:bg-red-50 h-7 px-2 text-xs"
+              className="ml-auto text-red-600 hover:text-red-700 hover:bg-red-50 h-6 px-2 text-xs"
             >
               <X className="h-3 w-3 mr-1" />
               Cancelar
@@ -385,44 +387,44 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
           )}
         </div>
 
-        {/* Cronómetros específicos - Compact */}
-        <div className="bg-muted/30 rounded p-2 border-t">
-          <div className="grid grid-cols-5 gap-2 text-center">
+        {/* Cronómetros específicos - Extra Compact */}
+        <div className="bg-muted/30 rounded p-1.5 border-t">
+          <div className="grid grid-cols-5 gap-1 text-center">
             <div>
-              <div className="text-xs text-muted-foreground mb-1">Aceptación</div>
-              <div className="text-xs text-muted-foreground mb-1">Despachador</div>
+              <div className="text-xs text-muted-foreground">Aceptación</div>
+              <div className="text-xs text-muted-foreground">Despachador</div>
               <div className={`text-xs font-mono ${getColorClassForTimer(cronometrosEspecificos.aceptacion_despachador.color)}`}>
                 {formatTiempo(cronometrosEspecificos.aceptacion_despachador.tiempo)}
               </div>
             </div>
             
             <div>
-              <div className="text-xs text-muted-foreground mb-1">Despachador</div>
-              <div className="text-xs text-muted-foreground mb-1">envío</div>
+              <div className="text-xs text-muted-foreground">Despachador</div>
+              <div className="text-xs text-muted-foreground">envío</div>
               <div className={`text-xs font-mono ${getColorClassForTimer(cronometrosEspecificos.despachador_envio.color)}`}>
                 {formatTiempo(cronometrosEspecificos.despachador_envio.tiempo)}
               </div>
             </div>
             
             <div>
-              <div className="text-xs text-muted-foreground mb-1">Supervisor</div>
-              <div className="text-xs text-muted-foreground mb-1">aceptación</div>
+              <div className="text-xs text-muted-foreground">Supervisor</div>
+              <div className="text-xs text-muted-foreground">aceptación</div>
               <div className={`text-xs font-mono ${getColorClassForTimer(cronometrosEspecificos.supervisor_aceptacion.color)}`}>
                 {formatTiempo(cronometrosEspecificos.supervisor_aceptacion.tiempo)}
               </div>
             </div>
             
             <div>
-              <div className="text-xs text-muted-foreground mb-1">Supervisor</div>
-              <div className="text-xs text-muted-foreground mb-1">llegada</div>
+              <div className="text-xs text-muted-foreground">Supervisor</div>
+              <div className="text-xs text-muted-foreground">llegada</div>
               <div className={`text-xs font-mono ${getColorClassForTimer(cronometrosEspecificos.supervisor_llegada.color)}`}>
                 {formatTiempo(cronometrosEspecificos.supervisor_llegada.tiempo)}
               </div>
             </div>
             
             <div>
-              <div className="text-xs text-muted-foreground mb-1">Supervisor</div>
-              <div className="text-xs text-muted-foreground mb-1">salida</div>
+              <div className="text-xs text-muted-foreground">Supervisor</div>
+              <div className="text-xs text-muted-foreground">salida</div>
               <div className={`text-xs font-mono ${getColorClassForTimer(cronometrosEspecificos.supervisor_salida.color)}`}>
                 {formatTiempo(cronometrosEspecificos.supervisor_salida.tiempo)}
               </div>
