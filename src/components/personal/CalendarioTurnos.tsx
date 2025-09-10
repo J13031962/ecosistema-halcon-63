@@ -211,25 +211,17 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
   const getTotalHorasOperador = (operadorId: string) => {
     const turnosOperador = turnos.filter(t => t.operador_id === operadorId);
 
-    // Si existen campos detallados, usarlos (corrige cruces sábado-noche → domingo)
-    const hasDetalle = turnosOperador.some((t: any) =>
-      t.horas_diurnas_ordinarias !== undefined ||
-      t.horas_nocturnas_ordinarias !== undefined ||
-      t.horas_diurnas_dominicales !== undefined ||
-      t.horas_nocturnas_dominicales !== undefined ||
-      t.horas_diurnas_festivos !== undefined ||
-      t.horas_nocturnas_festivos !== undefined
-    );
+    // Calcular desglose detallado si existen valores reales (>0)
+    const hdo = turnosOperador.reduce((s, t: any) => s + (t.horas_diurnas_ordinarias || 0), 0);
+    const hno = turnosOperador.reduce((s, t: any) => s + (t.horas_nocturnas_ordinarias || 0), 0);
+    const hdd = turnosOperador.reduce((s, t: any) => s + (t.horas_diurnas_dominicales || 0), 0);
+    const hnd = turnosOperador.reduce((s, t: any) => s + (t.horas_nocturnas_dominicales || 0), 0);
+    const hdf = turnosOperador.reduce((s, t: any) => s + (t.horas_diurnas_festivos || 0), 0);
+    const hnf = turnosOperador.reduce((s, t: any) => s + (t.horas_nocturnas_festivos || 0), 0);
 
-    if (hasDetalle) {
-      const hdo = turnosOperador.reduce((s, t: any) => s + (t.horas_diurnas_ordinarias || 0), 0);
-      const hno = turnosOperador.reduce((s, t: any) => s + (t.horas_nocturnas_ordinarias || 0), 0);
-      const hdd = turnosOperador.reduce((s, t: any) => s + (t.horas_diurnas_dominicales || 0), 0);
-      const hnd = turnosOperador.reduce((s, t: any) => s + (t.horas_nocturnas_dominicales || 0), 0);
-      const hdf = turnosOperador.reduce((s, t: any) => s + (t.horas_diurnas_festivos || 0), 0);
-      const hnf = turnosOperador.reduce((s, t: any) => s + (t.horas_nocturnas_festivos || 0), 0);
+    const totalDetalle = hdo + hno + hdd + hnd + hdf + hnf;
 
-      const total = hdo + hno + hdd + hnd + hdf + hnf;
+    if (totalDetalle > 0) {
       const diurnasExtras = Math.max(0, hdo - 88);
       const diurnasOrdinariasLimitadas = Math.min(hdo, 88);
 
@@ -241,9 +233,10 @@ export const CalendarioTurnos: React.FC<CalendarioTurnosProps> = ({
         dominicalesNocturnas: hnd,
         festivasDiurnas: hdf,
         festivasNocturnas: hnf,
-        total,
+        total: totalDetalle,
       };
     }
+
 
     // Fallback: lógica anterior usando los campos base del turno
     const horasDiurnasOrdinarias = turnosOperador.reduce((sum, t) => {
