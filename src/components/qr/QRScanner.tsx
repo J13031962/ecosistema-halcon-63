@@ -33,7 +33,12 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
   useEffect(() => {
     if (isOpen && videoRef.current && !qrScanner) {
       console.log('🎯 Dialog abierto, iniciando scanner...');
-      startScanner();
+      // Delay to ensure video element is ready
+      const timer = setTimeout(() => {
+        startScanner();
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
 
     return () => {
@@ -41,7 +46,7 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
         cleanupScanner();
       }
     };
-  }, [isOpen, qrScanner]);
+  }, [isOpen]);
 
   const cleanupScanner = () => {
     if (qrScanner) {
@@ -198,6 +203,18 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
       
       setIsScanning(false);
       
+      // Don't show error for AbortError as it's normal during initialization
+      if (error.name === 'AbortError') {
+        console.log('⚠️ AbortError during initialization - retrying...');
+        // Retry after a short delay
+        setTimeout(() => {
+          if (isOpen && videoRef.current) {
+            startScanner();
+          }
+        }, 500);
+        return;
+      }
+      
       let errorMessage = "No se pudo acceder a la cámara";
       
       if (error.name === 'NotAllowedError' || error.message?.includes('Permission')) {
@@ -264,13 +281,7 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
             <div className="space-y-4">
               <div className="relative rounded-lg overflow-hidden bg-black">
                 <video 
-                  ref={(el) => {
-                    videoRef.current = el;
-                    if (isOpen && el && !qrScanner) {
-                      console.log('📷 Video element mounted, starting scanner...');
-                      setTimeout(() => startScanner(), 0);
-                    }
-                  }} 
+                  ref={videoRef} 
                   className="w-full h-64 object-cover"
                   playsInline
                   muted
