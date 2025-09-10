@@ -258,42 +258,26 @@ const Asignaciones = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Servicios Pendientes de Asignación */}
+        {/* Información de Servicios */}
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Servicios Pendientes</CardTitle>
-              <CardDescription>Servicios que requieren asignación de supervisor</CardDescription>
+              <CardTitle>Información de Servicios</CardTitle>
+              <CardDescription>Los servicios activos se muestran en la sección "Patrullas Activas"</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {serviciosPendientes.map((servicio) => (
-                  <CronometroAlarma
-                    key={servicio.id}
-                    alarmaId={servicio.id}
-                    tipo={servicio.tipo}
-                    cliente={servicio.clientes?.nombre || 'Cliente no especificado'}
-                    direccion={servicio.direccion}
-                    municipio={servicio.municipio}
-                    telefono={undefined}
-                    prioridad={servicio.prioridad}
-                    estado={servicio.estado as any}
-                    created_at={servicio.created_at}
-                    attended_at={servicio.attended_at || undefined}
-                    tiempo_asignacion_supervisor={servicio.tiempo_asignacion_supervisor || undefined}
-                    tiempo_primera_lectura_qr={servicio.tiempo_primera_lectura_qr || undefined}
-                    tiempo_segunda_lectura_qr={servicio.tiempo_segunda_lectura_qr || undefined}
-                    supervisor={servicio.supervisor || undefined}
-                    patrulla_asignada={servicio.patrulla_asignada || undefined}
-                    onSelect={() => handleSelectAlarmaForAssignment(servicio.id)}
-                    isSelected={selectedAlarmaId === servicio.id}
-                  />
-                ))}
-                {serviciosPendientes.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No hay servicios pendientes de asignación
-                  </div>
-                )}
+              <div className="text-center py-8 text-muted-foreground">
+                <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">Servicios en Patrullas Activas</h3>
+                <p className="mb-4">
+                  Los servicios pendientes y activos se visualizan en la sección "Patrullas Activas"
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.href = '/patrullas-activas'}
+                >
+                  Ir a Patrullas Activas
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -301,30 +285,26 @@ const Asignaciones = () => {
 
         {/* Panel de Asignación */}
         <div className="lg:col-span-1 space-y-6">
-          {/* Información de asignación */}
-          {selectedAlarmaId && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Asignar Supervisor
-                </CardTitle>
-                <CardDescription className="text-sm bg-accent/50 p-2 rounded">
-                  ✓ Alarma seleccionada - Asigne un supervisor para continuar
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  onClick={() => setIsModalOpen(true)}
-                  className="w-full"
-                  disabled={isAssigning}
-                >
-                  <UserCheck className="h-4 w-4 mr-2" />
-                  {isAssigning ? 'Asignando...' : 'Seleccionar Supervisor'}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          {/* Información de asignación rápida */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Asignación Rápida
+              </CardTitle>
+              <CardDescription>
+                Selecciona un servicio en "Patrullas Activas" para asignar supervisor
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-4 text-muted-foreground">
+                <UserCheck className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">
+                  Los servicios se gestionan desde la sección "Patrullas Activas"
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Patrullas Disponibles */}
           <Card>
@@ -405,23 +385,25 @@ const Asignaciones = () => {
         </div>
       </div>
 
-      {/* Modal de Asignación de Supervisor */}
-      <AsignarSupervisorModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedAlarmaId(null);
-        }}
-        alarma={selectedAlarmaId ? {
-          id: selectedAlarmaId,
-          tipo: alarmas.find(a => a.id === selectedAlarmaId)?.tipo || '',
-          cliente: alarmas.find(a => a.id === selectedAlarmaId)?.clientes?.nombre,
-          direccion: alarmas.find(a => a.id === selectedAlarmaId)?.direccion,
-          prioridad: alarmas.find(a => a.id === selectedAlarmaId)?.prioridad || 'media',
-          created_at: alarmas.find(a => a.id === selectedAlarmaId)?.created_at || ''
-        } : null}
-        onAssign={handleAssignSupervisor}
-      />
+      {/* Modal de Asignación de Supervisor - Solo si hay servicio seleccionado desde Patrullas Activas */}
+      {selectedAlarmaId && (
+        <AsignarSupervisorModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedAlarmaId(null);
+          }}
+          alarma={selectedAlarmaId ? {
+            id: selectedAlarmaId,
+            tipo: alarmas.find(a => a.id === selectedAlarmaId)?.tipo || '',
+            cliente: alarmas.find(a => a.id === selectedAlarmaId)?.clientes?.nombre,
+            direccion: alarmas.find(a => a.id === selectedAlarmaId)?.direccion,
+            prioridad: alarmas.find(a => a.id === selectedAlarmaId)?.prioridad || 'media',
+            created_at: alarmas.find(a => a.id === selectedAlarmaId)?.created_at || ''
+          } : null}
+          onAssign={handleAssignSupervisor}
+        />
+      )}
     </div>
   );
 };

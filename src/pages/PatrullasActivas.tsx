@@ -173,6 +173,46 @@ const PatrullasActivas = () => {
         </CardContent>
       </Card>
 
+      {/* Servicios Pendientes de Asignación */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Servicios Pendientes de Asignación</CardTitle>
+          <CardDescription>Servicios que requieren asignación de supervisor</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {alarmas.filter(a => a.estado === 'activa').map((alarma) => (
+              <CronometroAlarma
+                key={alarma.id}
+                alarmaId={alarma.id}
+                tipo={alarma.tipo}
+                cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
+                direccion={alarma.direccion}
+                municipio={alarma.municipio}
+                telefono={alarma.clientes?.telefono}
+                prioridad={alarma.prioridad}
+                estado={alarma.estado as any}
+                created_at={alarma.created_at}
+                attended_at={alarma.attended_at || undefined}
+                tiempo_asignacion_supervisor={alarma.tiempo_asignacion || undefined}
+                tiempo_primera_lectura_qr={undefined}
+                tiempo_segunda_lectura_qr={undefined}
+                supervisor={alarma.supervisor || undefined}
+                patrulla_asignada={alarma.patrulla_asignada || undefined}
+                showCancelButton={false}
+              />
+            ))}
+            {alarmas.filter(a => a.estado === 'activa').length === 0 && (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">No hay servicios pendientes</h3>
+                <p>Los servicios pendientes de asignación aparecerán aquí</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Alarmas Activas */}
       <Card>
         <CardHeader>
