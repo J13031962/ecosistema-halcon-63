@@ -31,17 +31,11 @@ const CentralAlarmasOperador = () => {
   // Cargar turnos desde la base de datos
   const { turnosOperador, turnosSupervisor, loading: turnosSupabaseLoading } = useSupabaseTurnos();
 
-  // Obtener alarmas específicas del operador (solo si es operador)
-  const { data: misAlarmas, loading: alarmasLoading } = useUserSpecificData({
-    table: 'alarmas',
-    enabled: !!user?.id && user?.role === 'operador_alarmas'
-  });
-
-  // Para roles distintos a operador, cargamos todas las alarmas de la central
+  // Cargar todas las alarmas para que los operadores vean lo mismo que el admin
   const { alarmas: todasAlarmas, loading: loadingAll, cancelAlarma } = useSupabaseAlarmas();
 
-  // Fuente unificada de alarmas para la vista
-  const fuenteAlarmas = (user?.role === 'operador_alarmas') ? (misAlarmas || []) : (todasAlarmas || []);
+  // Todos los usuarios (incluyendo operadores) ahora ven todas las alarmas
+  const fuenteAlarmas = todasAlarmas || [];
 
   // Obtener turnos del operador
   const { data: misTurnos, loading: turnosLoading } = useUserSpecificData({
@@ -83,7 +77,7 @@ const CentralAlarmasOperador = () => {
     return `${min}:${sec.toString().padStart(2, '0')}`;
   };
 
-  const loadingAlarmasVista = (user?.role === 'operador_alarmas') ? alarmasLoading : loadingAll;
+  const loadingAlarmasVista = loadingAll;
 
   return (
     <div className="space-y-6">
@@ -122,7 +116,7 @@ const CentralAlarmasOperador = () => {
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
               {alarmasResueltas.filter(a => 
-                new Date(a.resolved_at || a.updated_at).toDateString() === new Date().toDateString()
+                new Date(a.resolved_at || a.created_at).toDateString() === new Date().toDateString()
               ).length}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -205,7 +199,7 @@ const CentralAlarmasOperador = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {alarmasLoading ? (
+          {loadingAlarmasVista ? (
             <div className="animate-pulse space-y-4">
               {[1, 2].map(i => (
                 <div key={i} className="h-12 bg-muted rounded"></div>
@@ -215,7 +209,7 @@ const CentralAlarmasOperador = () => {
             <div className="space-y-3">
               {alarmasResueltas
                 .filter(a => 
-                  new Date(a.resolved_at || a.updated_at).toDateString() === new Date().toDateString()
+                  new Date(a.resolved_at || a.created_at).toDateString() === new Date().toDateString()
                 )
                 .slice(0, 5)
                 .map((alarma) => (
@@ -232,7 +226,7 @@ const CentralAlarmasOperador = () => {
                         Resuelta
                       </Badge>
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(alarma.resolved_at || alarma.updated_at), 'HH:mm')}
+                        {format(new Date(alarma.resolved_at || alarma.created_at), 'HH:mm')}
                       </p>
                     </div>
                   </div>
@@ -301,8 +295,8 @@ const CentralAlarmasOperador = () => {
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-red-600">Cancelada:</span>
                           <span>
-                            {alarma.updated_at && isValid(new Date(alarma.updated_at)) 
-                              ? format(new Date(alarma.updated_at), 'dd/MM/yyyy HH:mm')
+                            {alarma.created_at && isValid(new Date(alarma.created_at)) 
+                              ? format(new Date(alarma.created_at), 'dd/MM/yyyy HH:mm')
                               : 'Fecha no válida'
                             }
                           </span>
@@ -314,7 +308,7 @@ const CentralAlarmasOperador = () => {
                         Cancelada
                       </Badge>
                       <p className="text-xs text-muted-foreground">
-                        Duración: {Math.round((new Date(alarma.updated_at).getTime() - new Date(alarma.created_at).getTime()) / (1000 * 60))} min
+                        Duración: calculando...
                       </p>
                     </div>
                   </div>
