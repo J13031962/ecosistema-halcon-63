@@ -129,12 +129,20 @@ const MisAsignaciones = () => {
 
       // Verify QR matches the client
       const expectedClientId = alarma.cliente_id;
+      console.log('🔍 QR Validation:', {
+        scannedClientId: qrData.id_cliente,
+        expectedClientId: expectedClientId,
+        clientName: qrData.nombre,
+        alarmType: alarma.tipo
+      });
+      
       if (qrData.id_cliente !== expectedClientId) {
         toast({
           title: "QR Incorrecto",
-          description: "El código QR no corresponde a este cliente",
+          description: `El código QR escaneado pertenece a "${qrData.nombre}" pero esta alarma es para otro cliente. Por favor, escanee el QR correcto.`,
           variant: "destructive"
         });
+        setIsQRScannerOpen(false);
         return;
       }
 
@@ -142,35 +150,49 @@ const MisAsignaciones = () => {
       
       if (currentScanType === 'arrival') {
         // Mark arrival at site
-        const { error } = await supabase
+        console.log('📍 Marking arrival for alarm:', selectedAlarmaId);
+        const { data, error } = await supabase
           .from('alarmas')
           .update({
             tiempo_llegada_sitio: now,
-            qr_llegada_data: qrData as any, // Type assertion for JSONB
+            qr_llegada_data: qrData as any,
+            tiempo_aceptacion_supervisor: now,
             estado: 'en_proceso'
           })
-          .eq('id', selectedAlarmaId);
+          .eq('id', selectedAlarmaId)
+          .select('*');
 
-        if (error) throw error;
-
+        if (error) {
+          console.error('❌ Error updating arrival:', error);
+          throw error;
+        }
+        
+        console.log('✅ Arrival marked successfully:', data);
         toast({
           title: "Llegada Confirmada",
           description: `Has llegado al sitio de ${qrData.nombre}. El contador de tiempo ha iniciado.`,
         });
       } else {
         // Mark departure from site
-        const { error } = await supabase
+        console.log('🏁 Marking departure for alarm:', selectedAlarmaId);
+        const { data, error } = await supabase
           .from('alarmas')
           .update({
             tiempo_salida_sitio: now,
-            qr_salida_data: qrData as any, // Type assertion for JSONB
+            qr_salida_data: qrData as any,
+            tiempo_segunda_lectura_qr: now,
             resolved_at: now,
             estado: 'resuelta'
           })
-          .eq('id', selectedAlarmaId);
+          .eq('id', selectedAlarmaId)
+          .select('*');
 
-        if (error) throw error;
-
+        if (error) {
+          console.error('❌ Error updating departure:', error);
+          throw error;
+        }
+        
+        console.log('✅ Departure marked successfully:', data);
         toast({
           title: "Servicio Finalizado",
           description: `Has finalizado el servicio en ${qrData.nombre} exitosamente.`,
