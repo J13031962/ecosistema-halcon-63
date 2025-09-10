@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Plus, Clock, Calendar, Download, Edit2 } from 'lucide-react';
+import { Users, Plus, Clock, Calendar, Download, Edit2, History } from 'lucide-react';
 import { FormularioOperador } from '@/components/personal/FormularioOperador';
 import { GeneradorTurnos } from '@/components/personal/GeneradorTurnos';
 import { CalendarioTurnos } from '@/components/personal/CalendarioTurnos';
+import { HistorialTurnos } from '@/components/turnos/HistorialTurnos';
 import { generarTurnosAutomaticos, calcularHorasTurno, esDomingo as esDomingoUtil, esFeriado as esFeriadoUtil } from '@/components/personal/TurnosCalculadorHoras';
 import { useSupabaseTurnos } from '@/hooks/useSupabaseTurnos';
 import { useSupabaseUsuarios } from '@/hooks/useSupabaseUsuarios';
@@ -23,6 +24,7 @@ const Personal = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedDateTurnos, setSelectedDateTurnos] = useState<{fecha: Date, turnos: any[]}>({fecha: new Date(), turnos: []});
   const [newTurno, setNewTurno] = useState({ operador_id: '', tipo: '' });
+  const [isHistorialOpen, setIsHistorialOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
 
   // Hook para manejar turnos en Supabase
@@ -476,6 +478,10 @@ const Personal = () => {
             <Clock className="h-4 w-4 mr-2" />
             Generar Turnos
           </Button>
+          <Button onClick={() => setIsHistorialOpen(true)} variant="outline">
+            <History className="h-4 w-4 mr-2" />
+            Ver Historial
+          </Button>
           <Button onClick={() => setIsFormOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Ingresar Operador
@@ -563,6 +569,19 @@ const Personal = () => {
         onGenerate={handleGenerarTurnos}
         personal={personal}
       />
+
+      {/* Modal para Historial de Turnos */}
+      <Dialog open={isHistorialOpen} onOpenChange={setIsHistorialOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Historial de Turnos Generados</DialogTitle>
+            <DialogDescription>
+              Consulta todos los turnos generados anteriormente con filtros avanzados
+            </DialogDescription>
+          </DialogHeader>
+          <HistorialTurnos onClose={() => setIsHistorialOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
