@@ -345,56 +345,6 @@ const CentralAlarmasOperador = () => {
         </Card>
       )}
 
-      {/* Sección de turnos guardados */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Turnos Programados
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {turnosSupabaseLoading ? (
-            <div className="text-center py-4">Cargando turnos...</div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold mb-2">Turnos de Operadores</h4>
-                {turnosOperador.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {turnosOperador.slice(0, 6).map((turno) => (
-                      <div key={turno.id} className="p-3 border rounded-lg">
-                        <div className="font-medium">{turno.operador_nombre}</div>
-                        <div className="text-sm text-muted-foreground">{turno.fecha}</div>
-                        <div className="text-sm">{turno.turno}</div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground">No hay turnos de operadores programados</div>
-                )}
-              </div>
-              
-              <div>
-                <h4 className="font-semibold mb-2">Turnos de Supervisores</h4>
-                {turnosSupervisor.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {turnosSupervisor.slice(0, 6).map((turno) => (
-                      <div key={turno.id} className="p-3 border rounded-lg">
-                        <div className="font-medium">{turno.supervisor_nombre}</div>
-                        <div className="text-sm text-muted-foreground">{turno.fecha}</div>
-                        <div className="text-sm">{turno.turno}</div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground">No hay turnos de supervisores programados</div>
-                )}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 };
