@@ -76,45 +76,33 @@ export default function LeafletMap({
   withControls = true
 }: MapProps) {
   const mapRef = useRef(null);
-  const [mapStyle, setMapStyle] = useState({
+  
+  const mapStyle = fullScreen ? {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '100vh',
+    width: '100vw',
+    borderRadius: '0',
+    zIndex: 999
+  } : {
     height: height,
     width: '100%',
     borderRadius: '8px',
     zIndex: 1
-  });
-
-  useEffect(() => {
-    if (fullScreen) {
-      setMapStyle({
-        ...mapStyle,
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height: '100vh',
-        width: '100vw',
-        borderRadius: '0',
-        zIndex: 999
-      } as any);
-    } else {
-      setMapStyle({
-        ...mapStyle,
-        height: height,
-        position: 'relative',
-        borderRadius: '8px',
-      } as any);
-    }
-  }, [fullScreen, height]);
+  };
 
   return (
-    <MapContainer
-      center={center}
-      zoom={zoom}
-      style={mapStyle}
-      zoomControl={withControls}
-      ref={mapRef}
-    >
+    <div style={mapStyle}>
+      <MapContainer
+        center={center}
+        zoom={zoom}
+        style={{ height: '100%', width: '100%' }}
+        zoomControl={withControls}
+        ref={mapRef}
+      >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -134,6 +122,7 @@ export default function LeafletMap({
       ))}
       
       <MapUpdater center={center} zoom={zoom} />
-    </MapContainer>
+      </MapContainer>
+    </div>
   );
 }
