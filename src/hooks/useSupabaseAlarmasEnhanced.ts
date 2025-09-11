@@ -199,7 +199,7 @@ export const useSupabaseAlarmasEnhanced = () => {
         .update({
           ...asignacionData,
           estado: 'asignada',
-          tiempo_asignacion: now
+          tiempo_asignacion_supervisor: now // Cronómetro 1: "Aceptación Despachador" se detiene aquí
         })
         .eq('id', alarmaId)
         .select(`
@@ -349,6 +349,38 @@ export const useSupabaseAlarmasEnhanced = () => {
     };
   }, []);
 
+  // Nueva función para que el supervisor acepte un servicio
+  const aceptarServicio = async (alarmaId: string, supervisorId: string) => {
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase
+        .from('alarmas')
+        .update({
+          attended_at: new Date().toISOString(), // Marca cuando el supervisor acepta
+          estado: 'en_proceso'
+        })
+        .eq('id', alarmaId);
+
+      if (error) throw error;
+
+      // Actualizar estado local
+      setAlarmas(prev => prev.map(alarma => 
+        alarma.id === alarmaId 
+          ? { ...alarma, attended_at: new Date().toISOString(), estado: 'en_proceso' }
+          : alarma
+      ));
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error accepting service:', error);
+      setError(error.message);
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     alarmas,
     loading,
@@ -357,6 +389,7 @@ export const useSupabaseAlarmasEnhanced = () => {
     atenderAlarma,
     asignarPatrulla,
     resolverAlarma,
+    aceptarServicio, // Nueva función
     getAlarmasActivas,
     getAlarmasEnProceso,
     getAlarmasAsignadas,

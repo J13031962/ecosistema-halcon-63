@@ -185,37 +185,46 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
 
       setTiempoActual(nuevoEstado);
       
-      // Calcular cronómetros específicos según los requisitos
+      // Calcular cronómetros específicos según los requisitos del usuario
       const nuevosCronometros = {
-        // Aceptación Despachador: tiempo desde que se generó la alarma hasta que el despachador la toma
+        // 1. Aceptación Despachador: Se inicia cuando se hace clic en "Asignar Supervisor" 
+        // y se detiene cuando se confirma la asignación del supervisor
         aceptacion_despachador: {
-          tiempo: fechaAtencion 
-            ? differenceInSeconds(fechaAtencion, fechaCreacion)
+          tiempo: fechaAsignacion 
+            ? differenceInSeconds(fechaAsignacion, fechaCreacion)
             : differenceInSeconds(ahora, fechaCreacion),
-          color: (!fechaAtencion && differenceInSeconds(ahora, fechaCreacion) > 240) ? 'red' : 'green' as 'green' | 'red'
+          color: (!fechaAsignacion && differenceInSeconds(ahora, fechaCreacion) > 240) ? 'red' : 'green' as 'green' | 'red'
         },
-        // Despachador envío: tiempo desde que toma la alarma hasta que asigna supervisor
+        
+        // 2. Despachador envío: Se inicia después de asignar supervisor 
+        // y se detiene cuando el supervisor acepta el servicio (tiempo_aceptacion_supervisor)
         despachador_envio: {
-          tiempo: fechaAtencion && fechaAsignacion 
-            ? differenceInSeconds(fechaAsignacion, fechaAtencion)
-            : fechaAtencion ? differenceInSeconds(ahora, fechaAtencion) : 0,
-          color: (fechaAtencion && !fechaAsignacion && differenceInSeconds(ahora, fechaAtencion) > 360) ? 'red' : 'green' as 'green' | 'red'
+          tiempo: fechaAsignacion 
+            ? (attended_at // attended_at representa cuando el supervisor acepta
+               ? differenceInSeconds(new Date(attended_at), fechaAsignacion)
+               : differenceInSeconds(ahora, fechaAsignacion)) 
+            : 0,
+          color: (fechaAsignacion && !attended_at && differenceInSeconds(ahora, fechaAsignacion) > 360) ? 'red' : 'green' as 'green' | 'red'
         },
-        // Supervisor aceptación: tiempo desde asignación hasta aceptación (primera lectura QR)
+        
+        // 3. Supervisor aceptación: Este cronómetro ya no es necesario según tu nuevo flujo
+        // porque el botón "Aceptar" del supervisor detiene "Despachador envío" e inicia "Supervisor llegada"
         supervisor_aceptacion: {
-          tiempo: fechaAsignacion && fechaPrimeraLectura 
-            ? differenceInSeconds(fechaPrimeraLectura, fechaAsignacion)
-            : fechaAsignacion ? differenceInSeconds(ahora, fechaAsignacion) : 0,
-          color: (fechaAsignacion && !fechaPrimeraLectura && differenceInSeconds(ahora, fechaAsignacion) > 240) ? 'red' : 'green' as 'green' | 'red'
+          tiempo: 0, // No se usa en el nuevo flujo
+          color: 'green' as 'green' | 'red'
         },
-        // Supervisor llegada: tiempo desde aceptación hasta llegada al sitio
+        
+        // 4. Supervisor llegada: Se inicia cuando el supervisor acepta el servicio (attended_at)
+        // y se detiene cuando escanea el primer QR (tiempo_primera_lectura_qr)
         supervisor_llegada: {
-          tiempo: fechaAsignacion && fechaPrimeraLectura 
-            ? differenceInSeconds(fechaPrimeraLectura, fechaAsignacion)
-            : fechaAsignacion ? differenceInSeconds(ahora, fechaAsignacion) : 0,
-          color: (fechaAsignacion && !fechaPrimeraLectura && differenceInSeconds(ahora, fechaAsignacion) > 1200) ? 'red' : 'green' as 'green' | 'red'
+          tiempo: attended_at && fechaPrimeraLectura 
+            ? differenceInSeconds(fechaPrimeraLectura, new Date(attended_at))
+            : attended_at ? differenceInSeconds(ahora, new Date(attended_at)) : 0,
+          color: (attended_at && !fechaPrimeraLectura && differenceInSeconds(ahora, new Date(attended_at)) > 1200) ? 'red' : 'green' as 'green' | 'red'
         },
-        // Supervisor salida: tiempo que estuvo en sitio (entre QR llegada y QR salida)
+        
+        // 5. Supervisor salida: Se inicia con el primer escaneo QR (llegada)
+        // y se detiene con el segundo escaneo QR (salida)
         supervisor_salida: {
           tiempo: fechaPrimeraLectura && fechaSegundaLectura 
             ? differenceInSeconds(fechaSegundaLectura, fechaPrimeraLectura)
@@ -428,9 +437,10 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
           </div>
         )}
 
-        {/* Cronómetros específicos compactos */}
+        {/* Cronómetros específicos según el nuevo flujo de usuario */}
         <div className="bg-muted/20 rounded p-2 border-t">
           <div className="grid grid-cols-5 gap-2 text-center">
+            {/* 1. Aceptación Despachador: Desde creación hasta asignación de supervisor */}
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Aceptación</div>
               <div className="text-xs text-muted-foreground leading-tight">Despachador</div>
@@ -442,6 +452,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               </div>
             </div>
             
+            {/* 2. Despachador envío: Desde asignación hasta que supervisor acepta */}
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Despachador</div>
               <div className="text-xs text-muted-foreground leading-tight">envío</div>
@@ -453,17 +464,19 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               </div>
             </div>
             
+            {/* 3. Supervisor aceptación: No usado en el nuevo flujo */}
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Supervisor</div>
               <div className="text-xs text-muted-foreground leading-tight">aceptación</div>
               <div className="flex items-center justify-center mt-1">
                 <Clock className="h-3 w-3 mr-1 text-orange-500" />
-                <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.supervisor_aceptacion.color)}`}>
-                  {formatTiempo(cronometrosEspecificos.supervisor_aceptacion.tiempo)}
+                <div className={`text-xs font-mono font-bold text-gray-400`}>
+                  --:--
                 </div>
               </div>
             </div>
             
+            {/* 4. Supervisor llegada: Desde que acepta servicio hasta escaneo QR llegada */}
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Supervisor</div>
               <div className="text-xs text-muted-foreground leading-tight">llegada</div>
@@ -475,6 +488,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               </div>
             </div>
             
+            {/* 5. Supervisor salida: Desde QR llegada hasta QR salida */}
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Supervisor</div>
               <div className="text-xs text-muted-foreground leading-tight">salida</div>

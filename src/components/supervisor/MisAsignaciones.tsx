@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
+import { useSupabaseAlarmasEnhanced } from "@/hooks/useSupabaseAlarmasEnhanced";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { MapPin, Clock, Phone, AlertTriangle, CheckCircle, Camera, Timer, LogOut, Navigation } from "lucide-react";
 import { format, differenceInSeconds } from "date-fns";
@@ -32,6 +33,7 @@ interface ExtendedAlarma {
 const MisAsignaciones = () => {
   const { user } = useAuthConsolidated();
   const { alarmas, loading, attendAlarma, refetch } = useSupabaseAlarmas();
+  const { aceptarServicio } = useSupabaseAlarmasEnhanced();
   const { toast } = useToast();
   
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
@@ -87,6 +89,29 @@ const MisAsignaciones = () => {
     return () => clearInterval(interval);
   }, [misAsignaciones]);
 
+  // Función para aceptar servicio (nueva lógica según el flujo del usuario)
+  const handleAceptarServicio = async (alarmaId: string) => {
+    try {
+      const result = await aceptarServicio(alarmaId, user?.id || '');
+      if (result.success) {
+        toast({
+          title: "Servicio Aceptado",
+          description: "Has aceptado el servicio. Ahora puedes dirigirte al sitio.",
+        });
+        refetch();
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo aceptar el servicio",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Función existente para aceptar asignación (mantenida para compatibilidad)
   const handleAceptarAsignacion = async (alarmaId: string) => {
     try {
       await attendAlarma(alarmaId);
@@ -415,7 +440,19 @@ const MisAsignaciones = () => {
 
                   {/* Acciones con QR Scanning */}
                   <div className="flex gap-2 pt-4 border-t">
-                    {alarma.estado === 'asignada' && (
+                    {/* Botón para aceptar servicio asignado (nuevo flujo) */}
+                    {alarma.tiempo_asignacion_supervisor && !alarma.attended_at && (
+                      <Button 
+                        onClick={() => handleAceptarServicio(alarma.id)}
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Aceptar Servicio
+                      </Button>
+                    )}
+                    
+                    {/* Botón original para casos legacy */}
+                    {alarma.estado === 'asignada' && !alarma.tiempo_asignacion_supervisor && (
                       <Button 
                         onClick={() => handleAceptarAsignacion(alarma.id)}
                         className="flex items-center gap-2"
@@ -425,7 +462,8 @@ const MisAsignaciones = () => {
                       </Button>
                     )}
                     
-                    {alarma.estado === 'en_proceso' && !extendedAlarma.tiempo_llegada_sitio && (
+                    {/* Botón para marcar llegada (después de aceptar servicio) */}
+                    {alarma.attended_at && !extendedAlarma.tiempo_llegada_sitio && (
                       <Button 
                         onClick={() => handleArrivalScan(alarma.id)}
                         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
