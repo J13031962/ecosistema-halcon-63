@@ -18,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 const PatrullasActivas = () => {
   const { patrullas, loading: patrullasLoading, updatePatrulla } = useSupabasePatrullas();
   const { alarmas, resolverAlarma, asignarPatrulla, refetch: refetchAlarmas } = useSupabaseAlarmasEnhanced();
-  const { servicios, loading: serviciosLoading } = useServiciosTecnicos();
+  const { servicios, loading: serviciosLoading, fetchServicios } = useServiciosTecnicos();
   const { supervisores: supervisoresFromHook } = useSupabaseSupervisores();
   const { userRole } = useAuthConsolidated();
   const { toast } = useToast();
@@ -231,7 +231,9 @@ const PatrullasActivas = () => {
         
         if (error) throw error;
         
-        // Actualización optimista para servicios técnicos
+        // Refrescar lista de servicios para reflejar cambio de estado
+        await fetchServicios();
+        
         console.log('🔄 Servicio técnico asignado:', data);
       } else {
         // Es una alarma
