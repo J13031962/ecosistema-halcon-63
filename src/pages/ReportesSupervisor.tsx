@@ -23,6 +23,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import LeafletMap from '@/components/map/LeafletMap';
 
 interface ReportData {
   id: string;
@@ -304,15 +305,22 @@ const ReportesSupervisor = () => {
                     </div>
                   </div>
 
-                  {/* Mapa placeholder */}
+                  {/* Mapa con ubicación */}
                   <div className="mt-6">
-                    <div className="bg-muted rounded-lg h-64 flex items-center justify-center">
-                      <div className="text-center text-muted-foreground">
-                        <MapPin className="h-12 w-12 mx-auto mb-2" />
-                        <p>Mapa de ubicación</p>
-                        <p className="text-sm">{reporteSeleccionado.direccion}</p>
-                      </div>
-                    </div>
+                    <LeafletMap
+                      center={[25.674, -100.309]}
+                      zoom={15}
+                      height="320px"
+                      markers={[
+                        {
+                          position: [25.674, -100.309],
+                          title: reporteSeleccionado.cliente,
+                          popupContent: `${reporteSeleccionado.direccion}\nSupervisor: ${reporteSeleccionado.supervisor.nombre}\nVehículo: ${reporteSeleccionado.vehiculo.codigo}`
+                        }
+                      ]}
+                      showTraffic={true}
+                      withControls={true}
+                    />
                   </div>
                 </CardContent>
               </Card>
