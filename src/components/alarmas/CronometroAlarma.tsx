@@ -81,6 +81,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
   });
 
   const [parpadeo, setParpadeo] = useState(false);
+  const [tiempoTotal, setTiempoTotal] = useState(0);
 
   const isAssignedToCurrentSupervisor = React.useMemo(() => {
     if (supervisor_id && currentUserId) {
@@ -214,6 +215,12 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
           fase: 'espera_despachador'
         };
       }
+
+      // Actualizar tiempo total acumulado (desde creación hasta ahora o hasta salida)
+      const totalSegundos = tiempo_segunda_lectura_qr
+        ? differenceInSeconds(new Date(tiempo_segunda_lectura_qr), fechaCreacion)
+        : differenceInSeconds(ahora, fechaCreacion);
+      setTiempoTotal(totalSegundos);
 
       setTiempoActual(nuevoEstado);
       
@@ -374,7 +381,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
           {/* Tiempo total en la parte superior derecha */}
           <div className="text-right">
             <div className={`text-sm font-bold ${getTiempoColor()}`}>
-              {formatTiempo(tiempoActual.segundos)}
+              {formatTiempo(tiempoTotal)}
             </div>
             <div className="text-xs text-muted-foreground">
               {getFaseTexto()}
