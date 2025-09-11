@@ -495,11 +495,24 @@ const GenerarAlarma = () => {
             <Card className="bg-green-50 border-green-200">
               <CardContent className="pt-4">
                 <div className="flex justify-between items-start">
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-semibold text-green-800">{clienteEncontrado.nombre}</h3>
                     <p className="text-sm text-green-700">📍 {clienteEncontrado.direccion}</p>
                     <p className="text-sm text-green-700">🏙️ {clienteEncontrado.municipio}</p>
                     <p className="text-sm text-green-700">📄 Cuenta: {clienteEncontrado.numero_cuenta}</p>
+                  </div>
+                  <div className="border border-green-300 bg-white rounded-lg p-3 min-w-48">
+                    <div className="space-y-1 text-sm">
+                      <div className="text-green-800">
+                        <strong>Alarmas mes</strong> {clienteEncontrado.servicios_contratados?.alarmas_mes || 0}/{clienteEncontrado.servicios_contratados?.cantidad_patrullas || 0}
+                      </div>
+                      <div className="text-green-800">
+                        <strong>Revistas pagas mes</strong> {clienteEncontrado.servicios_contratados?.revistas_mes || 0}/{clienteEncontrado.servicios_contratados?.cantidad_revistas || 0}
+                      </div>
+                      <div className="text-green-800">
+                        <strong>Acompañamiento mes</strong> {clienteEncontrado.servicios_contratados?.acompañamientos_mes || 0}/{clienteEncontrado.servicios_contratados?.acompañamientos || 1}
+                      </div>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button 
