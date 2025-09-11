@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const PatrullasActivas = () => {
   const { patrullas, loading: patrullasLoading, updatePatrulla } = useSupabasePatrullas();
-  const { alarmas, resolverAlarma, asignarPatrulla } = useSupabaseAlarmasEnhanced();
+  const { alarmas, resolverAlarma, asignarPatrulla, refetch: refetchAlarmas } = useSupabaseAlarmasEnhanced();
   const { servicios, loading: serviciosLoading } = useServiciosTecnicos();
   const { supervisores: supervisoresFromHook } = useSupabaseSupervisores();
   const { userRole } = useAuthConsolidated();
@@ -235,6 +235,7 @@ const PatrullasActivas = () => {
         if (!result.success) throw new Error(result.error);
 
         // Actualización optimista local: mover a Servicios Activos inmediatamente
+        console.log('🔄 Actualizando estado local a asignada para', alarmaId);
         setRealtimeAlarmas(prev => prev.map(a => a.id === alarmaId ? {
           ...a,
           estado: 'asignada',
@@ -243,6 +244,9 @@ const PatrullasActivas = () => {
           patrulla_asignada: supervisorData.patrulla_asignada,
           tiempo_asignacion_supervisor: now
         } : a));
+
+        // Forzar refetch para consolidar estado con BD
+        await refetchAlarmas();
       }
 
       // Registrar el tiempo de asignación para el supervisor (para disponibilidad)
