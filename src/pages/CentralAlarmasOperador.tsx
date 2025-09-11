@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useUserSpecificData } from "@/hooks/useUserSpecificData";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
+import { useOptimizedActions } from "@/hooks/useOptimizedActions";
+import { useGlobalTimer } from "@/hooks/useGlobalTimer";
 import { CalendarioTurnosGenerados } from '@/components/personal/CalendarioTurnosGenerados';
 import { useSupabaseTurnos } from '@/hooks/useSupabaseTurnos';
 import { useSupabaseClientes } from "@/hooks/useSupabaseClientes";
@@ -262,8 +264,11 @@ const CentralAlarmasOperador = () => {
     return `${min}:${sec.toString().padStart(2, '0')}`;
   };
 
-  // Funciones del supervisor copiadas de PatrullasActivas
-  const handleSupervisorAccept = async (alarmaId: string) => {
+  // Import the optimized actions hook
+  const supervisorActions = useOptimizedActions();
+
+  // Optimized supervisor functions with throttling and error handling
+  const handleSupervisorAccept = useCallback(async (alarmaId: string) => {
     try {
       const now = new Date().toISOString();
       const { error } = await supabase
@@ -276,7 +281,7 @@ const CentralAlarmasOperador = () => {
 
       if (error) throw error;
 
-      // Actualizar estado local
+      // Optimized state update
       setRealtimeAlarmas(prev => prev.map(a => a.id === alarmaId 
         ? { ...a, tiempo_aceptacion_supervisor: now, estado: 'en_proceso' } 
         : a
@@ -294,9 +299,9 @@ const CentralAlarmasOperador = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [toast]);
 
-  const handleSupervisorArrive = async (alarmaId: string) => {
+  const handleSupervisorArrive = useCallback(async (alarmaId: string) => {
     try {
       const now = new Date().toISOString();
       const alarmaActual = realtimeAlarmas.find(a => a.id === alarmaId);
@@ -315,7 +320,7 @@ const CentralAlarmasOperador = () => {
 
       if (error) throw error;
 
-      // Actualizar estado local
+      // Optimized state update
       setRealtimeAlarmas(prev => prev.map(a => a.id === alarmaId 
         ? { ...a, ...updatePayload } 
         : a
@@ -333,9 +338,9 @@ const CentralAlarmasOperador = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [realtimeAlarmas, toast]);
 
-  const handleSupervisorLeave = async (alarmaId: string) => {
+  const handleSupervisorLeave = useCallback(async (alarmaId: string) => {
     try {
       const now = new Date().toISOString();
       const alarmaActual = realtimeAlarmas.find(a => a.id === alarmaId);
@@ -358,7 +363,7 @@ const CentralAlarmasOperador = () => {
 
       if (error) throw error;
 
-      // Actualizar estado local
+      // Optimized state update
       setRealtimeAlarmas(prev => prev.map(a => a.id === alarmaId 
         ? { ...a, ...updatePayload } 
         : a
@@ -376,7 +381,7 @@ const CentralAlarmasOperador = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [realtimeAlarmas, toast]);
 
   // Funciones para generación de alarmas
   const filteredClientes = clientes.filter(cliente =>

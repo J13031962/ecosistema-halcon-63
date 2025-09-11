@@ -317,8 +317,11 @@ export const useSupabaseAlarmasEnhanced = () => {
   const getAlarmasAsignadas = () => alarmas.filter(alarma => alarma.estado === 'asignada');
   const getAlarmasResueltas = () => alarmas.filter(alarma => alarma.estado === 'resuelta');
 
-  // Real-time subscription
+  // Optimized real-time subscription with debouncing
   useEffect(() => {
+    let updateTimeoutId: NodeJS.Timeout;
+    let isSubscriptionActive = true;
+    
     const subscription = supabase
       .channel('alarmas_enhanced_changes')
       .on(
@@ -329,24 +332,37 @@ export const useSupabaseAlarmasEnhanced = () => {
           table: 'alarmas'
         },
         (payload) => {
+          if (!isSubscriptionActive) return;
+          
           console.log('Alarma change received:', payload);
           
-          if (payload.eventType === 'INSERT') {
-            // Refetch para obtener datos completos con relaciones
-            fetchAlarmas();
-          } else if (payload.eventType === 'UPDATE') {
-            setAlarmas(prev => 
-              prev.map(alarma => 
-                alarma.id === payload.new.id 
-                  ? { ...alarma, ...payload.new }
-                  : alarma
-              )
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setAlarmas(prev => 
-              prev.filter(alarma => alarma.id !== payload.old.id)
-            );
-          }
+          // Debounce rapid updates
+          clearTimeout(updateTimeoutId);
+          updateTimeoutId = setTimeout(() => {
+            if (!isSubscriptionActive) return;
+            
+            if (payload.eventType === 'INSERT') {
+              // Optimized: only refetch if we don't have the data
+              setAlarmas(prev => {
+                const exists = prev.some(a => a.id === payload.new.id);
+                if (exists) return prev;
+                fetchAlarmas(); // Refetch to get complete data with relations
+                return prev;
+              });
+            } else if (payload.eventType === 'UPDATE') {
+              setAlarmas(prev => 
+                prev.map(alarma => 
+                  alarma.id === payload.new.id 
+                    ? { ...alarma, ...payload.new }
+                    : alarma
+                )
+              );
+            } else if (payload.eventType === 'DELETE') {
+              setAlarmas(prev => 
+                prev.filter(alarma => alarma.id !== payload.old.id)
+              );
+            }
+          }, 150); // 150ms debounce
         }
       )
       .subscribe();
@@ -354,7 +370,11 @@ export const useSupabaseAlarmasEnhanced = () => {
     fetchAlarmas();
 
     return () => {
-      supabase.removeChannel(subscription);
+      isSubscriptionActive = false;
+      clearTimeout(updateTimeoutId);
+      if (subscription) {
+        supabase.removeChannel(subscription);
+      }
     };
   }, []);
 

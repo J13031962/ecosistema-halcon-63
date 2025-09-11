@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, User, MapPin, CheckCircle, X, Phone } from 'lucide-react';
-import { format, differenceInSeconds } from 'date-fns';
+import { format } from 'date-fns';
+import { useOptimizedCronometer } from '@/hooks/useOptimizedCronometer';
+import { useGlobalTimer } from '@/hooks/useGlobalTimer';
 
 interface CronometroAlarmaProps {
   alarmaId: string;
@@ -37,11 +39,7 @@ interface CronometroAlarmaProps {
   currentUserName?: string;
 }
 
-interface TiempoEstado {
-  segundos: number;
-  color: 'green' | 'yellow' | 'orange' | 'red' | 'red-blink';
-  fase: 'espera_despachador' | 'desplazamiento' | 'en_sitio' | 'finalizada';
-}
+// Interfaces moved to useOptimizedCronometer hook
 
 const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
   alarmaId,
@@ -74,15 +72,29 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
   currentUserId,
   currentUserName
 }) => {
-  const [tiempoActual, setTiempoActual] = useState<TiempoEstado>({
-    segundos: 0,
-    color: 'green',
-    fase: 'espera_despachador'
+  const [parpadeo, setParpadeo] = useState(false);
+
+  // Use optimized cronometer hook
+  const {
+    tiempoActual,
+    tiempoTotal,
+    cronometrosEspecificos,
+    formatTiempo,
+    getFaseTexto
+  } = useOptimizedCronometer({
+    created_at,
+    estado,
+    tiempo_toma_despachador,
+    tiempo_asignacion_supervisor,
+    tiempo_aceptacion_supervisor,
+    tiempo_primera_lectura_qr,
+    tiempo_segunda_lectura_qr
   });
 
-  const [parpadeo, setParpadeo] = useState(false);
-  const [tiempoTotal, setTiempoTotal] = useState(0);
+  // Global timer for blinking effect
+  const { currentTime } = useGlobalTimer();
 
+  // Memoized supervisor assignment check
   const isAssignedToCurrentSupervisor = React.useMemo(() => {
     if (supervisor_id && currentUserId) {
       return supervisor_id === currentUserId;
@@ -95,205 +107,39 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
     return false;
   }, [supervisor_id, currentUserId, supervisor, currentUserName]);
 
-
-  // Estados para cronómetros específicos
-  const [cronometrosEspecificos, setCronometrosEspecificos] = useState<{
-    aceptacion_despachador: { tiempo: number; color: 'green' | 'red' };
-    despachador_envio: { tiempo: number; color: 'green' | 'red' };
-    supervisor_aceptacion: { tiempo: number; color: 'green' | 'red' };
-    supervisor_llegada: { tiempo: number; color: 'green' | 'red' };
-    supervisor_salida: { tiempo: number; color: 'green' | 'red' };
-  }>({
-    aceptacion_despachador: { tiempo: 0, color: 'green' },
-    despachador_envio: { tiempo: 0, color: 'green' },
-    supervisor_aceptacion: { tiempo: 0, color: 'green' },
-    supervisor_llegada: { tiempo: 0, color: 'green' },
-    supervisor_salida: { tiempo: 0, color: 'green' }
-  });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const ahora = new Date();
-      const fechaCreacion = new Date(created_at);
-      const fechaTomaDespachador = tiempo_toma_despachador ? new Date(tiempo_toma_despachador) : null;
-      const fechaAsignacion = tiempo_asignacion_supervisor ? new Date(tiempo_asignacion_supervisor) : null;
-      const fechaAceptacion = tiempo_aceptacion_supervisor ? new Date(tiempo_aceptacion_supervisor) : null;
-      const fechaPrimeraLectura = tiempo_primera_lectura_qr ? new Date(tiempo_primera_lectura_qr) : null;
-      const fechaSegundaLectura = tiempo_segunda_lectura_qr ? new Date(tiempo_segunda_lectura_qr) : null;
-
-      let nuevoEstado: TiempoEstado;
-
-      if (estado === 'resuelta') {
-        nuevoEstado = {
-          segundos: fechaSegundaLectura ? differenceInSeconds(fechaSegundaLectura, fechaCreacion) : 0,
-          color: 'green',
-          fase: 'finalizada'
-        };
-      } else if (fechaSegundaLectura) {
-        // Servicio completado - mostrar tiempo total
-        nuevoEstado = {
-          segundos: differenceInSeconds(fechaSegundaLectura, fechaCreacion),
-          color: 'green',
-          fase: 'finalizada'
-        };
-      } else if (fechaPrimeraLectura) {
-        // Supervisor en sitio - contar tiempo desde llegada
-        const segundosEnSitio = differenceInSeconds(ahora, fechaPrimeraLectura);
-        let color: TiempoEstado['color'] = 'green';
-        
-        if (segundosEnSitio > 3600) { // 1+ hora
-          color = 'red';
-        } else if (segundosEnSitio > 2400) { // 40+ minutos
-          color = 'orange';
-        } else if (segundosEnSitio > 1800) { // 30+ minutos
-          color = 'yellow';
-        }
-
-        nuevoEstado = {
-          segundos: segundosEnSitio,
-          color,
-          fase: 'en_sitio'
-        };
-      } else if (fechaAsignacion) {
-        // Asignada a supervisor, contando tiempo de desplazamiento
-        const segundosDesplazamiento = differenceInSeconds(ahora, fechaAsignacion);
-        let color: TiempoEstado['color'] = 'green';
-        
-        if (segundosDesplazamiento > 2400) { // 40+ minutos
-          color = 'red-blink';
-        } else if (segundosDesplazamiento > 2100) { // 35+ minutos
-          color = 'red';
-        } else if (segundosDesplazamiento > 1800) { // 30+ minutos
-          color = 'orange';
-        } else if (segundosDesplazamiento > 1200) { // 20+ minutos
-          color = 'yellow';
-        }
-
-        nuevoEstado = {
-          segundos: segundosDesplazamiento,
-          color,
-          fase: 'desplazamiento'
-        };
-      } else if (estado === 'en_proceso' && fechaTomaDespachador) {
-        // Despachador tomó la alarma, esperando asignación
-        const segundosDesdeAtencion = differenceInSeconds(ahora, fechaTomaDespachador);
-        let color: TiempoEstado['color'] = 'green';
-        
-        if (segundosDesdeAtencion > 240) { // 4+ minutos
-          color = 'red-blink';
-        } else if (segundosDesdeAtencion > 180) { // 3+ minutos
-          color = 'red';
-        } else if (segundosDesdeAtencion > 120) { // 2+ minutos
-          color = 'orange';
-        } else if (segundosDesdeAtencion > 60) { // 1+ minuto
-          color = 'yellow';
-        }
-
-        nuevoEstado = {
-          segundos: segundosDesdeAtencion,
-          color,
-          fase: 'espera_despachador'
-        };
-      } else {
-        // Esperando atención del despachador
-        const segundosEspera = differenceInSeconds(ahora, fechaCreacion);
-        let color: TiempoEstado['color'] = 'green';
-        
-        if (segundosEspera > 240) { // 4+ minutos
-          color = 'red-blink';
-        } else if (segundosEspera > 180) { // 3+ minutos
-          color = 'red';
-        } else if (segundosEspera > 120) { // 2+ minutos
-          color = 'orange';
-        } else if (segundosEspera > 60) { // 1+ minuto
-          color = 'yellow';
-        }
-
-        nuevoEstado = {
-          segundos: segundosEspera,
-          color,
-          fase: 'espera_despachador'
-        };
-      }
-
-      // Actualizar tiempo total acumulado (desde creación hasta ahora o hasta salida)
-      const totalSegundos = tiempo_segunda_lectura_qr
-        ? differenceInSeconds(new Date(tiempo_segunda_lectura_qr), fechaCreacion)
-        : differenceInSeconds(ahora, fechaCreacion);
-      setTiempoTotal(totalSegundos);
-
-      setTiempoActual(nuevoEstado);
-      
-      // Calcular cronómetros específicos según el nuevo flujo solicitado
-      const nuevosCronometros = {
-        // 1. Aceptación Despachador: Desde creación hasta clic en alarma (tiempo_toma_despachador)
-        aceptacion_despachador: {
-          tiempo: fechaTomaDespachador 
-            ? differenceInSeconds(fechaTomaDespachador, fechaCreacion)
-            : differenceInSeconds(ahora, fechaCreacion),
-          color: (!fechaTomaDespachador && differenceInSeconds(ahora, fechaCreacion) > 240) ? 'red' : 'green' as 'green' | 'red'
-        },
-        
-        // 2. Despachador envío: Desde clic en alarma hasta asignación de supervisor
-        despachador_envio: {
-          tiempo: fechaTomaDespachador && fechaAsignacion 
-            ? differenceInSeconds(fechaAsignacion, fechaTomaDespachador)
-            : fechaTomaDespachador 
-              ? differenceInSeconds(ahora, fechaTomaDespachador) 
-              : 0,
-          color: (fechaTomaDespachador && !fechaAsignacion && differenceInSeconds(ahora, fechaTomaDespachador) > 360) ? 'red' : 'green' as 'green' | 'red'
-        },
-        
-        // 3. Supervisor aceptación: Desde asignación hasta que supervisor acepta
-        supervisor_aceptacion: {
-          tiempo: fechaAsignacion && fechaAceptacion
-            ? differenceInSeconds(fechaAceptacion, fechaAsignacion)
-            : fechaAsignacion 
-              ? differenceInSeconds(ahora, fechaAsignacion) 
-              : 0,
-          color: (fechaAsignacion && !fechaAceptacion && differenceInSeconds(ahora, fechaAsignacion) > 300) ? 'red' : 'green' as 'green' | 'red'
-        },
-        
-        // 4. Supervisor llegada: Desde aceptación hasta primer QR
-        supervisor_llegada: {
-          tiempo: fechaAceptacion && fechaPrimeraLectura 
-            ? differenceInSeconds(fechaPrimeraLectura, fechaAceptacion)
-            : fechaAceptacion ? differenceInSeconds(ahora, fechaAceptacion) : 0,
-          color: (fechaAceptacion && !fechaPrimeraLectura && differenceInSeconds(ahora, fechaAceptacion) > 1200) ? 'red' : 'green' as 'green' | 'red'
-        },
-        
-        // 5. Supervisor salida: Desde primer QR hasta segundo QR
-        supervisor_salida: {
-          tiempo: fechaPrimeraLectura && fechaSegundaLectura 
-            ? differenceInSeconds(fechaSegundaLectura, fechaPrimeraLectura)
-            : fechaPrimeraLectura ? differenceInSeconds(ahora, fechaPrimeraLectura) : 0,
-          color: (fechaPrimeraLectura && !fechaSegundaLectura && differenceInSeconds(ahora, fechaPrimeraLectura) > 3600) ? 'red' : 'green' as 'green' | 'red'
-        }
-      };
-
-      setCronometrosEspecificos(nuevosCronometros);
-      
-      // Controlar parpadeo
-      if (nuevoEstado.color === 'red-blink') {
+  // Handle blinking effect based on timer color
+  React.useEffect(() => {
+    if (tiempoActual.color === 'red-blink') {
+      const blinkInterval = setInterval(() => {
         setParpadeo(prev => !prev);
-      } else {
-        setParpadeo(false);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [created_at, tiempo_toma_despachador, tiempo_asignacion_supervisor, tiempo_aceptacion_supervisor, tiempo_primera_lectura_qr, tiempo_segunda_lectura_qr, estado]);
-
-  const formatTiempo = (segundos: number) => {
-    const horas = Math.floor(segundos / 3600);
-    const minutos = Math.floor((segundos % 3600) / 60);
-    const segs = segundos % 60;
-    
-    if (horas > 0) {
-      return `${horas}:${minutos.toString().padStart(2, '0')}:${segs.toString().padStart(2, '0')}`;
+      }, 500); // Blink every 500ms
+      
+      return () => clearInterval(blinkInterval);
+    } else {
+      setParpadeo(false);
     }
-    return `${minutos}:${segs.toString().padStart(2, '0')}`;
-  };
+  }, [tiempoActual.color]);
+
+  // Memoized utility functions to avoid recreation
+  const memoizedCallbacks = React.useMemo(() => ({
+    onSelectHandler: () => onSelect?.(),
+    onCancelHandler: (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onCancel?.();
+    },
+    onSupervisorAcceptHandler: (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onSupervisorAccept?.(alarmaId);
+    },
+    onSupervisorArriveHandler: (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onSupervisorArrive?.(alarmaId);
+    },
+    onSupervisorLeaveHandler: (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onSupervisorLeave?.(alarmaId);
+    }
+  }), [onSelect, onCancel, onSupervisorAccept, onSupervisorArrive, onSupervisorLeave, alarmaId]);
 
   const getCardClasses = () => {
     const baseClasses = `p-2 border rounded-lg cursor-pointer transition-all duration-300 ${
@@ -339,33 +185,22 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
     }
   };
 
-  const getFaseTexto = () => {
-    switch (tiempoActual.fase) {
-      case 'espera_despachador':
-        return estado === 'activa' ? 'Esperando atención' : 'Esperando asignación';
-      case 'desplazamiento':
-        return 'En desplazamiento';
-      case 'en_sitio':
-        return 'En sitio';
-      case 'finalizada':
-        return 'Finalizada';
-      default:
-        return 'Pendiente';
+  // Memoized style functions
+  const styleHelpers = React.useMemo(() => ({
+    getPriorityColor: (prioridad: string) => {
+      switch (prioridad) {
+        case 'alta': return 'destructive';
+        case 'media': return 'default';
+        case 'baja': return 'secondary';
+        default: return 'outline';
+      }
+    },
+    getColorClassForTimer: (color: 'green' | 'red') => {
+      return color === 'red' ? 'text-red-600 font-bold' : 'text-green-600';
     }
-  };
+  }), []);
 
-  const getPriorityColor = (prioridad: string) => {
-    switch (prioridad) {
-      case 'alta': return 'destructive';
-      case 'media': return 'default';
-      case 'baja': return 'secondary';
-      default: return 'outline';
-    }
-  };
-
-  const getColorClassForTimer = (color: 'green' | 'red') => {
-    return color === 'red' ? 'text-red-600 font-bold' : 'text-green-600';
-  };
+  // Remove these functions as they're now in styleHelpers
 
   return (
     <div className={getCardClasses()} onClick={onSelect}>
@@ -374,7 +209,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium">{tipo}</span>
-            <Badge variant={getPriorityColor(prioridad)} className="text-xs px-1 py-0">
+            <Badge variant={styleHelpers.getPriorityColor(prioridad)} className="text-xs px-1 py-0">
               {prioridad}
             </Badge>
           </div>
@@ -437,10 +272,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
             <Button
               variant="default"
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelect();
-              }}
+              onClick={memoizedCallbacks.onSelectHandler}
               className="bg-blue-600 hover:bg-blue-700 text-white h-6 px-2 text-xs"
             >
               <User className="h-3 w-3 mr-1" />
@@ -458,10 +290,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSupervisorAccept?.(alarmaId);
-                  }}
+                  onClick={memoizedCallbacks.onSupervisorAcceptHandler}
                   className="bg-green-600 hover:bg-green-700 text-white h-8 px-4 text-sm"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
@@ -476,10 +305,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSupervisorArrive?.(alarmaId);
-                  }}
+                  onClick={memoizedCallbacks.onSupervisorArriveHandler}
                   className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-sm"
                 >
                   <MapPin className="h-4 w-4 mr-2" />
@@ -494,10 +320,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSupervisorLeave?.(alarmaId);
-                  }}
+                  onClick={memoizedCallbacks.onSupervisorLeaveHandler}
                   className="bg-orange-600 hover:bg-orange-700 text-white h-8 px-4 text-sm"
                 >
                   <Clock className="h-4 w-4 mr-2" />
@@ -543,7 +366,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               <div className="text-xs text-muted-foreground leading-tight">Despachador</div>
               <div className="flex items-center justify-center mt-1">
                 <Clock className="h-3 w-3 mr-1 text-blue-500" />
-                <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.aceptacion_despachador.color)}`}>
+                <div className={`text-xs font-mono font-bold ${styleHelpers.getColorClassForTimer(cronometrosEspecificos.aceptacion_despachador.color)}`}>
                   {formatTiempo(cronometrosEspecificos.aceptacion_despachador.tiempo)}
                 </div>
               </div>
@@ -555,7 +378,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               <div className="text-xs text-muted-foreground leading-tight">envío</div>
               <div className="flex items-center justify-center mt-1">
                 <Clock className="h-3 w-3 mr-1 text-purple-500" />
-                <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.despachador_envio.color)}`}>
+                <div className={`text-xs font-mono font-bold ${styleHelpers.getColorClassForTimer(cronometrosEspecificos.despachador_envio.color)}`}>
                   {formatTiempo(cronometrosEspecificos.despachador_envio.tiempo)}
                 </div>
               </div>
@@ -567,7 +390,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               <div className="text-xs text-muted-foreground leading-tight">aceptación</div>
               <div className="flex items-center justify-center mt-1">
                 <Clock className="h-3 w-3 mr-1 text-yellow-500" />
-                <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.supervisor_aceptacion.color)}`}>
+                <div className={`text-xs font-mono font-bold ${styleHelpers.getColorClassForTimer(cronometrosEspecificos.supervisor_aceptacion.color)}`}>
                   {formatTiempo(cronometrosEspecificos.supervisor_aceptacion.tiempo)}
                 </div>
               </div>
@@ -579,7 +402,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               <div className="text-xs text-muted-foreground leading-tight">llegada</div>
               <div className="flex items-center justify-center mt-1">
                 <Clock className="h-3 w-3 mr-1 text-teal-500" />
-                <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.supervisor_llegada.color)}`}>
+                <div className={`text-xs font-mono font-bold ${styleHelpers.getColorClassForTimer(cronometrosEspecificos.supervisor_llegada.color)}`}>
                   {formatTiempo(cronometrosEspecificos.supervisor_llegada.tiempo)}
                 </div>
               </div>
@@ -591,7 +414,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               <div className="text-xs text-muted-foreground leading-tight">salida</div>
               <div className="flex items-center justify-center mt-1">
                 <Clock className="h-3 w-3 mr-1 text-cyan-500" />
-                <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.supervisor_salida.color)}`}>
+                <div className={`text-xs font-mono font-bold ${styleHelpers.getColorClassForTimer(cronometrosEspecificos.supervisor_salida.color)}`}>
                   {formatTiempo(cronometrosEspecificos.supervisor_salida.tiempo)}
                 </div>
               </div>
@@ -603,4 +426,14 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
   );
 };
 
-export default CronometroAlarma;
+// Memoize the component to prevent unnecessary re-renders
+export default React.memo(CronometroAlarma, (prevProps, nextProps) => {
+  // Custom comparison function - only re-render if critical props change
+  const criticalProps = [
+    'estado', 'created_at', 'tiempo_toma_despachador', 'tiempo_asignacion_supervisor',
+    'tiempo_aceptacion_supervisor', 'tiempo_primera_lectura_qr', 'tiempo_segunda_lectura_qr',
+    'isSelected', 'supervisor', 'supervisor_id'
+  ];
+  
+  return criticalProps.every(prop => prevProps[prop] === nextProps[prop]);
+});
