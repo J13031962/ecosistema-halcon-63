@@ -99,11 +99,12 @@ const RutasAsignadas = () => {
       const now = new Date().toISOString();
       
       if (currentScanType === 'arrival') {
-        // Mark arrival at site
+        // Mark arrival at site - Update tiempo_primera_lectura_qr to stop supervisor llegada timer
         const { error } = await supabase
           .from('alarmas')
           .update({
             tiempo_llegada_sitio: now,
+            tiempo_primera_lectura_qr: now, // This stops the supervisor llegada timer
             qr_llegada_data: qrData as any,
             estado: 'en_proceso'
           })
@@ -116,11 +117,12 @@ const RutasAsignadas = () => {
           description: `Has llegado al sitio de ${qrData.nombre}. El contador de tiempo ha iniciado.`,
         });
       } else {
-        // Mark departure from site
+        // Mark departure from site - Update tiempo_segunda_lectura_qr to stop supervisor salida timer
         const { error } = await supabase
           .from('alarmas')
           .update({
             tiempo_salida_sitio: now,
+            tiempo_segunda_lectura_qr: now, // This stops the supervisor salida timer
             qr_salida_data: qrData as any,
             resolved_at: now,
             estado: 'resuelta'

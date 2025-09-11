@@ -83,14 +83,29 @@ const HistorialServicios = () => {
 
   const calcularTiempos = (servicio: any) => {
     const fechaCreacion = new Date(servicio.created_at);
+    const fechaTomaDespachador = servicio.tiempo_toma_despachador ? new Date(servicio.tiempo_toma_despachador) : null;
     const fechaAsignacion = servicio.tiempo_asignacion_supervisor ? new Date(servicio.tiempo_asignacion_supervisor) : null;
+    const fechaAceptacion = servicio.tiempo_aceptacion_supervisor ? new Date(servicio.tiempo_aceptacion_supervisor) : null;
     const fechaLlegada = servicio.tiempo_primera_lectura_qr ? new Date(servicio.tiempo_primera_lectura_qr) : null;
     const fechaSalida = servicio.tiempo_segunda_lectura_qr ? new Date(servicio.tiempo_segunda_lectura_qr) : null;
 
     return {
-      aceptacionDespachador: fechaAsignacion ? differenceInSeconds(fechaAsignacion, fechaCreacion) : 0,
-      supervisorLlegada: fechaAsignacion && fechaLlegada ? differenceInSeconds(fechaLlegada, fechaAsignacion) : 0,
-      tiempoEnSitio: fechaLlegada && fechaSalida ? differenceInSeconds(fechaSalida, fechaLlegada) : 0,
+      // 1. Aceptación Despachador: Desde creación hasta clic en alarma
+      aceptacionDespachador: fechaTomaDespachador ? differenceInSeconds(fechaTomaDespachador, fechaCreacion) : 0,
+      
+      // 2. Despachador envío: Desde clic en alarma hasta asignación de supervisor
+      despachadorEnvio: fechaTomaDespachador && fechaAsignacion ? differenceInSeconds(fechaAsignacion, fechaTomaDespachador) : 0,
+      
+      // 3. Supervisor aceptación: Desde asignación hasta que supervisor acepta
+      supervisorAceptacion: fechaAsignacion && fechaAceptacion ? differenceInSeconds(fechaAceptacion, fechaAsignacion) : 0,
+      
+      // 4. Supervisor llegada: Desde aceptación hasta primer QR (llegada)
+      supervisorLlegada: fechaAceptacion && fechaLlegada ? differenceInSeconds(fechaLlegada, fechaAceptacion) : 0,
+      
+      // 5. Supervisor salida: Desde primer QR hasta segundo QR (salida)
+      supervisorSalida: fechaLlegada && fechaSalida ? differenceInSeconds(fechaSalida, fechaLlegada) : 0,
+      
+      // Tiempo Total: Desde creación hasta finalización
       tiempoTotal: fechaSalida ? differenceInSeconds(fechaSalida, fechaCreacion) : 0
     };
   };
@@ -114,8 +129,10 @@ const HistorialServicios = () => {
       'Supervisor',
       'Patrulla',
       'Aceptación Despachador (min)',
+      'Despachador Envío (min)',
+      'Supervisor Aceptación (min)',
       'Supervisor Llegada (min)',
-      'Tiempo en Sitio (min)',
+      'Supervisor Salida (min)',
       'Tiempo Total (min)'
     ];
 
@@ -130,8 +147,10 @@ const HistorialServicios = () => {
         servicio.supervisor || 'N/A',
         servicio.patrulla_asignada || 'N/A',
         Math.round(tiempos.aceptacionDespachador / 60),
+        Math.round(tiempos.despachadorEnvio / 60),
+        Math.round(tiempos.supervisorAceptacion / 60),
         Math.round(tiempos.supervisorLlegada / 60),
-        Math.round(tiempos.tiempoEnSitio / 60),
+        Math.round(tiempos.supervisorSalida / 60),
         Math.round(tiempos.tiempoTotal / 60)
       ];
     });
@@ -343,14 +362,14 @@ const HistorialServicios = () => {
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-orange-600" />
               <div>
-                <p className="text-sm text-muted-foreground">Tiempo en Sitio Promedio</p>
-                <p className="text-2xl font-bold">
-                  {serviciosFiltrados.length > 0 ? 
-                    formatTiempo(
-                      serviciosFiltrados.reduce((acc, s) => acc + calcularTiempos(s).tiempoEnSitio, 0) / serviciosFiltrados.length
-                    ) : '0:00'
-                  }
-                </p>
+                <p className="text-sm text-muted-foreground">Tiempo Salida Promedio</p>
+                 <p className="text-2xl font-bold">
+                   {serviciosFiltrados.length > 0 ? 
+                     formatTiempo(
+                       serviciosFiltrados.reduce((acc, s) => acc + calcularTiempos(s).supervisorSalida, 0) / serviciosFiltrados.length
+                     ) : '0:00'
+                   }
+                 </p>
               </div>
             </div>
           </CardContent>
@@ -429,28 +448,36 @@ const HistorialServicios = () => {
                           </div>
                         </div>
 
-                        {/* Tiempos Detallados */}
-                        <div className="bg-muted/50 rounded-lg p-4">
-                          <h4 className="font-medium mb-3">Análisis de Tiempos</h4>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Aceptación Despachador</p>
-                              <p className="font-mono font-bold text-sm">{formatTiempo(tiempos.aceptacionDespachador)}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Supervisor Llegada</p>
-                              <p className="font-mono font-bold text-sm">{formatTiempo(tiempos.supervisorLlegada)}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Tiempo en Sitio</p>
-                              <p className="font-mono font-bold text-sm">{formatTiempo(tiempos.tiempoEnSitio)}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Tiempo Total</p>
-                              <p className="font-mono font-bold text-sm text-green-600">{formatTiempo(tiempos.tiempoTotal)}</p>
-                            </div>
-                          </div>
-                        </div>
+                         {/* Tiempos Detallados - Los mismos 5 cronómetros que en Servicios Activos */}
+                         <div className="bg-muted/50 rounded-lg p-4">
+                           <h4 className="font-medium mb-3">Análisis de Tiempos</h4>
+                           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+                             <div>
+                               <p className="text-xs text-muted-foreground mb-1">Aceptación Despachador</p>
+                               <p className="font-mono font-bold text-sm">{formatTiempo(tiempos.aceptacionDespachador)}</p>
+                             </div>
+                             <div>
+                               <p className="text-xs text-muted-foreground mb-1">Despachador Envío</p>
+                               <p className="font-mono font-bold text-sm">{formatTiempo(tiempos.despachadorEnvio)}</p>
+                             </div>
+                             <div>
+                               <p className="text-xs text-muted-foreground mb-1">Supervisor Aceptación</p>
+                               <p className="font-mono font-bold text-sm">{formatTiempo(tiempos.supervisorAceptacion)}</p>
+                             </div>
+                             <div>
+                               <p className="text-xs text-muted-foreground mb-1">Supervisor Llegada</p>
+                               <p className="font-mono font-bold text-sm">{formatTiempo(tiempos.supervisorLlegada)}</p>
+                             </div>
+                             <div>
+                               <p className="text-xs text-muted-foreground mb-1">Supervisor Salida</p>
+                               <p className="font-mono font-bold text-sm">{formatTiempo(tiempos.supervisorSalida)}</p>
+                             </div>
+                           </div>
+                           <div className="mt-3 pt-3 border-t text-center">
+                             <p className="text-xs text-muted-foreground mb-1">Tiempo Total</p>
+                             <p className="font-mono font-bold text-lg text-primary">{formatTiempo(tiempos.tiempoTotal)}</p>
+                           </div>
+                         </div>
                       </div>
                     </CardContent>
                   </Card>
