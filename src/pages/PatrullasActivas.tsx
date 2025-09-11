@@ -42,9 +42,9 @@ const PatrullasActivas = () => {
     (['asignada', 'en_proceso'].includes(a.estado) || a.tiempo_asignacion_supervisor || a.supervisor || a.patrulla_asignada)
   );
 
-  // Alarmas pendientes ordenadas por tiempo (aún sin supervisor/patrulla asignados)
+  // Alarmas pendientes ordenadas por tiempo (aún sin supervisor/patrulla asignados y sin tiempo de asignación)
   const alarmasPendientes = alarmasOrdenadas.filter(a => 
-    a.estado === 'activa' && !a.supervisor_id && !a.supervisor && !a.patrulla_asignada
+    a.estado === 'activa' && !a.supervisor_id && !a.supervisor && !a.patrulla_asignada && !a.tiempo_asignacion_supervisor
   );
   
   // Servicios pendientes de asignación (sin supervisor asignado)
