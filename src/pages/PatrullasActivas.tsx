@@ -44,9 +44,9 @@ const PatrullasActivas = () => {
     (['asignada', 'en_proceso'].includes(a.estado) || a.tiempo_asignacion_supervisor || a.supervisor || a.patrulla_asignada)
   );
 
-  // Alarmas pendientes ordenadas por tiempo (aún sin supervisor/patrulla asignados y sin tiempo de asignación)
+  // Alarmas pendientes ordenadas por tiempo (sin tiempo_toma_despachador)
   const alarmasPendientes = alarmasOrdenadas.filter(a => 
-    a.estado === 'activa' && !a.supervisor_id && !a.supervisor && !a.patrulla_asignada && !a.tiempo_asignacion_supervisor && !hiddenPendingIds.has(a.id)
+    a.estado === 'activa' && !a.tiempo_toma_despachador && !hiddenPendingIds.has(a.id)
   );
   
   // Servicios pendientes de asignación (sin supervisor asignado)
@@ -267,7 +267,6 @@ const PatrullasActivas = () => {
           });
           refetchAlarmas();
         }, 300);
-        setTimeout(() => refetchAlarmas(), 300);
       }
 
       // Registrar el tiempo de asignación para el supervisor (para disponibilidad)
@@ -432,7 +431,9 @@ const PatrullasActivas = () => {
                     estado={alarma.estado as any}
                     created_at={alarma.created_at}
                     attended_at={alarma.attended_at || undefined}
+                    tiempo_toma_despachador={alarma.tiempo_toma_despachador || undefined}
                     tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                    tiempo_aceptacion_supervisor={alarma.tiempo_aceptacion_supervisor || undefined}
                     tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
                     tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
                     supervisor={alarma.supervisor || undefined}
@@ -518,7 +519,9 @@ const PatrullasActivas = () => {
                     estado={alarma.estado as any}
                     created_at={alarma.created_at}
                     attended_at={alarma.attended_at || undefined}
+                    tiempo_toma_despachador={alarma.tiempo_toma_despachador || undefined}
                     tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                    tiempo_aceptacion_supervisor={alarma.tiempo_aceptacion_supervisor || undefined}
                     tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
                     tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
                     supervisor={alarma.supervisor || undefined}
@@ -583,7 +586,9 @@ const PatrullasActivas = () => {
                   estado="resuelta"
                   created_at={alarma.created_at}
                   attended_at={alarma.attended_at || undefined}
+                  tiempo_toma_despachador={alarma.tiempo_toma_despachador || undefined}
                   tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                  tiempo_aceptacion_supervisor={alarma.tiempo_aceptacion_supervisor || undefined}
                   tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
                   tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
                   supervisor={alarma.supervisor || undefined}
