@@ -21,7 +21,10 @@ interface ClienteFormData {
   departamento: string;
   latitud: string;
   longitud: string;
-  contacto_alarma: string;
+  contacto_alarma_nombre: string;
+  contacto_alarma_celular: string;
+  cantidad_patrullas: string;
+  cantidad_revistas: string;
 }
 
 const ClientesDirCentral = () => {
@@ -43,7 +46,10 @@ const ClientesDirCentral = () => {
     departamento: '',
     latitud: '',
     longitud: '',
-    contacto_alarma: ''
+    contacto_alarma_nombre: '',
+    contacto_alarma_celular: '',
+    cantidad_patrullas: '',
+    cantidad_revistas: ''
   });
 
   const handleInputChange = (field: keyof ClienteFormData, value: string) => {
@@ -124,9 +130,14 @@ const ClientesDirCentral = () => {
         nombre: formData.nombre,
         direccion: formData.direccion,
         municipio: formData.municipio || '',
-        email: formData.contacto_alarma || undefined,
+        email: formData.contacto_alarma_nombre || undefined,
         estado: 'activo',
-        observaciones: `Ciudad: ${formData.ciudad}, Departamento: ${formData.departamento}, Contacto Alarma: ${formData.contacto_alarma}, Coordenadas: ${formData.latitud}, ${formData.longitud}`
+        observaciones: `Ciudad: ${formData.ciudad}, Departamento: ${formData.departamento}, Contacto Alarma: ${formData.contacto_alarma_nombre} - ${formData.contacto_alarma_celular}, Coordenadas: ${formData.latitud}, ${formData.longitud}, Patrullas: ${formData.cantidad_patrullas}, Revistas: ${formData.cantidad_revistas}`,
+        servicios_contratados: {
+          alarmas: 0,
+          revistas: parseInt(formData.cantidad_revistas) || 0,
+          acompañamientos: parseInt(formData.cantidad_patrullas) || 0
+        }
       };
 
       if (editingCliente) {
@@ -150,7 +161,8 @@ const ClientesDirCentral = () => {
             id_numerico: formData.id_numerico,
             ciudad: formData.ciudad,
             departamento: formData.departamento,
-            contacto_alarma: formData.contacto_alarma,
+            contacto_alarma_nombre: formData.contacto_alarma_nombre,
+            contacto_alarma_celular: formData.contacto_alarma_celular,
             latitud: formData.latitud,
             longitud: formData.longitud
           };
@@ -168,7 +180,10 @@ const ClientesDirCentral = () => {
         departamento: '',
         latitud: '',
         longitud: '',
-        contacto_alarma: ''
+        contacto_alarma_nombre: '',
+        contacto_alarma_celular: '',
+        cantidad_patrullas: '',
+        cantidad_revistas: ''
       });
       setShowModal(false);
       setEditingCliente(null);
@@ -193,6 +208,10 @@ const ClientesDirCentral = () => {
       return match ? match[1].trim() : '';
     };
     
+    const contactoAlarma = cliente.email || extractFromObservaciones(observacionesData, 'Contacto Alarma');
+    const [contactoNombre, contactoCelular] = contactoAlarma.includes(' - ') ? 
+      contactoAlarma.split(' - ') : [contactoAlarma, ''];
+
     setFormData({
       id_numerico: cliente.numero_cuenta || '',
       nombre: cliente.nombre || '',
@@ -202,7 +221,10 @@ const ClientesDirCentral = () => {
       departamento: extractFromObservaciones(observacionesData, 'Departamento'),
       latitud: extractCoordinate(cliente.observaciones, 'lat'),
       longitud: extractCoordinate(cliente.observaciones, 'lng'),
-      contacto_alarma: cliente.email || extractFromObservaciones(observacionesData, 'Contacto Alarma')
+      contacto_alarma_nombre: contactoNombre,
+      contacto_alarma_celular: contactoCelular,
+      cantidad_patrullas: extractFromObservaciones(observacionesData, 'Patrullas') || (cliente.servicios_contratados?.acompañamientos?.toString() || ''),
+      cantidad_revistas: extractFromObservaciones(observacionesData, 'Revistas') || (cliente.servicios_contratados?.revistas?.toString() || '')
     });
     
     setEditingCliente(cliente);
@@ -351,12 +373,46 @@ const ClientesDirCentral = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="contacto_alarma">Contacto Alarma</Label>
+                  <Label htmlFor="contacto_alarma_nombre">Contacto Alarma - Nombre</Label>
                   <Input
-                    id="contacto_alarma"
-                    value={formData.contacto_alarma}
-                    onChange={(e) => handleInputChange('contacto_alarma', e.target.value)}
-                    placeholder="Email o teléfono"
+                    id="contacto_alarma_nombre"
+                    value={formData.contacto_alarma_nombre}
+                    onChange={(e) => handleInputChange('contacto_alarma_nombre', e.target.value)}
+                    placeholder="Nombre del contacto"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="contacto_alarma_celular">Contacto Alarma - Celular</Label>
+                  <Input
+                    id="contacto_alarma_celular"
+                    value={formData.contacto_alarma_celular}
+                    onChange={(e) => handleInputChange('contacto_alarma_celular', e.target.value)}
+                    placeholder="Número celular"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="cantidad_patrullas">Cantidad de Patrullas</Label>
+                  <Input
+                    id="cantidad_patrullas"
+                    value={formData.cantidad_patrullas}
+                    onChange={(e) => handleInputChange('cantidad_patrullas', e.target.value)}
+                    placeholder="Número de patrullas contratadas"
+                    type="number"
+                    min="0"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="cantidad_revistas">Cantidad de Revistas</Label>
+                  <Input
+                    id="cantidad_revistas"
+                    value={formData.cantidad_revistas}
+                    onChange={(e) => handleInputChange('cantidad_revistas', e.target.value)}
+                    placeholder="Número de revistas pagas"
+                    type="number"
+                    min="0"
                   />
                 </div>
 
@@ -401,7 +457,10 @@ const ClientesDirCentral = () => {
                       departamento: '',
                       latitud: '',
                       longitud: '',
-                      contacto_alarma: ''
+                      contacto_alarma_nombre: '',
+                      contacto_alarma_celular: '',
+                      cantidad_patrullas: '',
+                      cantidad_revistas: ''
                     });
                   }}
                 >
