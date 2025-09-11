@@ -28,6 +28,7 @@ const PatrullasActivas = () => {
   const [lastAssignedTimes, setLastAssignedTimes] = useState<Record<string, number>>({});
   const [syncHoldUntil, setSyncHoldUntil] = useState<number>(0);
   const [hiddenPendingIds, setHiddenPendingIds] = useState<Set<string>>(new Set());
+  const [patchedAceptacionIds, setPatchedAceptacionIds] = useState<Set<string>>(new Set());
   
   // Filtrar solo supervisores (que tienen patrullas asignadas)
   const supervisoresPatrulla = patrullas.filter(p => p.supervisor_nombre);
@@ -128,6 +129,29 @@ const PatrullasActivas = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Parche automático: si una alarma está en proceso con supervisor asignado pero sin tiempo_aceptacion_supervisor, lo registramos para detener cronómetro
+  useEffect(() => {
+    const pendientes = realtimeAlarmas.filter(a => 
+      a.estado === 'en_proceso' && (a.supervisor_id || a.supervisor) && !a.tiempo_aceptacion_supervisor
+    );
+
+    pendientes.forEach(async (a) => {
+      if (patchedAceptacionIds.has(a.id)) return;
+      const marca = a.attended_at || new Date().toISOString();
+      const { error } = await supabase
+        .from('alarmas')
+        .update({ tiempo_aceptacion_supervisor: marca })
+        .eq('id', a.id);
+      if (!error) {
+        setPatchedAceptacionIds(prev => new Set(prev).add(a.id));
+        setRealtimeAlarmas(prev => prev.map(x => x.id === a.id ? { ...x, tiempo_aceptacion_supervisor: marca } : x));
+        console.log('✅ Parche: tiempo_aceptacion_supervisor registrado para', a.id);
+      } else {
+        console.error('❌ Error parcheando tiempo_aceptacion_supervisor', error);
+      }
+    });
+  }, [realtimeAlarmas, patchedAceptacionIds]);
 
   // Función para verificar si un supervisor está disponible
   const isSupervisorAvailable = (supervisor: string, patrulla: string, tiempoAsignacion?: string) => {

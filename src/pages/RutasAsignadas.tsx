@@ -211,7 +211,9 @@ const RutasAsignadas = () => {
       switch (nuevoEstado) {
         case 'en_proceso':
           updates.estado = 'en_proceso';
-          updates.attended_at = new Date().toISOString();
+          const now = new Date().toISOString();
+          updates.attended_at = now;
+          updates.tiempo_aceptacion_supervisor = now; // Marca aceptación del supervisor para detener cronómetro
           break;
         case 'resuelta':
           updates.estado = 'resuelta';

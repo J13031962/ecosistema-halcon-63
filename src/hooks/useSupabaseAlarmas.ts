@@ -155,7 +155,8 @@ export const useSupabaseAlarmas = () => {
         .from('alarmas')
         .update({ 
           estado: 'en_proceso',
-          attended_at: new Date().toISOString()
+          attended_at: new Date().toISOString(),
+          tiempo_aceptacion_supervisor: new Date().toISOString()
         })
         .eq('id', id)
         .select(`
