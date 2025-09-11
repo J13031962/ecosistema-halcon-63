@@ -10,6 +10,7 @@ import { VisualizadorTurnosOperador } from "@/components/turnos/VisualizadorTurn
 import { CalendarTurnos } from "@/components/turnos/CalendarTurnos";
 import { CalendarioTurnosQuincenal } from "@/components/personal/CalendarioTurnosQuincenal";
 import { CalendarioTurnos as CalendarioTurnosPersonal } from "@/components/personal/CalendarioTurnos";
+import { CalendarioTurnosGenerados } from "@/components/personal/CalendarioTurnosGenerados";
 import { useSupabaseTurnos, TurnoOperador } from "@/hooks/useSupabaseTurnos";
 import { Plus, Calendar, Users, Clock, Settings, Eye, AlertCircle, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -136,7 +137,7 @@ const TurnosOperador = () => {
       )}
 
       <Tabs defaultValue="calendar" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="calendar" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Calendario de Turnos
@@ -144,6 +145,10 @@ const TurnosOperador = () => {
           <TabsTrigger value="summary" className="flex items-center gap-2">
             <Eye className="h-4 w-4" />
             Resumen de Horas
+          </TabsTrigger>
+          <TabsTrigger value="generated" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Turnos Generados
           </TabsTrigger>
         </TabsList>
         
@@ -321,6 +326,23 @@ const TurnosOperador = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="generated" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Turnos Generados por Dirección Central
+              </CardTitle>
+              <CardDescription>
+                Consulta los turnos generados automáticamente por la dirección central (solo lectura)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CalendarioTurnosGenerados />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
