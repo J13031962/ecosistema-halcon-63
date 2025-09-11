@@ -209,7 +209,7 @@ export const useSupabaseAlarmasEnhanced = () => {
             telefono
           )
         `)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -222,12 +222,16 @@ export const useSupabaseAlarmasEnhanced = () => {
         })
         .eq('alarma_id', alarmaId);
 
-      // Actualizar estado local
-      setAlarmas(prev => 
-        prev.map(alarma => 
-          alarma.id === alarmaId ? data : alarma
-        )
-      );
+      // Actualizar estado local o refetch si no hubo retorno
+      if (data) {
+        setAlarmas(prev => 
+          prev.map(alarma => 
+            alarma.id === alarmaId ? data : alarma
+          )
+        );
+      } else {
+        await fetchAlarmas();
+      }
 
       toast({
         title: "Patrulla asignada",

@@ -248,11 +248,11 @@ const PatrullasActivas = () => {
         title: "Supervisor asignado",
         description: "El servicio pasó a Servicios Activos",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al asignar supervisor:', error);
       toast({
-        title: "Error",
-        description: "No se pudo asignar el supervisor",
+        title: "Error en asignación",
+        description: error?.message || "No se pudo asignar el supervisor a la alarma",
         variant: "destructive"
       });
       throw error;
