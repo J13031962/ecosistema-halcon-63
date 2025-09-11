@@ -421,10 +421,13 @@ const ReporteUbicacion = () => {
                   {/* Fondo del mapa estilo Google Maps */}
                   <div className="absolute inset-0 bg-gradient-to-br from-green-100 via-blue-50 to-gray-100"></div>
                   
-                  {/* Icono de moto azul en el centro */}
+                  {/* Icono de moto azul en el centro - más realista */}
                   <div className="relative z-10 flex flex-col items-center">
-                    <div className="bg-blue-600 p-4 rounded-full shadow-lg mb-2">
-                      <Bike className="h-8 w-8 text-white" />
+                    <div className="bg-blue-600 p-3 rounded-full shadow-lg mb-2 relative">
+                      {/* Usar emoji de moto en lugar del icono simple */}
+                      <span className="text-2xl">🏍️</span>
+                      {/* Punto de ubicación pequeño */}
+                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-red-500 border-2 border-white rounded-full"></div>
                     </div>
                     <div className="bg-white px-3 py-1 rounded-lg shadow-md border">
                       <span className="text-sm font-medium text-blue-600">Supervisor Motorizado</span>
