@@ -187,38 +187,40 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
       
       // Calcular cronómetros específicos según los requisitos
       const nuevosCronometros = {
-        // Aceptación Despachador: tiempo desde que se generó la alarma hasta que el despachador asignó patrullero
+        // Aceptación Despachador: tiempo desde que se generó la alarma hasta que el despachador la toma
         aceptacion_despachador: {
-          tiempo: fechaAsignacion 
-            ? differenceInSeconds(fechaAsignacion, fechaCreacion)
+          tiempo: fechaAtencion 
+            ? differenceInSeconds(fechaAtencion, fechaCreacion)
             : differenceInSeconds(ahora, fechaCreacion),
-          color: (!fechaAsignacion && differenceInSeconds(ahora, fechaCreacion) > 300) ? 'red' : 'green' as 'green' | 'red'
+          color: (!fechaAtencion && differenceInSeconds(ahora, fechaCreacion) > 240) ? 'red' : 'green' as 'green' | 'red'
         },
-        // Supervisor llegada: tiempo desde asignación hasta escaneo QR de llegada
+        // Despachador envío: tiempo desde que toma la alarma hasta que asigna supervisor
         despachador_envio: {
+          tiempo: fechaAtencion && fechaAsignacion 
+            ? differenceInSeconds(fechaAsignacion, fechaAtencion)
+            : fechaAtencion ? differenceInSeconds(ahora, fechaAtencion) : 0,
+          color: (fechaAtencion && !fechaAsignacion && differenceInSeconds(ahora, fechaAtencion) > 360) ? 'red' : 'green' as 'green' | 'red'
+        },
+        // Supervisor aceptación: tiempo desde asignación hasta aceptación (primera lectura QR)
+        supervisor_aceptacion: {
+          tiempo: fechaAsignacion && fechaPrimeraLectura 
+            ? differenceInSeconds(fechaPrimeraLectura, fechaAsignacion)
+            : fechaAsignacion ? differenceInSeconds(ahora, fechaAsignacion) : 0,
+          color: (fechaAsignacion && !fechaPrimeraLectura && differenceInSeconds(ahora, fechaAsignacion) > 240) ? 'red' : 'green' as 'green' | 'red'
+        },
+        // Supervisor llegada: tiempo desde aceptación hasta llegada al sitio
+        supervisor_llegada: {
           tiempo: fechaAsignacion && fechaPrimeraLectura 
             ? differenceInSeconds(fechaPrimeraLectura, fechaAsignacion)
             : fechaAsignacion ? differenceInSeconds(ahora, fechaAsignacion) : 0,
           color: (fechaAsignacion && !fechaPrimeraLectura && differenceInSeconds(ahora, fechaAsignacion) > 1200) ? 'red' : 'green' as 'green' | 'red'
         },
         // Supervisor salida: tiempo que estuvo en sitio (entre QR llegada y QR salida)
-        supervisor_aceptacion: {
+        supervisor_salida: {
           tiempo: fechaPrimeraLectura && fechaSegundaLectura 
             ? differenceInSeconds(fechaSegundaLectura, fechaPrimeraLectura)
             : fechaPrimeraLectura ? differenceInSeconds(ahora, fechaPrimeraLectura) : 0,
           color: (fechaPrimeraLectura && !fechaSegundaLectura && differenceInSeconds(ahora, fechaPrimeraLectura) > 3600) ? 'red' : 'green' as 'green' | 'red'
-        },
-        // Tiempo total: desde creación hasta QR salida
-        supervisor_llegada: {
-          tiempo: fechaSegundaLectura 
-            ? differenceInSeconds(fechaSegundaLectura, fechaCreacion)
-            : estado === 'resuelta' ? differenceInSeconds(ahora, fechaCreacion) : differenceInSeconds(ahora, fechaCreacion),
-          color: (!fechaSegundaLectura && estado !== 'resuelta' && differenceInSeconds(ahora, fechaCreacion) > 7200) ? 'red' : 'green' as 'green' | 'red'
-        },
-        // Campo no usado pero mantenemos para compatibilidad
-        supervisor_salida: {
-          tiempo: 0,
-          color: 'green' as 'green' | 'red'
         }
       };
 
@@ -427,37 +429,60 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
         )}
 
         {/* Cronómetros específicos compactos */}
-        <div className="bg-muted/20 rounded p-1 border-t">
-          <div className="grid grid-cols-4 gap-1 text-center">
+        <div className="bg-muted/20 rounded p-2 border-t">
+          <div className="grid grid-cols-5 gap-2 text-center">
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Aceptación</div>
               <div className="text-xs text-muted-foreground leading-tight">Despachador</div>
-              <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.aceptacion_despachador.color)}`}>
-                {formatTiempo(cronometrosEspecificos.aceptacion_despachador.tiempo)}
+              <div className="flex items-center justify-center mt-1">
+                <Clock className="h-3 w-3 mr-1 text-blue-500" />
+                <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.aceptacion_despachador.color)}`}>
+                  {formatTiempo(cronometrosEspecificos.aceptacion_despachador.tiempo)}
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <div className="text-xs text-muted-foreground leading-tight">Despachador</div>
+              <div className="text-xs text-muted-foreground leading-tight">envío</div>
+              <div className="flex items-center justify-center mt-1">
+                <Clock className="h-3 w-3 mr-1 text-purple-500" />
+                <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.despachador_envio.color)}`}>
+                  {formatTiempo(cronometrosEspecificos.despachador_envio.tiempo)}
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <div className="text-xs text-muted-foreground leading-tight">Supervisor</div>
+              <div className="text-xs text-muted-foreground leading-tight">aceptación</div>
+              <div className="flex items-center justify-center mt-1">
+                <Clock className="h-3 w-3 mr-1 text-orange-500" />
+                <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.supervisor_aceptacion.color)}`}>
+                  {formatTiempo(cronometrosEspecificos.supervisor_aceptacion.tiempo)}
+                </div>
               </div>
             </div>
             
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Supervisor</div>
               <div className="text-xs text-muted-foreground leading-tight">llegada</div>
-              <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.despachador_envio.color)}`}>
-                {formatTiempo(cronometrosEspecificos.despachador_envio.tiempo)}
+              <div className="flex items-center justify-center mt-1">
+                <Clock className="h-3 w-3 mr-1 text-teal-500" />
+                <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.supervisor_llegada.color)}`}>
+                  {formatTiempo(cronometrosEspecificos.supervisor_llegada.tiempo)}
+                </div>
               </div>
             </div>
             
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Supervisor</div>
               <div className="text-xs text-muted-foreground leading-tight">salida</div>
-              <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.supervisor_aceptacion.color)}`}>
-                {formatTiempo(cronometrosEspecificos.supervisor_aceptacion.tiempo)}
-              </div>
-            </div>
-            
-            <div>
-              <div className="text-xs text-muted-foreground leading-tight">Tiempo</div>
-              <div className="text-xs text-muted-foreground leading-tight">total</div>
-              <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.supervisor_llegada.color)}`}>
-                {formatTiempo(cronometrosEspecificos.supervisor_llegada.tiempo)}
+              <div className="flex items-center justify-center mt-1">
+                <Clock className="h-3 w-3 mr-1 text-cyan-500" />
+                <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.supervisor_salida.color)}`}>
+                  {formatTiempo(cronometrosEspecificos.supervisor_salida.tiempo)}
+                </div>
               </div>
             </div>
           </div>
