@@ -166,13 +166,11 @@ const ReporteUbicacion = () => {
       const origen = `${lat},${lng}`;
       const destino = `${evento.ubicacionDestino[0]},${evento.ubicacionDestino[1]}`;
       const url = `https://www.google.com/maps/dir/${origen}/${destino}`;
-      // Usar location.href en lugar de window.open para evitar bloqueos
-      window.location.href = url;
+      window.open(url, '_blank');
     } else {
       // Mostrar ubicación del supervisor con marcador de moto azul en la ubicación de referencia
       const url = `https://www.google.com/maps/@${lat},${lng},15z?entry=ttu&g_ep=EgoyMDI1MDkwOC4wIKXMDSoASAFQAw%3D%3D`;
-      // Usar location.href en lugar de window.open para evitar bloqueos
-      window.location.href = url;
+      window.open(url, '_blank');
     }
   };
 
