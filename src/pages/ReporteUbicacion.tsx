@@ -108,12 +108,16 @@ const ReporteUbicacion = () => {
   const mapMarkers = supervisoresUbicacion.map(supervisor => ({
     position: supervisor.position,
     title: supervisor.name,
-    popupContent: `
-      <strong>${supervisor.name}</strong><br/>
-      Estado: ${getStatusText(supervisor.status)}<br/>
-      ${supervisor.destino ? `Destino: ${supervisor.destino}<br/>` : ''}
-      Última actualización: ${format(new Date(supervisor.ultimaActualizacion), 'HH:mm:ss')}
-    `
+    popupContent: (
+      <div>
+        <strong>{supervisor.name}</strong><br/>
+        Estado: {getStatusText(supervisor.status)}<br/>
+        {supervisor.destino && (
+          <>Destino: {supervisor.destino}<br/></>
+        )}
+        Última actualización: {format(new Date(supervisor.ultimaActualizacion), 'HH:mm:ss')}
+      </div>
+    )
   }));
 
   const handleRefresh = () => {

@@ -23,7 +23,7 @@ interface MapProps {
   markers?: Array<{
     position: [number, number];
     title: string;
-    popupContent?: string;
+    popupContent?: React.ReactNode;
   }>;
   showTraffic?: boolean;
   fullScreen?: boolean;
@@ -115,7 +115,9 @@ export default function LeafletMap({
           <Popup>
             <div>
               <h3 className="font-medium text-base">{marker.title}</h3>
-              {marker.popupContent && <p className="text-sm">{marker.popupContent}</p>}
+              {marker.popupContent && (
+                <div className="text-sm">{marker.popupContent}</div>
+              )}
             </div>
           </Popup>
         </Marker>
