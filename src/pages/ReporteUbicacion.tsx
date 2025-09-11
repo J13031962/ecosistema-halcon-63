@@ -157,8 +157,9 @@ const ReporteUbicacion = () => {
   };
 
   const abrirEnGoogleMaps = (evento: SupervisorEvent) => {
-    const lat = evento.ubicacionOrigen[0];
-    const lng = evento.ubicacionOrigen[1];
+    // Coordenadas de referencia en Medellín
+    const lat = 6.1760461;
+    const lng = -75.5625925;
     
     if (evento.ubicacionDestino) {
       // Si hay destino, mostrar ruta con marcador de moto azul en origen
@@ -168,8 +169,8 @@ const ReporteUbicacion = () => {
       // Usar location.href en lugar de window.open para evitar bloqueos
       window.location.href = url;
     } else {
-      // Solo mostrar ubicación actual con marcador de moto azul
-      const url = `https://www.google.com/maps?q=${lat},${lng}&markers=color:blue%7Clabel:🏍️%7C${lat},${lng}&zoom=15`;
+      // Mostrar ubicación del supervisor con marcador de moto azul en la ubicación de referencia
+      const url = `https://www.google.com/maps/@${lat},${lng},15z?entry=ttu&g_ep=EgoyMDI1MDkwOC4wIKXMDSoASAFQAw%3D%3D`;
       // Usar location.href en lugar de window.open para evitar bloqueos
       window.location.href = url;
     }
@@ -303,7 +304,7 @@ const ReporteUbicacion = () => {
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm">
                           <Bike className="h-4 w-4 mr-2 text-blue-500" />
-                          Ver Moto en Maps
+                          Ver Supervisor en Maps
                         </Button>
                         <Navigation className="h-5 w-5 text-primary" />
                       </div>
