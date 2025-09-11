@@ -348,16 +348,25 @@ const PatrullasActivas = () => {
   const handleSupervisorArrive = async (alarmaId: string) => {
     try {
       const now = new Date().toISOString();
+      const alarmaActual = realtimeAlarmas.find(a => a.id === alarmaId);
+      const updatePayload: any = {
+        tiempo_primera_lectura_qr: now,
+        estado: 'en_proceso'
+      };
+      if (!alarmaActual?.tiempo_aceptacion_supervisor) {
+        updatePayload.tiempo_aceptacion_supervisor = now;
+      }
+
       const { error } = await supabase
         .from('alarmas')
-        .update({ tiempo_primera_lectura_qr: now })
+        .update(updatePayload)
         .eq('id', alarmaId);
 
       if (error) throw error;
 
       // Actualizar estado local
       setRealtimeAlarmas(prev => prev.map(a => a.id === alarmaId 
-        ? { ...a, tiempo_primera_lectura_qr: now } 
+        ? { ...a, ...updatePayload } 
         : a
       ));
 
@@ -378,20 +387,29 @@ const PatrullasActivas = () => {
   const handleSupervisorLeave = async (alarmaId: string) => {
     try {
       const now = new Date().toISOString();
+      const alarmaActual = realtimeAlarmas.find(a => a.id === alarmaId);
+      const updatePayload: any = {
+        tiempo_segunda_lectura_qr: now,
+        resolved_at: now,
+        estado: 'resuelta'
+      };
+      if (!alarmaActual?.tiempo_aceptacion_supervisor) {
+        updatePayload.tiempo_aceptacion_supervisor = now;
+      }
+      if (!alarmaActual?.tiempo_primera_lectura_qr) {
+        updatePayload.tiempo_primera_lectura_qr = now;
+      }
+
       const { error } = await supabase
         .from('alarmas')
-        .update({ 
-          tiempo_segunda_lectura_qr: now,
-          resolved_at: now,
-          estado: 'resuelta'
-        })
+        .update(updatePayload)
         .eq('id', alarmaId);
 
       if (error) throw error;
 
       // Actualizar estado local
       setRealtimeAlarmas(prev => prev.map(a => a.id === alarmaId 
-        ? { ...a, tiempo_segunda_lectura_qr: now, resolved_at: now, estado: 'resuelta' } 
+        ? { ...a, ...updatePayload } 
         : a
       ));
 
