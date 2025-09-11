@@ -25,6 +25,7 @@ interface CronometroAlarmaProps {
   onCancel?: () => void;
   isSelected?: boolean;
   showCancelButton?: boolean;
+  showAssignButton?: boolean;
 }
 
 interface TiempoEstado {
@@ -52,7 +53,8 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
   onSelect,
   onCancel,
   isSelected,
-  showCancelButton
+  showCancelButton,
+  showAssignButton
 }) => {
   const [tiempoActual, setTiempoActual] = useState<TiempoEstado>({
     segundos: 0,
@@ -370,6 +372,24 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Botón de asignar supervisor */}
+        {showAssignButton && estado === 'activa' && !supervisor && onSelect && (
+          <div className="flex justify-end">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect();
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white h-6 px-2 text-xs"
+            >
+              <User className="h-3 w-3 mr-1" />
+              Asignar Supervisor
+            </Button>
+          </div>
+        )}
 
         {/* Botón de cancelar si está disponible */}
         {showCancelButton && estado !== 'resuelta' && onCancel && (

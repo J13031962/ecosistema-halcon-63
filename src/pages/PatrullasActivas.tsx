@@ -338,6 +338,7 @@ const PatrullasActivas = () => {
                     supervisor={alarma.supervisor || undefined}
                     patrulla_asignada={alarma.patrulla_asignada || undefined}
                     showCancelButton={false}
+                    showAssignButton={true}
                     onSelect={() => handleOpenAssignModal({
                       id: alarma.id,
                       tipo: alarma.tipo,
@@ -369,6 +370,7 @@ const PatrullasActivas = () => {
                     supervisor={undefined}
                     patrulla_asignada={undefined}
                     showCancelButton={false}
+                    showAssignButton={true}
                     onSelect={() => handleOpenAssignModal({
                       id: servicio.id,
                       tipo: servicio.tipo_servicio,
