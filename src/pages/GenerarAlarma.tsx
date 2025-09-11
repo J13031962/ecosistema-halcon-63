@@ -525,6 +525,13 @@ const GenerarAlarma = () => {
                       }>
                         <strong>Acompañamiento mes</strong> {clienteEncontrado.servicios_contratados?.acompañamientos_mes || 0}/{clienteEncontrado.servicios_contratados?.acompañamientos || 1}
                       </div>
+                      <div className={
+                        (clienteEncontrado.servicios_contratados?.smarturban_mes || 0) > (clienteEncontrado.servicios_contratados?.smarturban || 0)
+                          ? "text-red-600" 
+                          : "text-green-800"
+                      }>
+                        <strong>Llamadas SmartUrban</strong> {clienteEncontrado.servicios_contratados?.smarturban_mes || 0}/{clienteEncontrado.servicios_contratados?.smarturban || 0}
+                      </div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">

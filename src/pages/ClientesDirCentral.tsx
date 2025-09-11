@@ -25,6 +25,7 @@ interface ClienteFormData {
   contacto_alarma_celular: string;
   cantidad_patrullas: string;
   cantidad_revistas: string;
+  cantidad_smarturban: string;
 }
 
 const ClientesDirCentral = () => {
@@ -49,7 +50,8 @@ const ClientesDirCentral = () => {
     contacto_alarma_nombre: '',
     contacto_alarma_celular: '',
     cantidad_patrullas: '',
-    cantidad_revistas: ''
+    cantidad_revistas: '',
+    cantidad_smarturban: ''
   });
 
   const handleInputChange = (field: keyof ClienteFormData, value: string) => {
@@ -132,11 +134,12 @@ const ClientesDirCentral = () => {
         municipio: formData.municipio || '',
         email: formData.contacto_alarma_nombre || undefined,
         estado: 'activo',
-        observaciones: `Ciudad: ${formData.ciudad}, Departamento: ${formData.departamento}, Contacto Alarma: ${formData.contacto_alarma_nombre} - ${formData.contacto_alarma_celular}, Coordenadas: ${formData.latitud}, ${formData.longitud}, Patrullas: ${formData.cantidad_patrullas}, Revistas: ${formData.cantidad_revistas}`,
+        observaciones: `Ciudad: ${formData.ciudad}, Departamento: ${formData.departamento}, Contacto Alarma: ${formData.contacto_alarma_nombre} - ${formData.contacto_alarma_celular}, Coordenadas: ${formData.latitud}, ${formData.longitud}, Patrullas: ${formData.cantidad_patrullas}, Revistas: ${formData.cantidad_revistas}, SmartUrban: ${formData.cantidad_smarturban}`,
         servicios_contratados: {
           alarmas: 0,
           revistas: parseInt(formData.cantidad_revistas) || 0,
-          acompañamientos: parseInt(formData.cantidad_patrullas) || 0
+          acompañamientos: parseInt(formData.cantidad_patrullas) || 0,
+          smarturban: parseInt(formData.cantidad_smarturban) || 0
         }
       };
 
@@ -183,7 +186,8 @@ const ClientesDirCentral = () => {
         contacto_alarma_nombre: '',
         contacto_alarma_celular: '',
         cantidad_patrullas: '',
-        cantidad_revistas: ''
+        cantidad_revistas: '',
+        cantidad_smarturban: ''
       });
       setShowModal(false);
       setEditingCliente(null);
@@ -224,7 +228,8 @@ const ClientesDirCentral = () => {
       contacto_alarma_nombre: contactoNombre,
       contacto_alarma_celular: contactoCelular,
       cantidad_patrullas: extractFromObservaciones(observacionesData, 'Patrullas') || (cliente.servicios_contratados?.acompañamientos?.toString() || ''),
-      cantidad_revistas: extractFromObservaciones(observacionesData, 'Revistas') || (cliente.servicios_contratados?.revistas?.toString() || '')
+      cantidad_revistas: extractFromObservaciones(observacionesData, 'Revistas') || (cliente.servicios_contratados?.revistas?.toString() || ''),
+      cantidad_smarturban: extractFromObservaciones(observacionesData, 'SmartUrban') || (cliente.servicios_contratados?.smarturban?.toString() || '')
     });
     
     setEditingCliente(cliente);
@@ -417,6 +422,18 @@ const ClientesDirCentral = () => {
                 </div>
 
                 <div>
+                  <Label htmlFor="cantidad_smarturban">Cantidad de Llamadas SmartUrban</Label>
+                  <Input
+                    id="cantidad_smarturban"
+                    value={formData.cantidad_smarturban}
+                    onChange={(e) => handleInputChange('cantidad_smarturban', e.target.value)}
+                    placeholder="Número de llamadas SmartUrban"
+                    type="number"
+                    min="0"
+                  />
+                </div>
+
+                <div>
                   <Label htmlFor="latitud">Latitud</Label>
                   <Input
                     id="latitud"
@@ -460,7 +477,8 @@ const ClientesDirCentral = () => {
                       contacto_alarma_nombre: '',
                       contacto_alarma_celular: '',
                       cantidad_patrullas: '',
-                      cantidad_revistas: ''
+                      cantidad_revistas: '',
+                      cantidad_smarturban: ''
                     });
                   }}
                 >
