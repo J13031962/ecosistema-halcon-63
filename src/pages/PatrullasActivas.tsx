@@ -152,14 +152,54 @@ const PatrullasActivas = () => {
   };
 
   // Función para abrir modal de asignación
-  const handleOpenAssignModal = (alarmaData: any) => {
-    setSelectedAlarmaForAssign(alarmaData);
-    setShowAssignModal(true);
+  const handleOpenAssignModal = async (alarmaData: any) => {
+    try {
+      // Si es una alarma (no servicio técnico), validar estado y marcar "toma del despachador"
+      if (!alarmaData?.isService) {
+        const current = realtimeAlarmas.find(a => a.id === alarmaData.id);
+        if (!current) return;
+        
+        // Si ya no está activa, no permitir re-asignación
+        if (current.estado !== 'activa') {
+          toast({
+            title: "Asignación no disponible",
+            description: "Esta alarma ya fue asignada o está en proceso.",
+          });
+          return;
+        }
+
+        // Marcar tiempo de toma del despachador si aún no está marcado
+        if (!current.tiempo_toma_despachador) {
+          const { data: { user } } = await supabase.auth.getUser();
+          const now = new Date().toISOString();
+          await supabase
+            .from('alarmas')
+            .update({
+              tiempo_toma_despachador: now,
+              despachador_id: user?.id || null,
+              despachador_nombre: user?.email || 'Despachador'
+            })
+            .eq('id', current.id);
+          
+          // Actualizar localmente para feedback inmediato
+          setRealtimeAlarmas(prev => prev.map(a => a.id === current.id 
+            ? { ...a, tiempo_toma_despachador: now, despachador_id: user?.id || null, despachador_nombre: user?.email || 'Despachador' }
+            : a
+          ));
+        }
+      }
+
+      setSelectedAlarmaForAssign(alarmaData);
+      setShowAssignModal(true);
+    } catch (e) {
+      console.error('Error al preparar asignación:', e);
+    }
   };
 
   // Función para asignar supervisor
   const handleAssignSupervisor = async (alarmaId: string, supervisorData: { supervisor_id: string; supervisor_nombre: string; patrulla_asignada: string }) => {
     try {
+      const now = new Date().toISOString();
       // Obtener información del usuario actual para despachador
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -170,22 +210,32 @@ const PatrullasActivas = () => {
           .update({
             tecnico_id: supervisorData.supervisor_id,
             estado: 'aceptado',
-            fecha_aceptacion: new Date().toISOString()
+            fecha_aceptacion: now
           })
           .eq('id', alarmaId);
         
         if (error) throw error;
       } else {
         // Es una alarma
-        await asignarPatrulla(alarmaId, {
+        const result = await asignarPatrulla(alarmaId, {
           supervisor: supervisorData.supervisor_nombre,
           patrulla_asignada: supervisorData.patrulla_asignada,
           despachador_id: user?.id || '',
           despachador_nombre: user?.email || 'Despachador'
         });
+        if (!result.success) throw new Error(result.error);
+
+        // Actualización optimista local: mover a Servicios Activos inmediatamente
+        setRealtimeAlarmas(prev => prev.map(a => a.id === alarmaId ? {
+          ...a,
+          estado: 'asignada',
+          supervisor: supervisorData.supervisor_nombre,
+          patrulla_asignada: supervisorData.patrulla_asignada,
+          tiempo_asignacion_supervisor: now
+        } : a));
       }
 
-      // Registrar el tiempo de asignación para el supervisor
+      // Registrar el tiempo de asignación para el supervisor (para disponibilidad)
       setLastAssignedTimes(prev => ({
         ...prev,
         [supervisorData.supervisor_id]: Date.now()
@@ -193,8 +243,18 @@ const PatrullasActivas = () => {
 
       setShowAssignModal(false);
       setSelectedAlarmaForAssign(null);
+
+      toast({
+        title: "Supervisor asignado",
+        description: "El servicio pasó a Servicios Activos",
+      });
     } catch (error) {
       console.error('Error al asignar supervisor:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo asignar el supervisor",
+        variant: "destructive"
+      });
       throw error;
     }
   };
