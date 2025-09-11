@@ -20,7 +20,7 @@ const PatrullasActivas = () => {
   const { alarmas, resolverAlarma, asignarPatrulla, refetch: refetchAlarmas } = useSupabaseAlarmasEnhanced();
   const { servicios, loading: serviciosLoading, fetchServicios } = useServiciosTecnicos();
   const { supervisores: supervisoresFromHook } = useSupabaseSupervisores();
-  const { userRole } = useAuthConsolidated();
+  const { user: consolidatedUser, userRole } = useAuthConsolidated();
   const { toast } = useToast();
   const [realtimeAlarmas, setRealtimeAlarmas] = useState(alarmas);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -170,7 +170,7 @@ const PatrullasActivas = () => {
       // Si es una alarma (no servicio técnico), validar estado y marcar "toma del despachador"
       if (!alarmaData?.isService) {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        if (!user && !consolidatedUser) {
           toast({
             title: "Inicia sesión",
             description: "Debes iniciar sesión para tomar y asignar esta alarma",
@@ -195,8 +195,8 @@ const PatrullasActivas = () => {
             .from('alarmas')
             .update({
               tiempo_toma_despachador: now,
-              despachador_id: user.id,
-              despachador_nombre: user.email || 'Despachador'
+              despachador_id: user?.id || null,
+              despachador_nombre: user?.email || consolidatedUser?.email || 'Despachador'
             })
             .eq('id', current.id);
           if (updError) {
@@ -209,7 +209,7 @@ const PatrullasActivas = () => {
             return;
           }
           setRealtimeAlarmas(prev => prev.map(a => a.id === current.id 
-            ? { ...a, tiempo_toma_despachador: now, despachador_id: user.id, despachador_nombre: user.email || 'Despachador' }
+            ? { ...a, tiempo_toma_despachador: now, despachador_id: user?.id || null, despachador_nombre: user?.email || consolidatedUser?.email || 'Despachador' }
             : a
           ));
         }
@@ -228,14 +228,8 @@ const PatrullasActivas = () => {
       const now = new Date().toISOString();
       // Obtener información del usuario actual para despachador
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.id) {
-        toast({
-          title: "Sesión requerida",
-          description: "Debes iniciar sesión como despachador para asignar un supervisor",
-          variant: "destructive"
-        });
-        return;
-      }
+      const actingEmail = user?.email ?? consolidatedUser?.email ?? 'Despachador';
+      const actingId = user?.id ?? null;
       
       if (selectedAlarmaForAssign?.isService) {
         // Es un servicio técnico - actualizar directamente
@@ -263,8 +257,8 @@ const PatrullasActivas = () => {
           supervisor: supervisorData.supervisor_nombre,
           supervisor_id: supervisorData.supervisor_id,
           patrulla_asignada: supervisorData.patrulla_asignada,
-          despachador_id: user.id,
-          despachador_nombre: user.email || 'Despachador'
+          despachador_id: actingId,
+          despachador_nombre: actingEmail
         });
         if (!result.success) throw new Error(result.error);
 
@@ -277,8 +271,8 @@ const PatrullasActivas = () => {
           supervisor_id: supervisorData.supervisor_id,
           patrulla_asignada: supervisorData.patrulla_asignada,
           tiempo_asignacion_supervisor: now,
-          despachador_id: user.id,
-          despachador_nombre: user.email || 'Despachador'
+          despachador_id: actingId,
+          despachador_nombre: actingEmail
         } : a));
 
         setSyncHoldUntil(Date.now() + 2000);
