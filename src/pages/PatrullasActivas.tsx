@@ -27,6 +27,7 @@ const PatrullasActivas = () => {
   const [selectedAlarmaForAssign, setSelectedAlarmaForAssign] = useState<any>(null);
   const [lastAssignedTimes, setLastAssignedTimes] = useState<Record<string, number>>({});
   const [syncHoldUntil, setSyncHoldUntil] = useState<number>(0);
+  const [hiddenPendingIds, setHiddenPendingIds] = useState<Set<string>>(new Set());
   
   // Filtrar solo supervisores (que tienen patrullas asignadas)
   const supervisoresPatrulla = patrullas.filter(p => p.supervisor_nombre);
@@ -45,7 +46,7 @@ const PatrullasActivas = () => {
 
   // Alarmas pendientes ordenadas por tiempo (aún sin supervisor/patrulla asignados y sin tiempo de asignación)
   const alarmasPendientes = alarmasOrdenadas.filter(a => 
-    a.estado === 'activa' && !a.supervisor_id && !a.supervisor && !a.patrulla_asignada && !a.tiempo_asignacion_supervisor
+    a.estado === 'activa' && !a.supervisor_id && !a.supervisor && !a.patrulla_asignada && !a.tiempo_asignacion_supervisor && !hiddenPendingIds.has(a.id)
   );
   
   // Servicios pendientes de asignación (sin supervisor asignado)
@@ -257,7 +258,15 @@ const PatrullasActivas = () => {
         } : a));
 
         setSyncHoldUntil(Date.now() + 2000);
-        setTimeout(() => refetchAlarmas(), 300);
+        setHiddenPendingIds((prev) => new Set(prev).add(alarmaId));
+        setTimeout(() => {
+          setHiddenPendingIds((prev) => {
+            const n = new Set(prev);
+            n.delete(alarmaId);
+            return n;
+          });
+          refetchAlarmas();
+        }, 300);
         setTimeout(() => refetchAlarmas(), 300);
       }
 

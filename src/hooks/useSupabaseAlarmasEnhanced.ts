@@ -214,7 +214,7 @@ export const useSupabaseAlarmasEnhanced = () => {
             telefono
           )
         `)
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
 
@@ -230,9 +230,9 @@ export const useSupabaseAlarmasEnhanced = () => {
       // Actualizar estado local o refetch si no hubo retorno
       if (data) {
         setAlarmas(prev => 
-          prev.map(alarma => 
-            alarma.id === alarmaId ? data : alarma
-          )
+          prev.some(a => a.id === alarmaId)
+            ? prev.map(alarma => alarma.id === alarmaId ? data : alarma)
+            : [data, ...prev]
         );
       } else {
         await fetchAlarmas();
