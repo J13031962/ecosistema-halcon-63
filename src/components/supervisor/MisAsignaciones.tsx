@@ -445,16 +445,16 @@ const MisAsignaciones = () => {
 
                   {/* Acciones con QR Scanning */}
                   <div className="flex gap-2 pt-4 border-t">
-                    {/* Botón para aceptar servicio asignado (estado: asignada -> en_proceso) */}
-                    {alarma.estado === 'asignada' && !alarma.tiempo_aceptacion_supervisor && (
-                      <Button 
-                        onClick={() => handleAceptarServicio(alarma.id)}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                        Aceptar Servicio
-                      </Button>
-                    )}
+                  {/* Botón para aceptar servicio asignado (estado: asignada -> en_proceso) */}
+                  {alarma.estado === 'asignada' && !alarma.tiempo_aceptacion_supervisor && (
+                    <Button 
+                      onClick={() => handleAceptarServicio(alarma.id)}
+                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Atender
+                    </Button>
+                  )}
                     
                     {/* Botón original para casos legacy */}
                     {alarma.estado === 'asignada' && !alarma.tiempo_asignacion_supervisor && (
@@ -467,16 +467,16 @@ const MisAsignaciones = () => {
                       </Button>
                     )}
                     
-                    {/* Botón para marcar llegada (después de aceptar servicio) */}
-                    {alarma.attended_at && !extendedAlarma.tiempo_llegada_sitio && (
-                      <Button 
-                        onClick={() => handleArrivalScan(alarma.id)}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-                      >
-                        <Navigation className="h-4 w-4" />
-                        Marcar Llegada (Escanear QR)
-                      </Button>
-                    )}
+                  {/* Botón para marcar llegada (después de aceptar servicio) */}
+                  {alarma.tiempo_aceptacion_supervisor && !extendedAlarma.tiempo_llegada_sitio && (
+                    <Button 
+                      onClick={() => handleArrivalScan(alarma.id)}
+                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Navigation className="h-4 w-4" />
+                      Marcar Llegada (Escanear QR)
+                    </Button>
+                  )}
                     
                     {extendedAlarma.tiempo_llegada_sitio && !extendedAlarma.tiempo_salida_sitio && (
                       <Button 
