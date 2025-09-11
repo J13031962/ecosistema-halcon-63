@@ -215,10 +215,14 @@ const PatrullasActivas = () => {
       const now = new Date().toISOString();
       // Obtener información del usuario actual para despachador
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.id) {
+      const actingEmail = user?.email ?? 'admin@teleguardia.com';
+      const actingId = user?.id ?? null;
+
+      // Para servicios técnicos, exigimos sesión; para alarmas permitimos continuar sin sesión
+      if (selectedAlarmaForAssign?.isService && !actingId) {
         toast({
           title: "Sesión requerida",
-          description: "Debes iniciar sesión como despachador para asignar un supervisor",
+          description: "Inicia sesión para asignar servicios técnicos",
           variant: "destructive"
         });
         return;
@@ -241,7 +245,8 @@ const PatrullasActivas = () => {
         
         // Refrescar lista de servicios para reflejar cambio de estado
         await fetchServicios();
-        
+        // También actualizar UI optimistamente (mover a activos)
+        // No mezclamos tipos; solo refrescamos servicios
         console.log('🔄 Servicio técnico asignado:', data);
       } else {
         // Es una alarma
@@ -249,8 +254,8 @@ const PatrullasActivas = () => {
           supervisor: supervisorData.supervisor_nombre,
           supervisor_id: supervisorData.supervisor_id,
           patrulla_asignada: supervisorData.patrulla_asignada,
-          despachador_id: user.id,
-          despachador_nombre: user.email ?? null
+          despachador_id: actingId,
+          despachador_nombre: actingEmail
         });
         if (!result.success) throw new Error(result.error);
 
@@ -263,8 +268,8 @@ const PatrullasActivas = () => {
           supervisor_id: supervisorData.supervisor_id,
           patrulla_asignada: supervisorData.patrulla_asignada,
           tiempo_asignacion_supervisor: now,
-          despachador_id: user.id,
-          despachador_nombre: user.email || 'Despachador'
+          despachador_id: actingId,
+          despachador_nombre: actingEmail
         } : a));
 
         setSyncHoldUntil(Date.now() + 2000);
