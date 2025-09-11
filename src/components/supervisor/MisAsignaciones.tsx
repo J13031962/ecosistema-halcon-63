@@ -92,8 +92,10 @@ const MisAsignaciones = () => {
   // Función para aceptar servicio (nueva lógica según el flujo del usuario)
   const handleAceptarServicio = async (alarmaId: string) => {
     try {
+      console.log('🎯 Supervisor aceptando servicio:', alarmaId);
       const result = await aceptarServicio(alarmaId, user?.id || '');
       if (result.success) {
+        console.log('✅ Servicio aceptado exitosamente, estado: asignada -> en_proceso');
         toast({
           title: "Servicio Aceptado",
           description: "Has aceptado el servicio. Ahora puedes dirigirte al sitio.",
@@ -103,6 +105,7 @@ const MisAsignaciones = () => {
         throw new Error(result.error);
       }
     } catch (error: any) {
+      console.error('❌ Error aceptando servicio:', error);
       toast({
         title: "Error",
         description: error.message || "No se pudo aceptar el servicio",
@@ -220,10 +223,12 @@ const MisAsignaciones = () => {
             qr_salida_data: qrData as any,
             tiempo_segunda_lectura_qr: now,
             resolved_at: now,
-            estado: 'resuelta'
+            estado: 'resuelta' // Estado final: en_proceso -> resuelta
           })
           .eq('id', selectedAlarmaId)
           .select('*');
+        
+        console.log('🏁 Servicio finalizado, estado: en_proceso -> resuelta, alarmaId:', selectedAlarmaId);
 
         if (error) {
           console.error('❌ Error updating departure:', error);
@@ -440,8 +445,8 @@ const MisAsignaciones = () => {
 
                   {/* Acciones con QR Scanning */}
                   <div className="flex gap-2 pt-4 border-t">
-                    {/* Botón para aceptar servicio asignado (nuevo flujo) */}
-                    {alarma.tiempo_asignacion_supervisor && !alarma.attended_at && (
+                    {/* Botón para aceptar servicio asignado (estado: asignada -> en_proceso) */}
+                    {alarma.estado === 'asignada' && !alarma.tiempo_aceptacion_supervisor && (
                       <Button 
                         onClick={() => handleAceptarServicio(alarma.id)}
                         className="flex items-center gap-2 bg-green-600 hover:bg-green-700"

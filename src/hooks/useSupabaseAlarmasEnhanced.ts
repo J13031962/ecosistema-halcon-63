@@ -361,32 +361,47 @@ export const useSupabaseAlarmasEnhanced = () => {
   // Nueva función para que el supervisor acepte un servicio
   const aceptarServicio = async (alarmaId: string, supervisorId: string) => {
     try {
-      setLoading(true);
+      const now = new Date().toISOString();
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('alarmas')
         .update({
-          attended_at: new Date().toISOString(), // Marca cuando el supervisor acepta
-          estado: 'en_proceso'
+          tiempo_aceptacion_supervisor: now,
+          estado: 'en_proceso' // Cambia de 'asignada' a 'en_proceso'
         })
-        .eq('id', alarmaId);
+        .eq('id', alarmaId)
+        .select(`
+          *,
+          clientes (
+            nombre,
+            telefono
+          )
+        `)
+        .single();
 
       if (error) throw error;
 
       // Actualizar estado local
       setAlarmas(prev => prev.map(alarma => 
         alarma.id === alarmaId 
-          ? { ...alarma, attended_at: new Date().toISOString(), estado: 'en_proceso' }
+          ? data
           : alarma
       ));
 
-      return { success: true };
+      toast({
+        title: "Servicio Aceptado",
+        description: "Has aceptado el servicio y ahora está en proceso",
+      });
+
+      return { success: true, data };
     } catch (error: any) {
       console.error('Error accepting service:', error);
-      setError(error.message);
+      toast({
+        title: "Error",
+        description: "No se pudo aceptar el servicio",
+        variant: "destructive",
+      });
       return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
     }
   };
 
