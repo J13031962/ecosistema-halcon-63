@@ -152,24 +152,19 @@ const CentralAlarmasOperador = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Mis Turnos</CardTitle>
-            <Clock className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-sm font-medium">Canceladas Hoy</CardTitle>
+            <UserCheck className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {turnosHoy.length > 0 ? turnosHoy[0].turno : 'Sin turno'}
+            <div className="text-2xl font-bold text-gray-600">
+              {fuenteAlarmas.filter(a => 
+                a.estado === 'cancelada' && 
+                new Date(a.created_at).toDateString() === new Date().toDateString()
+              ).length}
             </div>
             <p className="text-xs text-muted-foreground">
-              {turnosHoy.length > 0 ? 
-                `${turnosHoy[0].horario_inicio} - ${turnosHoy[0].horario_fin}` : 
-                'No programado'
-              }
+              Alarmas canceladas hoy
             </p>
-            {turnosOperador.length > 0 && (
-              <div className="mt-2 text-xs text-muted-foreground">
-                Total turnos programados: {turnosOperador.length}
-              </div>
-            )}
           </CardContent>
         </Card>
 
