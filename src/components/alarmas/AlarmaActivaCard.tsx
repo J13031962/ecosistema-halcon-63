@@ -18,6 +18,7 @@ interface AlarmaActivaCardProps {
     tiempo_aceptacion_supervisor?: string;
     tiempo_primera_lectura_qr?: string;
     tiempo_segunda_lectura_qr?: string;
+    supervisor?: string;
   };
   onCancelar?: (alarmaId: string) => void;
 }
@@ -198,10 +199,15 @@ export const AlarmaActivaCard = ({ alarma, onCancelar }: AlarmaActivaCardProps) 
               Cancelar
             </Button>
           )}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Tiempo Total</span>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-2xl font-bold">{tiempos.total.tiempo}</span>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Tiempo Total</span>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-2xl font-bold">{tiempos.total.tiempo}</span>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              <strong>Supervisor:</strong> {alarma.supervisor || 'Sin asignar'}
+            </div>
           </div>
         </div>
       </div>
