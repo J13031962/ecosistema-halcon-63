@@ -53,9 +53,9 @@ interface CreateAlarmaData {
 interface AsignacionPatrullaData {
   patrulla_asignada: string;
   supervisor: string;
-  supervisor_id?: string;
-  despachador_id: string;
-  despachador_nombre: string;
+  supervisor_id?: string | null;
+  despachador_id: string | null;
+  despachador_nombre: string | null;
 }
 
 export const useSupabaseAlarmasEnhanced = () => {
@@ -198,8 +198,11 @@ export const useSupabaseAlarmasEnhanced = () => {
       const { data, error } = await supabase
         .from('alarmas')
         .update({
-          ...asignacionData,
-          supervisor_id: asignacionData.supervisor_id || null,
+          supervisor: asignacionData.supervisor,
+          supervisor_id: asignacionData.supervisor_id ?? null,
+          patrulla_asignada: asignacionData.patrulla_asignada,
+          despachador_id: asignacionData.despachador_id ?? null,
+          despachador_nombre: asignacionData.despachador_nombre,
           estado: 'asignada',
           tiempo_asignacion_supervisor: now // Cronómetro 1: "Aceptación Despachador" se detiene aquí
         })

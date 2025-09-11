@@ -202,6 +202,14 @@ const PatrullasActivas = () => {
       const now = new Date().toISOString();
       // Obtener información del usuario actual para despachador
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        toast({
+          title: "Sesión requerida",
+          description: "Debes iniciar sesión como despachador para asignar un supervisor",
+          variant: "destructive"
+        });
+        return;
+      }
       
       if (selectedAlarmaForAssign?.isService) {
         // Es un servicio técnico - actualizar directamente
@@ -221,8 +229,8 @@ const PatrullasActivas = () => {
           supervisor: supervisorData.supervisor_nombre,
           supervisor_id: supervisorData.supervisor_id,
           patrulla_asignada: supervisorData.patrulla_asignada,
-          despachador_id: user?.id || '',
-          despachador_nombre: user?.email || 'Despachador'
+          despachador_id: user.id,
+          despachador_nombre: user.email ?? null
         });
         if (!result.success) throw new Error(result.error);
 
