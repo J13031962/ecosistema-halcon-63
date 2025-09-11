@@ -190,6 +190,7 @@ const MisAsignaciones = () => {
             tiempo_llegada_sitio: now,
             tiempo_primera_lectura_qr: now,
             qr_llegada_data: qrData as any,
+            tiempo_aceptacion_supervisor: alarma.tiempo_aceptacion_supervisor || now,
             estado: 'en_proceso'
           })
           .eq('id', selectedAlarmaId)
@@ -227,6 +228,9 @@ const MisAsignaciones = () => {
             tiempo_salida_sitio: now,
             qr_salida_data: qrData as any,
             tiempo_segunda_lectura_qr: now,
+            // Asegurar consistencia de tiempos si faltan
+            tiempo_aceptacion_supervisor: alarma.tiempo_aceptacion_supervisor || now,
+            tiempo_primera_lectura_qr: (alarma as any).tiempo_primera_lectura_qr || (alarma as any).tiempo_llegada_sitio || now,
             resolved_at: now,
             estado: 'resuelta' // Estado final: en_proceso -> resuelta
           })
