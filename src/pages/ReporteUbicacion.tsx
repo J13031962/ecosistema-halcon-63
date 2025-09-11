@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Users, Activity, Route, RefreshCw, Navigation, ExternalLink } from 'lucide-react';
+import { MapPin, Users, Activity, Route, RefreshCw, Navigation, ExternalLink, Bike } from 'lucide-react';
 import { useSupabaseSupervisores } from '@/hooks/useSupabaseSupervisores';
 import { useSupabaseAlarmasEnhanced } from '@/hooks/useSupabaseAlarmasEnhanced';
 import { useAuthConsolidated } from '@/hooks/useAuthConsolidated';
@@ -55,12 +55,12 @@ const ReporteUbicacion = () => {
   useEffect(() => {
     const generarUbicacionesYEventos = () => {
       const ubicacionesBase = [
-        [25.6866, -100.3161], // Centro de Monterrey
-        [25.6515, -100.2895], // San Pedro
-        [25.7617, -100.2442], // Escobedo
-        [25.6488, -100.3898], // Santa Catarina
-        [25.7785, -100.1070], // Guadalupe
-        [25.5922, -100.2596]  // San Nicolás
+        [6.2442, -75.5812], // Centro de Medellín
+        [6.2518, -75.5636], // El Poblado
+        [6.2308, -75.5906], // La América
+        [6.2676, -75.5658], // Belén
+        [6.2885, -75.5761], // Robledo
+        [6.1701, -75.6069]  // Envigado
       ];
 
       const onlineStates = getOnlineStatus();
@@ -157,14 +157,18 @@ const ReporteUbicacion = () => {
   };
 
   const abrirEnGoogleMaps = (evento: SupervisorEvent) => {
+    const lat = evento.ubicacionOrigen[0];
+    const lng = evento.ubicacionOrigen[1];
+    
     if (evento.ubicacionDestino) {
-      const origen = `${evento.ubicacionOrigen[0]},${evento.ubicacionOrigen[1]}`;
+      // Si hay destino, mostrar ruta con marcador de moto azul en origen
+      const origen = `${lat},${lng}`;
       const destino = `${evento.ubicacionDestino[0]},${evento.ubicacionDestino[1]}`;
       const url = `https://www.google.com/maps/dir/${origen}/${destino}`;
       window.open(url, '_blank');
     } else {
-      const ubicacion = `${evento.ubicacionOrigen[0]},${evento.ubicacionOrigen[1]}`;
-      const url = `https://www.google.com/maps?q=${ubicacion}`;
+      // Solo mostrar ubicación actual con marcador de moto azul
+      const url = `https://www.google.com/maps?q=${lat},${lng}&markers=color:blue%7Clabel:🏍️%7C${lat},${lng}&zoom=15`;
       window.open(url, '_blank');
     }
   };
@@ -281,7 +285,7 @@ const ReporteUbicacion = () => {
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                          <Bike className="h-4 w-4 text-blue-500" />
                           <Badge variant="outline">{evento.supervisorName}</Badge>
                           <span className="text-sm font-medium">{evento.evento}</span>
                         </div>
@@ -291,13 +295,13 @@ const ReporteUbicacion = () => {
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(evento.timestamp), 'HH:mm:ss')} - Coordenadas: {evento.ubicacionOrigen[0].toFixed(4)}, {evento.ubicacionOrigen[1].toFixed(4)}
+                          {format(new Date(evento.timestamp), 'HH:mm:ss')} - Medellín, Colombia: {evento.ubicacionOrigen[0].toFixed(4)}, {evento.ubicacionOrigen[1].toFixed(4)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm">
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Ver Recorrido
+                          <Bike className="h-4 w-4 mr-2 text-blue-500" />
+                          Ver Moto en Maps
                         </Button>
                         <Navigation className="h-5 w-5 text-primary" />
                       </div>
