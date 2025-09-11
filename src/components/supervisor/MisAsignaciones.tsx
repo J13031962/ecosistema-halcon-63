@@ -157,14 +157,19 @@ const MisAsignaciones = () => {
 
       // Verify QR matches the client
       const expectedClientId = alarma.cliente_id;
-      console.log('🔍 QR Validation:', {
-        scannedClientId: qrData.id_cliente,
-        expectedClientId: expectedClientId,
-        clientName: qrData.nombre,
-        alarmType: alarma.tipo
-      });
+      const expectedName = alarma.clientes?.nombre || '';
+
+      const normalize = (s: string | null | undefined) => (s ?? '').toString().trim().toLowerCase();
+      const idMatches = normalize(qrData.id_cliente) !== '' && normalize(expectedClientId) !== ''
+        ? normalize(qrData.id_cliente) === normalize(expectedClientId)
+        : false;
+      const nameMatches = normalize(qrData.nombre) !== '' && normalize(expectedName) !== ''
+        ? normalize(qrData.nombre) === normalize(expectedName)
+        : false;
+
+      console.log('🔎 QR match check:', { idMatches, nameMatches, expectedClientId, expectedName, scanned: qrData });
       
-      if (qrData.id_cliente !== expectedClientId) {
+      if (!idMatches && !nameMatches) {
         toast({
           title: "QR Incorrecto",
           description: `El código QR escaneado pertenece a "${qrData.nombre}" pero esta alarma es para otro cliente. Por favor, escanee el QR correcto.`,
@@ -183,8 +188,8 @@ const MisAsignaciones = () => {
           .from('alarmas')
           .update({
             tiempo_llegada_sitio: now,
+            tiempo_primera_lectura_qr: now,
             qr_llegada_data: qrData as any,
-            tiempo_aceptacion_supervisor: now,
             estado: 'en_proceso'
           })
           .eq('id', selectedAlarmaId)
