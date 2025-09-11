@@ -22,6 +22,7 @@ interface CronometroAlarmaProps {
   tiempo_primera_lectura_qr?: string;
   tiempo_segunda_lectura_qr?: string;
   supervisor?: string;
+  supervisor_id?: string;
   patrulla_asignada?: string;
   onSelect?: () => void;
   onCancel?: () => void;
@@ -59,6 +60,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
   tiempo_primera_lectura_qr,
   tiempo_segunda_lectura_qr,
   supervisor,
+  supervisor_id,
   patrulla_asignada,
   onSelect,
   onCancel,
@@ -79,6 +81,19 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
   });
 
   const [parpadeo, setParpadeo] = useState(false);
+
+  const isAssignedToCurrentSupervisor = React.useMemo(() => {
+    if (supervisor_id && currentUserId) {
+      return supervisor_id === currentUserId;
+    }
+    if (supervisor && currentUserName) {
+      const s = supervisor.toLowerCase();
+      const u = currentUserName.toLowerCase();
+      return s.includes(u) || u.includes(s);
+    }
+    return false;
+  }, [supervisor_id, currentUserId, supervisor, currentUserName]);
+
 
   // Estados para cronómetros específicos
   const [cronometrosEspecificos, setCronometrosEspecificos] = useState<{
@@ -428,10 +443,10 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
         )}
 
         {/* Botones del supervisor */}
-        {userRole === 'supervisor_motorizado' && estado === 'asignada' && supervisor && currentUserName && supervisor.includes(currentUserName) && (
+        {userRole === 'supervisor_motorizado' && isAssignedToCurrentSupervisor && (
           <div className="space-y-2">
             {/* Botón Atender - aparece cuando el servicio está asignado al supervisor */}
-            {!tiempo_aceptacion_supervisor && (
+            {estado === 'asignada' && !tiempo_aceptacion_supervisor && (
               <div className="flex justify-center">
                 <Button
                   variant="default"

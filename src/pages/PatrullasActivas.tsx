@@ -677,6 +677,7 @@ const PatrullasActivas = () => {
                      tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
                      tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
                      supervisor={alarma.supervisor || undefined}
+                     supervisor_id={alarma.supervisor_id || undefined}
                      patrulla_asignada={alarma.patrulla_asignada || undefined}
                      showCancelButton={true}
                      onCancel={() => handleCancelAlarma(alarma.id)}
