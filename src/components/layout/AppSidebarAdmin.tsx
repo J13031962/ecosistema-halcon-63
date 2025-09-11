@@ -153,7 +153,7 @@ const adminMenuItems: MenuCategory[] = [
         { title: "Turnos Operador", url: "/turnos-operador", icon: Clock },
       ]},
         { title: "Despachador", url: "#", icon: Car, subcategory: [
-          { title: "Patrullas Activas", url: "/patrullas-activas", icon: Car },
+          { title: "Alarmas Activas", url: "/patrullas-activas", icon: Car },
           { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
           { title: "Asignaciones", url: "/asignaciones", icon: MapPin },
           { title: "Sección Despachador", url: "/seccion-despachador", icon: Phone },

@@ -102,7 +102,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           category: "🚗 Despachador Patrullas", 
           items: [
             { title: "Dashboard Despachador", url: "/seccion-despachador", icon: BarChart3 },
-            { title: "Patrullas Activas", url: "/patrullas-activas", icon: Car },
+            { title: "Alarmas Activas", url: "/patrullas-activas", icon: Car },
             { title: "Reporte de Ubicación", url: "/reporte-ubicacion", icon: MapPin },
             { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
             { title: "Todas las Patrullas", url: "/patrullas", icon: Car },
@@ -215,7 +215,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           category: "🚗 Despachador Patrullas", 
           items: [
             { title: "Dashboard Despachador", url: "/seccion-despachador", icon: BarChart3 },
-            { title: "Patrullas Activas", url: "/patrullas-activas", icon: Car },
+            { title: "Alarmas Activas", url: "/patrullas-activas", icon: Car },
             { title: "Reporte de Ubicación", url: "/reporte-ubicacion", icon: MapPin },
             { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
             { title: "Todas las Patrullas", url: "/patrullas", icon: Car },

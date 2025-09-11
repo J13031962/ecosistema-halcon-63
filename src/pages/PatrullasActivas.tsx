@@ -480,8 +480,8 @@ const PatrullasActivas = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Patrullas Activas</h1>
-        <p className="text-muted-foreground">Monitoreo de supervisores registrados en el sistema</p>
+        <h1 className="text-3xl font-bold text-foreground">Alarmas Activas</h1>
+        <p className="text-muted-foreground">Monitoreo de alarmas y servicios activos en tiempo real</p>
       </div>
 
       {/* Estadísticas rápidas */}

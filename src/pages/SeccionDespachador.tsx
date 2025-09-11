@@ -179,7 +179,7 @@ const SeccionDespachador = () => {
       <Tabs defaultValue="alarmas" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="alarmas">Gestión de Alarmas</TabsTrigger>
-          <TabsTrigger value="patrullas">Patrullas Activas</TabsTrigger>
+          <TabsTrigger value="patrullas">Alarmas Activas</TabsTrigger>
           <TabsTrigger value="turnos">Turnos Supervisores</TabsTrigger>
         </TabsList>
 

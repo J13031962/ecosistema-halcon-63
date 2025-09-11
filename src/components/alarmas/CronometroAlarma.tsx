@@ -296,7 +296,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
   };
 
   const getCardClasses = () => {
-    const baseClasses = `p-3 border rounded-lg cursor-pointer transition-all duration-300 ${
+    const baseClasses = `p-2 border rounded-lg cursor-pointer transition-all duration-300 ${
       isSelected ? 'ring-2 ring-primary bg-accent/50' : ''
     }`;
 
@@ -535,8 +535,8 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
         )}
 
         {/* Cronómetros específicos según el nuevo flujo de usuario */}
-        <div className="bg-muted/20 rounded p-2 border-t">
-          <div className="grid grid-cols-5 gap-2 text-center">
+        <div className="bg-muted/20 rounded p-1 border-t">
+          <div className="grid grid-cols-5 gap-1 text-center">
             {/* 1. Aceptación Despachador: Desde creación hasta asignación de supervisor */}
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Aceptación</div>

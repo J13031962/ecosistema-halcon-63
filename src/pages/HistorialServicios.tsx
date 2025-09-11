@@ -73,12 +73,11 @@ const HistorialServicios = () => {
   const formatTiempo = (segundos: number) => {
     const horas = Math.floor(segundos / 3600);
     const minutos = Math.floor((segundos % 3600) / 60);
-    const segs = segundos % 60;
     
     if (horas > 0) {
-      return `${horas}:${minutos.toString().padStart(2, '0')}:${segs.toString().padStart(2, '0')}`;
+      return `${horas}:${minutos.toString().padStart(2, '0')}`;
     }
-    return `${minutos}:${segs.toString().padStart(2, '0')}`;
+    return `${minutos}:00`;
   };
 
   const calcularTiempos = (servicio: any) => {
