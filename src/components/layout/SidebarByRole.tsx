@@ -190,15 +190,13 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
     case 'operador_alarmas':
       return [
         { 
-          category: "🚨 Operaciones", 
+          category: "🚨 Operaciones Alarmas", 
           items: [
             { title: "Monitoreo de Alarmas", url: "/central-alarmas", icon: AlertTriangle },
             { title: "Generar Alarma", url: "/generar-alarma", icon: Siren },
-            { title: "Servicios Activos", url: "/patrullas-activas", icon: Car },
             { title: "Historial de Alarmas", url: "/alarmas", icon: AlertTriangle },
-            { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
             { title: "Gestión de Clientes", url: "/gestion-clientes", icon: Users },
-            { title: "Mis Turnos", url: "/turnos-operador", icon: Clock },
+            { title: "Turnos Operadores", url: "/turnos-operador", icon: Clock },
           ]
         },
         { 
@@ -206,7 +204,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           items: [
             { title: "Registro Actividades", url: "/registro-actividades", icon: Clock },
             { title: "Historial Patrullas", url: "/historial-patrullas-operador", icon: Clock },
-            { title: "Mis Turnos", url: "/turnos-operador", icon: Clock },
           ]
         }
       ];
@@ -214,12 +211,13 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
     case 'despachador_patrullas':
       return [
         { 
-          category: "🚗 Despacho", 
+          category: "🚗 Despachador Patrullas", 
           items: [
             { title: "Dashboard Despachador", url: "/seccion-despachador", icon: BarChart3 },
             { title: "Patrullas Activas", url: "/patrullas-activas", icon: Car },
-            { title: "Historial de Servicios", url: "/historial-servicios", icon: History }, // Nueva opción agregada
-            { title: "Asignaciones", url: "/asignaciones", icon: MapPin },
+            { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
+            { title: "Todas las Patrullas", url: "/patrullas", icon: Car },
+            { title: "Gestión Personal Supervisores", url: "/personal-supervisores", icon: UserCheck },
           ]
         },
         { 
@@ -229,14 +227,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
             { title: "Plataforma de Monitoreo", url: "https://monitoreo.miscuentas24hs.com/", icon: Monitor, external: true },
             { title: "Plataforma GPS FullTrack", url: "https://fultrack.com", icon: Navigation, external: true },
             { title: "Plataforma GPS ProTrack", url: "https://www.protrack365.com/?lang=es-es", icon: Navigation, external: true },
-          ]
-        },
-        { 
-          category: "📊 Seguimiento", 
-          items: [
-            { title: "Historial Patrullas", url: "/historial-patrullas-despachador", icon: Clock },
-            { title: "Turnos Supervisores", url: "/turnos-supervisor", icon: Clock },
-            { title: "Estado Vehículos", url: "/patrullas", icon: Truck },
           ]
         }
       ];
