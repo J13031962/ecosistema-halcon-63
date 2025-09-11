@@ -26,6 +26,7 @@ const PatrullasActivas = () => {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedAlarmaForAssign, setSelectedAlarmaForAssign] = useState<any>(null);
   const [lastAssignedTimes, setLastAssignedTimes] = useState<Record<string, number>>({});
+  const [syncHoldUntil, setSyncHoldUntil] = useState<number>(0);
   
   // Filtrar solo supervisores (que tienen patrullas asignadas)
   const supervisoresPatrulla = patrullas.filter(p => p.supervisor_nombre);
@@ -78,8 +79,9 @@ const PatrullasActivas = () => {
 
   // Configurar actualizaciones en tiempo real
   useEffect(() => {
+    if (Date.now() < syncHoldUntil) return; // Evitar sobrescribir durante actualización optimista
     setRealtimeAlarmas(alarmas);
-  }, [alarmas]);
+  }, [alarmas, syncHoldUntil]);
 
   useEffect(() => {
     const channel = supabase
@@ -254,8 +256,9 @@ const PatrullasActivas = () => {
           despachador_nombre: user.email || 'Despachador'
         } : a));
 
-        // Forzar refetch para consolidar estado con BD
-        setTimeout(() => refetchAlarmas(), 500);
+        setSyncHoldUntil(Date.now() + 2000);
+        setTimeout(() => refetchAlarmas(), 300);
+        setTimeout(() => refetchAlarmas(), 300);
       }
 
       // Registrar el tiempo de asignación para el supervisor (para disponibilidad)
