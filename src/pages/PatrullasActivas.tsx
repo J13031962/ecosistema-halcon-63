@@ -244,11 +244,13 @@ const PatrullasActivas = () => {
           supervisor: supervisorData.supervisor_nombre,
           supervisor_id: supervisorData.supervisor_id,
           patrulla_asignada: supervisorData.patrulla_asignada,
-          tiempo_asignacion_supervisor: now
+          tiempo_asignacion_supervisor: now,
+          despachador_id: user.id,
+          despachador_nombre: user.email || 'Despachador'
         } : a));
 
         // Forzar refetch para consolidar estado con BD
-        await refetchAlarmas();
+        setTimeout(() => refetchAlarmas(), 500);
       }
 
       // Registrar el tiempo de asignación para el supervisor (para disponibilidad)
@@ -261,8 +263,8 @@ const PatrullasActivas = () => {
       setSelectedAlarmaForAssign(null);
 
       toast({
-        title: "Supervisor asignado",
-        description: "El servicio pasó a Servicios Activos",
+        title: "Supervisor asignado exitosamente",
+        description: `${supervisorData.supervisor_nombre} ha sido asignado y el servicio se movió a Servicios Activos en Desarrollo`,
       });
     } catch (error: any) {
       console.error('Error al asignar supervisor:', error);
@@ -472,16 +474,16 @@ const PatrullasActivas = () => {
       {/* Alarmas Activas */}
       <Card>
         <CardHeader>
-          <CardTitle>Servicios Activos</CardTitle>
-          <CardDescription>Servicios asignados y en proceso</CardDescription>
+          <CardTitle>Servicios Activos en Desarrollo</CardTitle>
+          <CardDescription>Servicios asignados y en proceso de desarrollo</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {alarmasActivas.length === 0 && serviciosActivos.length === 0 ? (
               <div className="col-span-full text-center py-8 text-muted-foreground">
                 <Car className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-medium mb-2">No hay servicios activos</h3>
-                <p>Los servicios asignados aparecerán aquí</p>
+                <h3 className="text-lg font-medium mb-2">No hay servicios activos en desarrollo</h3>
+                <p>Los servicios asignados y en desarrollo aparecerán aquí</p>
               </div>
             ) : (
               <>
