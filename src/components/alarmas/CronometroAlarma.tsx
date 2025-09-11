@@ -514,7 +514,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
 
         {/* Cronómetros específicos según el nuevo flujo de usuario */}
         <div className="bg-muted/20 rounded p-2 border-t">
-          <div className="grid grid-cols-4 gap-2 text-center">
+          <div className="grid grid-cols-5 gap-2 text-center">
             {/* 1. Aceptación Despachador: Desde creación hasta asignación de supervisor */}
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Aceptación</div>
@@ -539,7 +539,19 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               </div>
             </div>
             
-            {/* 3. Supervisor llegada: Desde que acepta servicio hasta escaneo QR llegada */}
+            {/* 3. Supervisor aceptación: Desde asignación hasta que presiona "Atender" */}
+            <div>
+              <div className="text-xs text-muted-foreground leading-tight">Supervisor</div>
+              <div className="text-xs text-muted-foreground leading-tight">aceptación</div>
+              <div className="flex items-center justify-center mt-1">
+                <Clock className="h-3 w-3 mr-1 text-yellow-500" />
+                <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.supervisor_aceptacion.color)}`}>
+                  {formatTiempo(cronometrosEspecificos.supervisor_aceptacion.tiempo)}
+                </div>
+              </div>
+            </div>
+            
+            {/* 4. Supervisor llegada: Desde que acepta servicio hasta escaneo QR llegada */}
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Supervisor</div>
               <div className="text-xs text-muted-foreground leading-tight">llegada</div>
@@ -551,7 +563,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               </div>
             </div>
             
-            {/* 4. Supervisor salida: Desde QR llegada hasta QR salida */}
+            {/* 5. Supervisor salida: Desde QR llegada hasta QR salida */}
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Supervisor</div>
               <div className="text-xs text-muted-foreground leading-tight">salida</div>
