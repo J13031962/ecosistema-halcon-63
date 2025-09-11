@@ -165,11 +165,13 @@ const ReporteUbicacion = () => {
       const origen = `${lat},${lng}`;
       const destino = `${evento.ubicacionDestino[0]},${evento.ubicacionDestino[1]}`;
       const url = `https://www.google.com/maps/dir/${origen}/${destino}`;
-      window.open(url, '_blank');
+      // Usar location.href en lugar de window.open para evitar bloqueos
+      window.location.href = url;
     } else {
       // Solo mostrar ubicación actual con marcador de moto azul
       const url = `https://www.google.com/maps?q=${lat},${lng}&markers=color:blue%7Clabel:🏍️%7C${lat},${lng}&zoom=15`;
-      window.open(url, '_blank');
+      // Usar location.href en lugar de window.open para evitar bloqueos
+      window.location.href = url;
     }
   };
 
