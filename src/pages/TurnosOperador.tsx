@@ -152,8 +152,8 @@ const TurnosOperador = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Turnos Generados por Dirección Central
+                <Calendar className="h-5 w-5" />
+                Calendario de Turnos Generados
               </CardTitle>
               <CardDescription>
                 Consulta los turnos generados automáticamente por la dirección central
@@ -168,101 +168,85 @@ const TurnosOperador = () => {
         <TabsContent value="summary" className="mt-6">
           {/* Statistics Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Mis Turnos</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{misTurnos.length}</div>
-                <p className="text-xs text-muted-foreground">Turnos asignados</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Horas Esta Semana</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">40h</div>
-                <p className="text-xs text-muted-foreground">Horas programadas</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Próximo Turno</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">Mañana</div>
-                <p className="text-xs text-muted-foreground">06:00 - 14:00</p>
-              </CardContent>
-            </Card>
+            {misTurnos.length > 0 && (
+              <>
+                {/* Calcular horas por operador único */}
+                {(() => {
+                  const operadoresUnicos = [...new Set(misTurnos.map(t => t.operador_nombre))];
+                  return operadoresUnicos.map((operadorNombre, index) => {
+                    const turnosOperador = misTurnos.filter(t => t.operador_nombre === operadorNombre);
+                    const horasDiurnas = turnosOperador.filter(t => t.turno === 'diurno').length * 12;
+                    const horasNocturnas = turnosOperador.filter(t => t.turno === 'nocturno').length * 12;
+                    const turnosDomingo = turnosOperador.filter(t => new Date(t.fecha).getDay() === 0);
+                    const horasDominicalesDiurnas = turnosDomingo.filter(t => t.turno === 'diurno').length * 12;
+                    const horasDominicalesNocturnas = turnosDomingo.filter(t => t.turno === 'nocturno').length * 12;
+                    const horasExtras = Math.max(0, (horasDiurnas + horasNocturnas) - 160); // Asumiendo 160h normales por mes
+                    const totalHoras = horasDiurnas + horasNocturnas;
+                    
+                    const colorClasses = [
+                      'bg-blue-50 border-blue-200',
+                      'bg-green-50 border-green-200', 
+                      'bg-purple-50 border-purple-200',
+                      'bg-orange-50 border-orange-200'
+                    ];
+                    
+                    return (
+                      <Card key={operadorNombre} className={`${colorClasses[index % 4]} p-4`}>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-lg font-bold">{operadorNombre}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-sm">Horas Diurnas Ordinarias:</span>
+                            <span className="font-bold">{Math.max(0, horasDiurnas - horasExtras).toFixed(1)}h</span>
+                          </div>
+                          {horasExtras > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-orange-600">Horas Extras Diurnas:</span>
+                              <span className="font-bold text-orange-600">{horasExtras.toFixed(1)}h</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-sm">Horas Nocturnas:</span>
+                            <span className="font-bold">{horasNocturnas.toFixed(1)}h</span>
+                          </div>
+                          {horasDominicalesDiurnas > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-blue-600">Horas Dominicales Diurnas:</span>
+                              <span className="font-bold text-blue-600">{horasDominicalesDiurnas.toFixed(1)}h</span>
+                            </div>
+                          )}
+                          {horasDominicalesNocturnas > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-blue-600">Horas Dominicales Nocturnas:</span>
+                              <span className="font-bold text-blue-600">{horasDominicalesNocturnas.toFixed(1)}h</span>
+                            </div>
+                          )}
+                          <div className="border-t pt-2 mt-2">
+                            <div className="flex justify-between font-bold">
+                              <span>Total:</span>
+                              <span>{totalHoras.toFixed(1)}h</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  });
+                })()}
+              </>
+            )}
           </div>
 
-          {/* Mi resumen personal */}
-          <div className="space-y-4">
-            <div className="p-4 bg-muted/30 rounded-lg">
-              <h4 className="font-medium mb-3">Mi Resumen Personal</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground block">Horas Esta Semana:</span>
-                  <span className="font-medium text-lg">40h</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground block">Horas Extra:</span>
-                  <span className="font-medium text-lg text-orange-600">0h</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground block">Turnos Asignados:</span>
-                  <span className="font-medium text-lg">{misTurnos.length}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground block">Próximo Turno:</span>
-                  <span className="font-medium text-lg">Mañana 06:00</span>
-                </div>
-              </div>
+          {/* Si no hay turnos, mostrar mensaje */}
+          {misTurnos.length === 0 && (
+            <div className="text-center py-8">
+              <AlertCircle className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-500 font-medium">No hay turnos para mostrar resumen</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Los resúmenes aparecerán cuando se generen turnos desde dirección central.
+              </p>
             </div>
-            
-            {/* Historial de cambios */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Historial de Cambios</CardTitle>
-                <CardDescription>
-                  Modificaciones realizadas por dirección central en tus turnos
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                    <div>
-                      <p className="font-medium">Cambio de turno - 15 Ene 2025</p>
-                      <p className="text-sm text-muted-foreground">Turno cambiado de noche (22:00-06:00) a día (06:00-14:00)</p>
-                    </div>
-                    <div className="text-sm text-blue-600">Hace 2h</div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                    <div>
-                      <p className="font-medium">Turno asignado - 10 Ene 2025</p>
-                      <p className="text-sm text-muted-foreground">Nuevo turno día (06:00-14:00) asignado</p>
-                    </div>
-                    <div className="text-sm text-green-600">Hace 5d</div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                    <div>
-                      <p className="font-medium">Modificación de horario - 8 Ene 2025</p>
-                      <p className="text-sm text-muted-foreground">Horario ajustado: 07:00-15:00 → 06:00-14:00</p>
-                    </div>
-                    <div className="text-sm text-orange-600">Hace 7d</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
