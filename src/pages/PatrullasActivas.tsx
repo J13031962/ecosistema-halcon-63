@@ -169,10 +169,18 @@ const PatrullasActivas = () => {
     try {
       // Si es una alarma (no servicio técnico), validar estado y marcar "toma del despachador"
       if (!alarmaData?.isService) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          toast({
+            title: "Inicia sesión",
+            description: "Debes iniciar sesión para tomar y asignar esta alarma",
+            variant: "destructive"
+          });
+          return;
+        }
         const current = realtimeAlarmas.find(a => a.id === alarmaData.id);
         if (!current) return;
         
-        // Si ya no está activa, no permitir re-asignación
         if (current.estado !== 'activa') {
           toast({
             title: "Asignación no disponible",
@@ -181,22 +189,27 @@ const PatrullasActivas = () => {
           return;
         }
 
-        // Marcar tiempo de toma del despachador si aún no está marcado
         if (!current.tiempo_toma_despachador) {
-          const { data: { user } } = await supabase.auth.getUser();
           const now = new Date().toISOString();
-          await supabase
+          const { error: updError } = await supabase
             .from('alarmas')
             .update({
               tiempo_toma_despachador: now,
-              despachador_id: user?.id || null,
-              despachador_nombre: user?.email || 'Despachador'
+              despachador_id: user.id,
+              despachador_nombre: user.email || 'Despachador'
             })
             .eq('id', current.id);
-          
-          // Actualizar localmente para feedback inmediato
+          if (updError) {
+            console.error('Error marcando toma despachador:', updError);
+            toast({
+              title: "Error",
+              description: "No se pudo tomar la alarma (revisa tu sesión)",
+              variant: "destructive"
+            });
+            return;
+          }
           setRealtimeAlarmas(prev => prev.map(a => a.id === current.id 
-            ? { ...a, tiempo_toma_despachador: now, despachador_id: user?.id || null, despachador_nombre: user?.email || 'Despachador' }
+            ? { ...a, tiempo_toma_despachador: now, despachador_id: user.id, despachador_nombre: user.email || 'Despachador' }
             : a
           ));
         }
@@ -215,14 +228,10 @@ const PatrullasActivas = () => {
       const now = new Date().toISOString();
       // Obtener información del usuario actual para despachador
       const { data: { user } } = await supabase.auth.getUser();
-      const actingEmail = user?.email ?? 'admin@teleguardia.com';
-      const actingId = user?.id ?? null;
-
-      // Para servicios técnicos, exigimos sesión; para alarmas permitimos continuar sin sesión
-      if (selectedAlarmaForAssign?.isService && !actingId) {
+      if (!user?.id) {
         toast({
           title: "Sesión requerida",
-          description: "Inicia sesión para asignar servicios técnicos",
+          description: "Debes iniciar sesión como despachador para asignar un supervisor",
           variant: "destructive"
         });
         return;
@@ -254,8 +263,8 @@ const PatrullasActivas = () => {
           supervisor: supervisorData.supervisor_nombre,
           supervisor_id: supervisorData.supervisor_id,
           patrulla_asignada: supervisorData.patrulla_asignada,
-          despachador_id: actingId,
-          despachador_nombre: actingEmail
+          despachador_id: user.id,
+          despachador_nombre: user.email || 'Despachador'
         });
         if (!result.success) throw new Error(result.error);
 
@@ -268,8 +277,8 @@ const PatrullasActivas = () => {
           supervisor_id: supervisorData.supervisor_id,
           patrulla_asignada: supervisorData.patrulla_asignada,
           tiempo_asignacion_supervisor: now,
-          despachador_id: actingId,
-          despachador_nombre: actingEmail
+          despachador_id: user.id,
+          despachador_nombre: user.email || 'Despachador'
         } : a));
 
         setSyncHoldUntil(Date.now() + 2000);
