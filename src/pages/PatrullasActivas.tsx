@@ -45,8 +45,13 @@ const PatrullasActivas = () => {
   // Alarmas pendientes ordenadas por tiempo
   const alarmasPendientes = alarmasOrdenadas.filter(a => a.estado === 'activa');
   
-  // Servicios pendientes de asignación
+  // Servicios pendientes de asignación (sin supervisor asignado)
   const serviciosPendientes = servicios.filter(s => s.estado === 'pendiente');
+  
+  // Servicios activos (con supervisor asignado)
+  const serviciosActivos = servicios.filter(s => 
+    ['aceptado', 'en_progreso', 'completado'].includes(s.estado) && s.tecnico_id
+  );
   
   // Supervisores disponibles (no han sido asignados en los últimos 6 minutos)
   const supervisoresDisponibles = supervisoresFromHook.filter(supervisor => {
@@ -396,35 +401,61 @@ const PatrullasActivas = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {alarmasActivas.length === 0 ? (
+            {alarmasActivas.length === 0 && serviciosActivos.length === 0 ? (
               <div className="col-span-full text-center py-8 text-muted-foreground">
                 <Car className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <h3 className="text-lg font-medium mb-2">No hay servicios activos</h3>
                 <p>Los servicios asignados aparecerán aquí</p>
               </div>
             ) : (
-              alarmasActivas.map((alarma) => (
-                <CronometroAlarma
-                  key={alarma.id}
-                  alarmaId={alarma.id}
-                  tipo={alarma.tipo}
-                  cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
-                  direccion={alarma.direccion}
-                  municipio={alarma.municipio}
-                  telefono={alarma.clientes?.telefono}
-                  prioridad={alarma.prioridad}
-                  estado={alarma.estado as any}
-                  created_at={alarma.created_at}
-                  attended_at={alarma.attended_at || undefined}
-                  tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
-                  tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
-                  tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
-                  supervisor={alarma.supervisor || undefined}
-                  patrulla_asignada={alarma.patrulla_asignada || undefined}
-                  showCancelButton={true}
-                  onCancel={() => handleCancelAlarma(alarma.id)}
-                />
-              ))
+              <>
+                {/* Alarmas activas */}
+                {alarmasActivas.map((alarma) => (
+                  <CronometroAlarma
+                    key={alarma.id}
+                    alarmaId={alarma.id}
+                    tipo={alarma.tipo}
+                    cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
+                    direccion={alarma.direccion}
+                    municipio={alarma.municipio}
+                    telefono={alarma.clientes?.telefono}
+                    prioridad={alarma.prioridad}
+                    estado={alarma.estado as any}
+                    created_at={alarma.created_at}
+                    attended_at={alarma.attended_at || undefined}
+                    tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                    tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
+                    tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
+                    supervisor={alarma.supervisor || undefined}
+                    patrulla_asignada={alarma.patrulla_asignada || undefined}
+                    showCancelButton={true}
+                    onCancel={() => handleCancelAlarma(alarma.id)}
+                  />
+                ))}
+                
+                {/* Servicios técnicos activos */}
+                {serviciosActivos.map((servicio) => (
+                  <CronometroAlarma
+                    key={`servicio-activo-${servicio.id}`}
+                    alarmaId={servicio.id}
+                    tipo={servicio.tipo_servicio}
+                    cliente={servicio.cliente_razon_social}
+                    direccion={servicio.cliente_direccion}
+                    municipio=""
+                    telefono={servicio.cliente_telefono}
+                    prioridad={servicio.prioridad}
+                    estado={servicio.estado === 'aceptado' ? 'asignada' : servicio.estado === 'en_progreso' ? 'en_proceso' : 'resuelta'}
+                    created_at={servicio.created_at}
+                    attended_at={servicio.fecha_aceptacion || undefined}
+                    tiempo_asignacion_supervisor={servicio.fecha_aceptacion || undefined}
+                    tiempo_primera_lectura_qr={servicio.fecha_inicio || undefined}
+                    tiempo_segunda_lectura_qr={servicio.fecha_finalizacion || undefined}
+                    supervisor="Supervisor asignado"
+                    patrulla_asignada="Servicio técnico"
+                    showCancelButton={false}
+                  />
+                ))}
+              </>
             )}
           </div>
         </CardContent>

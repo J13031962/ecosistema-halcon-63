@@ -329,6 +329,15 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               {prioridad}
             </Badge>
           </div>
+          {/* Tiempo total en la parte superior derecha */}
+          <div className="text-right">
+            <div className={`text-sm font-bold ${getTiempoColor()}`}>
+              {formatTiempo(tiempoActual.segundos)}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {getFaseTexto()}
+            </div>
+          </div>
         </div>
 
         {/* Fecha y hora compacta */}
