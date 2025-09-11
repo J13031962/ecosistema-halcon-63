@@ -305,8 +305,9 @@ const ReportesSupervisor = () => {
                     </div>
                   </div>
 
-                  {/* Mapa con ubicación */}
+                  {/* Mapa con ubicación y recorrido del supervisor */}
                   <div className="mt-6">
+                    <h4 className="font-semibold mb-2">Recorrido del Supervisor</h4>
                     <LeafletMap
                       center={[25.674, -100.309]}
                       zoom={15}
@@ -314,8 +315,13 @@ const ReportesSupervisor = () => {
                       markers={[
                         {
                           position: [25.674, -100.309],
+                          title: `Inicio - ${reporteSeleccionado.supervisor.nombre}`,
+                          popupContent: `Punto de inicio del recorrido\nHora: ${reporteSeleccionado.cronologia[0]?.hora || 'N/A'}`
+                        },
+                        {
+                          position: [25.676, -100.307],
                           title: reporteSeleccionado.cliente,
-                          popupContent: `${reporteSeleccionado.direccion}\nSupervisor: ${reporteSeleccionado.supervisor.nombre}\nVehículo: ${reporteSeleccionado.vehiculo.codigo}`
+                          popupContent: `${reporteSeleccionado.direccion}\nSupervisor: ${reporteSeleccionado.supervisor.nombre}\nVehículo: ${reporteSeleccionado.vehiculo.codigo}\nTiempo en sitio: ${reporteSeleccionado.tiempos.total} min`
                         }
                       ]}
                       showTraffic={true}

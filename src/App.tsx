@@ -63,6 +63,7 @@ import Mantenimiento from "./pages/Mantenimiento";
 import { RoleBasedDashboard } from "@/components/auth/RoleBasedDashboard";
 import ClientesDirCentral from "./pages/ClientesDirCentral";
 import ElementosCotizables from "./pages/ElementosCotizables";
+import ReporteUbicacion from "./pages/ReporteUbicacion";
 
 const queryClient = new QueryClient();
 
@@ -193,6 +194,14 @@ const AppContent = () => {
         </ProtectedRoute>
       } />
       
+      <Route path="/reporte-ubicacion" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <ReporteUbicacion />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+
       <Route path="/historial-servicios" element={
         <ProtectedRoute>
           <MainLayout>

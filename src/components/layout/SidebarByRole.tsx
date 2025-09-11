@@ -93,6 +93,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           items: [
             { title: "Monitoreo de Alarmas", url: "/central-alarmas", icon: AlertTriangle },
             { title: "Generar Alarma", url: "/generar-alarma", icon: Siren },
+            { title: "Reporte de Ubicación", url: "/reporte-ubicacion", icon: MapPin },
             { title: "Historial de Alarmas", url: "/alarmas", icon: AlertTriangle },
             { title: "Gestión de Clientes", url: "/gestion-clientes", icon: Users },
             { title: "Turnos Operadores", url: "/turnos-operador", icon: Clock },
@@ -103,6 +104,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           items: [
             { title: "Dashboard Despachador", url: "/seccion-despachador", icon: BarChart3 },
             { title: "Patrullas Activas", url: "/patrullas-activas", icon: Car },
+            { title: "Reporte de Ubicación", url: "/reporte-ubicacion", icon: MapPin },
             { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
             { title: "Todas las Patrullas", url: "/patrullas", icon: Car },
             { title: "Gestión Personal Supervisores", url: "/personal-supervisores", icon: UserCheck },
@@ -194,6 +196,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           items: [
             { title: "Monitoreo de Alarmas", url: "/central-alarmas", icon: AlertTriangle },
             { title: "Generar Alarma", url: "/generar-alarma", icon: Siren },
+            { title: "Reporte de Ubicación", url: "/reporte-ubicacion", icon: MapPin },
             { title: "Historial de Alarmas", url: "/alarmas", icon: AlertTriangle },
             { title: "Gestión de Clientes", url: "/gestion-clientes", icon: Users },
             { title: "Turnos Operadores", url: "/turnos-operador", icon: Clock },
@@ -215,6 +218,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           items: [
             { title: "Dashboard Despachador", url: "/seccion-despachador", icon: BarChart3 },
             { title: "Patrullas Activas", url: "/patrullas-activas", icon: Car },
+            { title: "Reporte de Ubicación", url: "/reporte-ubicacion", icon: MapPin },
             { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
             { title: "Todas las Patrullas", url: "/patrullas", icon: Car },
             { title: "Gestión Personal Supervisores", url: "/personal-supervisores", icon: UserCheck },
