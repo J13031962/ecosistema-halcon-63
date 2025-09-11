@@ -49,8 +49,16 @@ const PatrullasActivas = () => {
     a.estado === 'activa' && !a.tiempo_toma_despachador && !hiddenPendingIds.has(a.id)
   );
   
-  // Servicios pendientes de asignación (sin supervisor asignado)
-  const serviciosPendientes = servicios.filter(s => s.estado === 'pendiente');
+  // Servicios pendientes de asignación 
+  const alarmasPendientesAsignacion = alarmasOrdenadas.filter(a => 
+    a.estado === 'activa' && 
+    a.tiempo_toma_despachador && 
+    !a.supervisor_id && 
+    !a.supervisor && 
+    !a.tiempo_asignacion_supervisor
+  );
+  
+  const serviciosTecnicosPendientes = servicios.filter(s => s.estado === 'pendiente');
   
   // Servicios activos (con supervisor asignado)
   const serviciosActivos = servicios.filter(s => 
@@ -411,7 +419,7 @@ const PatrullasActivas = () => {
         <CardContent>
           <div className="space-y-4">
             {/* Alarmas pendientes */}
-            {alarmasPendientes.length === 0 && serviciosPendientes.length === 0 ? (
+            {alarmasPendientes.length === 0 && alarmasPendientesAsignacion.length === 0 && serviciosTecnicosPendientes.length === 0 ? (
               <div className="col-span-full text-center py-8 text-muted-foreground">
                 <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <h3 className="text-lg font-medium mb-2">No hay servicios pendientes</h3>
@@ -453,8 +461,42 @@ const PatrullasActivas = () => {
                   />
                 ))}
                 
+                {/* Alarmas con tiempo_toma_despachador pendientes de asignación de supervisor */}
+                {alarmasPendientesAsignacion.map((alarma) => (
+                  <CronometroAlarma
+                    key={`alarma-pending-${alarma.id}`}
+                    alarmaId={alarma.id}
+                    tipo={alarma.tipo}
+                    cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
+                    direccion={alarma.direccion}
+                    municipio={alarma.municipio}
+                    telefono={alarma.clientes?.telefono}
+                    prioridad={alarma.prioridad}
+                    estado={alarma.estado as any}
+                    created_at={alarma.created_at}
+                    attended_at={alarma.attended_at || undefined}
+                    tiempo_toma_despachador={alarma.tiempo_toma_despachador || undefined}
+                    tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                    tiempo_aceptacion_supervisor={alarma.tiempo_aceptacion_supervisor || undefined}
+                    tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
+                    tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
+                    supervisor={alarma.supervisor || undefined}
+                    patrulla_asignada={alarma.patrulla_asignada || undefined}
+                    showCancelButton={false}
+                    showAssignButton={true}
+                    onSelect={() => handleOpenAssignModal({
+                      id: alarma.id,
+                      tipo: alarma.tipo,
+                      cliente: alarma.clientes?.nombre || 'Cliente no especificado',
+                      direccion: alarma.direccion,
+                      prioridad: alarma.prioridad,
+                      created_at: alarma.created_at
+                    })}
+                  />
+                ))}
+
                 {/* Servicios técnicos pendientes */}
-                {serviciosPendientes.map((servicio) => (
+                {serviciosTecnicosPendientes.map((servicio) => (
                   <CronometroAlarma
                     key={`servicio-${servicio.id}`}
                     alarmaId={servicio.id}
@@ -467,7 +509,9 @@ const PatrullasActivas = () => {
                     estado="activa"
                     created_at={servicio.created_at}
                     attended_at={undefined}
+                    tiempo_toma_despachador={undefined}
                     tiempo_asignacion_supervisor={undefined}
+                    tiempo_aceptacion_supervisor={undefined}
                     tiempo_primera_lectura_qr={undefined}
                     tiempo_segunda_lectura_qr={undefined}
                     supervisor={undefined}
@@ -491,7 +535,7 @@ const PatrullasActivas = () => {
         </CardContent>
       </Card>
 
-      {/* Alarmas Activas */}
+      {/* Servicios Activos */}
       <Card>
         <CardHeader>
           <CardTitle>Servicios Activos en Desarrollo</CardTitle>
