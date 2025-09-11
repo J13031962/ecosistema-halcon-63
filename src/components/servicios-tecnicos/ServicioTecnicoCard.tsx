@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,8 @@ import {
   User,
   Phone,
   FileText,
-  Wrench
+  Wrench,
+  Timer
 } from "lucide-react";
 import { exportToPDF } from "@/utils/exportUtils";
 import { toast } from "@/hooks/use-toast";
@@ -33,7 +34,45 @@ export const ServicioTecnicoCard = ({ servicio, onRefresh }: ServicioTecnicoCard
   const [showModal, setShowModal] = useState(false);
   const [observaciones, setObservaciones] = useState("");
   const [firmaDigital, setFirmaDigital] = useState("");
+  const [tiempoTranscurrido, setTiempoTranscurrido] = useState("");
   const { aceptarServicio, iniciarServicio, completarServicio, agregarObservacion } = useServiciosTecnicos();
+
+  // Hook para calcular tiempo transcurrido en servicios en progreso
+  useEffect(() => {
+    if (servicio.estado === 'en_progreso' && servicio.fecha_inicio) {
+      const calcularTiempo = () => {
+        const inicio = new Date(servicio.fecha_inicio!);
+        const ahora = new Date();
+        const diferencia = ahora.getTime() - inicio.getTime();
+        
+        const horas = Math.floor(diferencia / (1000 * 60 * 60));
+        const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+        
+        setTiempoTranscurrido(`${horas}h ${minutos}m`);
+      };
+
+      calcularTiempo();
+      const intervalo = setInterval(calcularTiempo, 60000); // Actualizar cada minuto
+
+      return () => clearInterval(intervalo);
+    } else if (servicio.estado === 'aceptado' && servicio.fecha_aceptacion) {
+      const calcularTiempo = () => {
+        const inicio = new Date(servicio.fecha_aceptacion!);
+        const ahora = new Date();
+        const diferencia = ahora.getTime() - inicio.getTime();
+        
+        const horas = Math.floor(diferencia / (1000 * 60 * 60));
+        const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+        
+        setTiempoTranscurrido(`${horas}h ${minutos}m`);
+      };
+
+      calcularTiempo();
+      const intervalo = setInterval(calcularTiempo, 60000); // Actualizar cada minuto
+
+      return () => clearInterval(intervalo);
+    }
+  }, [servicio.estado, servicio.fecha_inicio, servicio.fecha_aceptacion]);
 
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
@@ -148,7 +187,13 @@ Equipo Técnico`;
               <Wrench className="h-5 w-5" />
               {servicio.motivo_servicio}
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              {(servicio.estado === 'en_progreso' || servicio.estado === 'aceptado') && tiempoTranscurrido && (
+                <div className="flex items-center gap-1 bg-primary/10 px-2 py-1 rounded-md">
+                  <Timer className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium text-primary">{tiempoTranscurrido}</span>
+                </div>
+              )}
               {getEstadoBadge(servicio.estado)}
               {getPrioridadBadge(servicio.prioridad)}
             </div>

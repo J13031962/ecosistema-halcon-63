@@ -92,7 +92,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           category: "🚨 Operaciones Alarmas", 
           items: [
             { title: "Monitoreo de Alarmas", url: "/central-alarmas", icon: AlertTriangle },
-            { title: "Generar Alarma", url: "/generar-alarma", icon: Siren },
             { title: "Reporte de Ubicación", url: "/reporte-ubicacion", icon: MapPin },
             { title: "Historial de Alarmas", url: "/alarmas", icon: AlertTriangle },
             { title: "Gestión de Clientes", url: "/gestion-clientes", icon: Users },
@@ -195,7 +194,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           category: "🚨 Operaciones Alarmas", 
           items: [
             { title: "Monitoreo de Alarmas", url: "/central-alarmas", icon: AlertTriangle },
-            { title: "Generar Alarma", url: "/generar-alarma", icon: Siren },
             { title: "Reporte de Ubicación", url: "/reporte-ubicacion", icon: MapPin },
             { title: "Historial de Alarmas", url: "/alarmas", icon: AlertTriangle },
             { title: "Gestión de Clientes", url: "/gestion-clientes", icon: Users },

@@ -36,7 +36,9 @@ import {
   Eye,
   Plus,
   MapPin,
-  X
+  X,
+  ChevronUp,
+  ChevronDown
 } from "lucide-react";
 import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
 import { useSupabaseAlarmasEnhanced } from "@/hooks/useSupabaseAlarmasEnhanced";
@@ -108,6 +110,7 @@ const CentralAlarmasOperador = () => {
   // Estados para la minuta
   const [nuevaEntradaMinuta, setNuevaEntradaMinuta] = useState("");
   const [tipoEntradaMinuta, setTipoEntradaMinuta] = useState<'general' | 'cambio_turno' | 'consigna' | 'incidente' | 'mantenimiento'>('general');
+  const [mostrarGenerarAlarma, setMostrarGenerarAlarma] = useState(true);
   
   // Cargar turnos desde la base de datos
   const { turnosOperador, turnosSupervisor, loading: turnosSupabaseLoading } = useSupabaseTurnos();
@@ -705,18 +708,32 @@ const CentralAlarmasOperador = () => {
         </Card>
       )}
 
-      {/* Sección Generar Nueva Alarma */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Siren className="h-6 w-6 text-primary" />
-            Generar Nueva Alarma
-          </CardTitle>
-          <CardDescription>
-            Busca clientes y genera alarmas directamente desde el panel de monitoreo
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      {/* Sección Generar Nueva Alarma - Flotante */}
+      <div className="sticky top-4 z-50">
+        <Card className="shadow-lg border-2">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Siren className="h-6 w-6 text-primary" />
+                  Generar Nueva Alarma
+                </CardTitle>
+                <CardDescription>
+                  Busca clientes y genera alarmas directamente desde el panel de monitoreo
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMostrarGenerarAlarma(!mostrarGenerarAlarma)}
+                className="h-8 w-8 p-0"
+              >
+                {mostrarGenerarAlarma ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </div>
+          </CardHeader>
+          {mostrarGenerarAlarma && (
+            <CardContent className="space-y-6">
           {/* Información importante */}
           <Card className="bg-blue-50 border-blue-200">
             <CardHeader>
@@ -911,8 +928,10 @@ const CentralAlarmasOperador = () => {
               </Card>
             )}
           </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          )}
+        </Card>
+      </div>
 
       {/* Sección de Minuta/Log de Operaciones */}
       <Card className="mb-6">
