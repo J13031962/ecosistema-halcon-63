@@ -7,8 +7,8 @@ import { useSupabasePatrullas } from "@/hooks/useSupabasePatrullas";
 import { useSupabaseAlarmasEnhanced } from "@/hooks/useSupabaseAlarmasEnhanced";
 import { useServiciosTecnicos } from "@/hooks/useServiciosTecnicos";
 import { useSupabaseSupervisores } from "@/hooks/useSupabaseSupervisores";
+import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import CronometroAlarma from "@/components/alarmas/CronometroAlarma";
-import ServicioPendienteCard from "@/components/servicios-tecnicos/ServicioPendienteCard";
 import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorModal";
 import { useToast } from "@/hooks/use-toast";
 import { Car, MapPin, Clock, Search, Filter, Download, Shield, AlertTriangle } from "lucide-react";
@@ -20,6 +20,7 @@ const PatrullasActivas = () => {
   const { alarmas, resolverAlarma, asignarPatrulla } = useSupabaseAlarmasEnhanced();
   const { servicios, loading: serviciosLoading } = useServiciosTecnicos();
   const { supervisores: supervisoresFromHook } = useSupabaseSupervisores();
+  const { userRole } = useAuthConsolidated();
   const { toast } = useToast();
   const [realtimeAlarmas, setRealtimeAlarmas] = useState(alarmas);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -157,12 +158,27 @@ const PatrullasActivas = () => {
       // Obtener información del usuario actual para despachador
       const { data: { user } } = await supabase.auth.getUser();
       
-      await asignarPatrulla(alarmaId, {
-        supervisor: supervisorData.supervisor_nombre,
-        patrulla_asignada: supervisorData.patrulla_asignada,
-        despachador_id: user?.id || '',
-        despachador_nombre: user?.email || 'Despachador'
-      });
+      if (selectedAlarmaForAssign?.isService) {
+        // Es un servicio técnico - actualizar directamente
+        const { error } = await supabase
+          .from('servicios_tecnicos_asignados')
+          .update({
+            tecnico_id: supervisorData.supervisor_id,
+            estado: 'aceptado',
+            fecha_aceptacion: new Date().toISOString()
+          })
+          .eq('id', alarmaId);
+        
+        if (error) throw error;
+      } else {
+        // Es una alarma
+        await asignarPatrulla(alarmaId, {
+          supervisor: supervisorData.supervisor_nombre,
+          patrulla_asignada: supervisorData.patrulla_asignada,
+          despachador_id: user?.id || '',
+          despachador_nombre: user?.email || 'Despachador'
+        });
+      }
 
       // Registrar el tiempo de asignación para el supervisor
       setLastAssignedTimes(prev => ({
@@ -335,20 +351,25 @@ const PatrullasActivas = () => {
                 
                 {/* Servicios técnicos pendientes */}
                 {serviciosPendientes.map((servicio) => (
-                  <ServicioPendienteCard
+                  <CronometroAlarma
                     key={`servicio-${servicio.id}`}
-                    servicioId={servicio.id}
+                    alarmaId={servicio.id}
                     tipo={servicio.tipo_servicio}
                     cliente={servicio.cliente_razon_social}
                     direccion={servicio.cliente_direccion}
-                    telefono={servicio.cliente_telefono || undefined}
+                    municipio=""
+                    telefono={servicio.cliente_telefono}
                     prioridad={servicio.prioridad}
-                    estado={servicio.estado as any}
+                    estado="activa"
                     created_at={servicio.created_at}
-                    fecha_aceptacion={servicio.fecha_aceptacion || undefined}
-                    fecha_inicio={servicio.fecha_inicio || undefined}
-                    fecha_finalizacion={servicio.fecha_finalizacion || undefined}
-                    onAssignSupervisor={() => handleOpenAssignModal({
+                    attended_at={undefined}
+                    tiempo_asignacion_supervisor={undefined}
+                    tiempo_primera_lectura_qr={undefined}
+                    tiempo_segunda_lectura_qr={undefined}
+                    supervisor={undefined}
+                    patrulla_asignada={undefined}
+                    showCancelButton={false}
+                    onSelect={() => handleOpenAssignModal({
                       id: servicio.id,
                       tipo: servicio.tipo_servicio,
                       cliente: servicio.cliente_razon_social,
@@ -357,7 +378,6 @@ const PatrullasActivas = () => {
                       created_at: servicio.created_at,
                       isService: true
                     })}
-                    showAssignButton={true}
                   />
                 ))}
               </>
@@ -408,8 +428,8 @@ const PatrullasActivas = () => {
         </CardContent>
       </Card>
 
-      {/* Historial de Asignaciones */}
-      {historialAsignaciones.length > 0 && (
+      {/* Historial de Asignaciones - Solo para roles que no sean despachador */}
+      {userRole !== 'despachador_patrullas' && historialAsignaciones.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -447,6 +467,14 @@ const PatrullasActivas = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Modal de asignación de supervisor */}
+      <AsignarSupervisorModal
+        isOpen={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        alarma={selectedAlarmaForAssign}
+        onAssign={handleAssignSupervisor}
+      />
     </div>
   );
 };
