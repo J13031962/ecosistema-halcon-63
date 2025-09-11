@@ -311,6 +311,104 @@ const PatrullasActivas = () => {
     }
   };
 
+  // Funciones del supervisor
+  const handleSupervisorAccept = async (alarmaId: string) => {
+    try {
+      const now = new Date().toISOString();
+      const { error } = await supabase
+        .from('alarmas')
+        .update({ 
+          tiempo_aceptacion_supervisor: now,
+          estado: 'en_proceso'
+        })
+        .eq('id', alarmaId);
+
+      if (error) throw error;
+
+      // Actualizar estado local
+      setRealtimeAlarmas(prev => prev.map(a => a.id === alarmaId 
+        ? { ...a, tiempo_aceptacion_supervisor: now, estado: 'en_proceso' } 
+        : a
+      ));
+
+      toast({
+        title: "Servicio atendido",
+        description: "Has aceptado atender este servicio. Ahora puedes marcar tu llegada.",
+      });
+    } catch (error) {
+      console.error('Error al aceptar servicio:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo aceptar el servicio",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSupervisorArrive = async (alarmaId: string) => {
+    try {
+      const now = new Date().toISOString();
+      const { error } = await supabase
+        .from('alarmas')
+        .update({ tiempo_primera_lectura_qr: now })
+        .eq('id', alarmaId);
+
+      if (error) throw error;
+
+      // Actualizar estado local
+      setRealtimeAlarmas(prev => prev.map(a => a.id === alarmaId 
+        ? { ...a, tiempo_primera_lectura_qr: now } 
+        : a
+      ));
+
+      toast({
+        title: "Llegada marcada",
+        description: "Has marcado tu llegada al sitio. Ahora puedes marcar tu salida cuando termines.",
+      });
+    } catch (error) {
+      console.error('Error al marcar llegada:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo marcar la llegada",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSupervisorLeave = async (alarmaId: string) => {
+    try {
+      const now = new Date().toISOString();
+      const { error } = await supabase
+        .from('alarmas')
+        .update({ 
+          tiempo_segunda_lectura_qr: now,
+          resolved_at: now,
+          estado: 'resuelta'
+        })
+        .eq('id', alarmaId);
+
+      if (error) throw error;
+
+      // Actualizar estado local
+      setRealtimeAlarmas(prev => prev.map(a => a.id === alarmaId 
+        ? { ...a, tiempo_segunda_lectura_qr: now, resolved_at: now, estado: 'resuelta' } 
+        : a
+      ));
+
+      toast({
+        title: "Servicio completado",
+        description: "Has marcado tu salida. El servicio ha sido completado exitosamente.",
+      });
+    } catch (error) {
+      console.error('Error al marcar salida:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo marcar la salida",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getStatusColor = (estado: string) => {
     switch (estado?.toLowerCase()) {
       case "disponible": return "secondary";
@@ -559,29 +657,35 @@ const PatrullasActivas = () => {
               </div>
             ) : (
               <>
-                {/* Alarmas activas */}
-                {alarmasActivas.map((alarma) => (
-                  <CronometroAlarma
-                    key={alarma.id}
-                    alarmaId={alarma.id}
-                    tipo={alarma.tipo}
-                    cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
-                    direccion={alarma.direccion}
-                    municipio={alarma.municipio}
-                    telefono={alarma.clientes?.telefono}
-                    prioridad={alarma.prioridad}
-                    estado={alarma.estado as any}
-                    created_at={alarma.created_at}
-                    attended_at={alarma.attended_at || undefined}
-                    tiempo_toma_despachador={alarma.tiempo_toma_despachador || undefined}
-                    tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
-                    tiempo_aceptacion_supervisor={alarma.tiempo_aceptacion_supervisor || undefined}
-                    tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
-                    tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
-                    supervisor={alarma.supervisor || undefined}
-                    patrulla_asignada={alarma.patrulla_asignada || undefined}
-                    showCancelButton={true}
-                    onCancel={() => handleCancelAlarma(alarma.id)}
+                 {/* Alarmas activas */}
+                 {alarmasActivas.map((alarma) => (
+                   <CronometroAlarma
+                     key={alarma.id}
+                     alarmaId={alarma.id}
+                     tipo={alarma.tipo}
+                     cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
+                     direccion={alarma.direccion}
+                     municipio={alarma.municipio}
+                     telefono={alarma.clientes?.telefono}
+                     prioridad={alarma.prioridad}
+                     estado={alarma.estado as any}
+                     created_at={alarma.created_at}
+                     attended_at={alarma.attended_at || undefined}
+                     tiempo_toma_despachador={alarma.tiempo_toma_despachador || undefined}
+                     tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                     tiempo_aceptacion_supervisor={alarma.tiempo_aceptacion_supervisor || undefined}
+                     tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
+                     tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
+                     supervisor={alarma.supervisor || undefined}
+                     patrulla_asignada={alarma.patrulla_asignada || undefined}
+                     showCancelButton={true}
+                     onCancel={() => handleCancelAlarma(alarma.id)}
+                     onSupervisorAccept={handleSupervisorAccept}
+                     onSupervisorArrive={handleSupervisorArrive}
+                     onSupervisorLeave={handleSupervisorLeave}
+                     userRole={userRole}
+                     currentUserId={consolidatedUser?.id}
+                     currentUserName={consolidatedUser?.email}
                   />
                 ))}
                 
@@ -602,9 +706,12 @@ const PatrullasActivas = () => {
                     tiempo_asignacion_supervisor={servicio.fecha_aceptacion || undefined}
                     tiempo_primera_lectura_qr={servicio.fecha_inicio || undefined}
                     tiempo_segunda_lectura_qr={servicio.fecha_finalizacion || undefined}
-                    supervisor="Supervisor asignado"
-                    patrulla_asignada="Servicio técnico"
-                    showCancelButton={false}
+                     supervisor="Supervisor asignado"
+                     patrulla_asignada="Servicio técnico"
+                     showCancelButton={false}
+                     userRole={userRole}
+                     currentUserId={consolidatedUser?.id}
+                     currentUserName={consolidatedUser?.email}
                   />
                 ))}
               </>

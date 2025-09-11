@@ -25,9 +25,15 @@ interface CronometroAlarmaProps {
   patrulla_asignada?: string;
   onSelect?: () => void;
   onCancel?: () => void;
+  onSupervisorAccept?: (alarmaId: string) => void;
+  onSupervisorArrive?: (alarmaId: string) => void;
+  onSupervisorLeave?: (alarmaId: string) => void;
   isSelected?: boolean;
   showCancelButton?: boolean;
   showAssignButton?: boolean;
+  userRole?: string;
+  currentUserId?: string;
+  currentUserName?: string;
 }
 
 interface TiempoEstado {
@@ -56,9 +62,15 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
   patrulla_asignada,
   onSelect,
   onCancel,
+  onSupervisorAccept,
+  onSupervisorArrive,
+  onSupervisorLeave,
   isSelected,
   showCancelButton,
-  showAssignButton
+  showAssignButton,
+  userRole,
+  currentUserId,
+  currentUserName
 }) => {
   const [tiempoActual, setTiempoActual] = useState<TiempoEstado>({
     segundos: 0,
@@ -415,6 +427,65 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
           </div>
         )}
 
+        {/* Botones del supervisor */}
+        {userRole === 'supervisor_motorizado' && estado === 'asignada' && supervisor && currentUserName && supervisor.includes(currentUserName) && (
+          <div className="space-y-2">
+            {/* Botón Atender - aparece cuando el servicio está asignado al supervisor */}
+            {!tiempo_aceptacion_supervisor && (
+              <div className="flex justify-center">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSupervisorAccept?.(alarmaId);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white h-8 px-4 text-sm"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Atender
+                </Button>
+              </div>
+            )}
+            
+            {/* Botón Marcar Llegada - aparece después de presionar Atender */}
+            {tiempo_aceptacion_supervisor && !tiempo_primera_lectura_qr && (
+              <div className="flex justify-center">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSupervisorArrive?.(alarmaId);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-sm"
+                >
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Marcar Llegada
+                </Button>
+              </div>
+            )}
+            
+            {/* Botón Marcar Salida - aparece después de Marcar Llegada */}
+            {tiempo_primera_lectura_qr && !tiempo_segunda_lectura_qr && (
+              <div className="flex justify-center">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSupervisorLeave?.(alarmaId);
+                  }}
+                  className="bg-orange-600 hover:bg-orange-700 text-white h-8 px-4 text-sm"
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Marcar Salida
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Botón de cancelar si está disponible */}
         {showCancelButton && estado !== 'resuelta' && onCancel && (
           <div className="flex justify-end">
@@ -443,7 +514,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
 
         {/* Cronómetros específicos según el nuevo flujo de usuario */}
         <div className="bg-muted/20 rounded p-2 border-t">
-          <div className="grid grid-cols-5 gap-2 text-center">
+          <div className="grid grid-cols-4 gap-2 text-center">
             {/* 1. Aceptación Despachador: Desde creación hasta asignación de supervisor */}
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Aceptación</div>
@@ -468,29 +539,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               </div>
             </div>
             
-            {/* 3. Supervisor aceptación: Desde asignación hasta aceptación */}
-            <div>
-              <div className="text-xs text-muted-foreground leading-tight">Supervisor</div>
-              <div className="text-xs text-muted-foreground leading-tight">aceptación</div>
-              <div className="flex items-center justify-center mt-1">
-                <Clock className="h-3 w-3 mr-1 text-yellow-500" />
-                <div className={`text-xs font-mono font-bold ${getColorClassForTimer(cronometrosEspecificos.supervisor_aceptacion.color)}`}>
-                  {formatTiempo(cronometrosEspecificos.supervisor_aceptacion.tiempo)}
-                </div>
-              </div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground leading-tight">Supervisor</div>
-              <div className="text-xs text-muted-foreground leading-tight">aceptación</div>
-              <div className="flex items-center justify-center mt-1">
-                <Clock className="h-3 w-3 mr-1 text-orange-500" />
-                <div className={`text-xs font-mono font-bold text-gray-400`}>
-                  --:--
-                </div>
-              </div>
-            </div>
-            
-            {/* 4. Supervisor llegada: Desde que acepta servicio hasta escaneo QR llegada */}
+            {/* 3. Supervisor llegada: Desde que acepta servicio hasta escaneo QR llegada */}
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Supervisor</div>
               <div className="text-xs text-muted-foreground leading-tight">llegada</div>
@@ -502,7 +551,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               </div>
             </div>
             
-            {/* 5. Supervisor salida: Desde QR llegada hasta QR salida */}
+            {/* 4. Supervisor salida: Desde QR llegada hasta QR salida */}
             <div>
               <div className="text-xs text-muted-foreground leading-tight">Supervisor</div>
               <div className="text-xs text-muted-foreground leading-tight">salida</div>
