@@ -44,6 +44,7 @@ import { useSupabasePatrullas } from "@/hooks/useSupabasePatrullas";
 import CronometroAlarma from "@/components/alarmas/CronometroAlarma";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useSupabaseMinutaOperaciones } from "@/hooks/useSupabaseMinutaOperaciones";
 
 interface ClienteFormData {
   id_numerico: string;
@@ -104,6 +105,10 @@ const CentralAlarmasOperador = () => {
     contacto_alarma: ''
   });
   
+  // Estados para la minuta
+  const [nuevaEntradaMinuta, setNuevaEntradaMinuta] = useState("");
+  const [tipoEntradaMinuta, setTipoEntradaMinuta] = useState<'general' | 'cambio_turno' | 'consigna' | 'incidente' | 'mantenimiento'>('general');
+  
   // Cargar turnos desde la base de datos
   const { turnosOperador, turnosSupervisor, loading: turnosSupabaseLoading } = useSupabaseTurnos();
 
@@ -113,6 +118,9 @@ const CentralAlarmasOperador = () => {
   // Hooks para generación de alarmas
   const { clientes, loading: clientesLoading, addCliente } = useSupabaseClientes();
   const { addLlamada } = useSupabaseLlamadas();
+  
+  // Hook para la minuta de operaciones
+  const { entradas: minutaEntradas, loading: minutaLoading, addEntrada: addMinutaEntrada } = useSupabaseMinutaOperaciones();
 
   // Hook para servicios activos (alarmas enhanced)
   const { 
@@ -536,6 +544,31 @@ const CentralAlarmasOperador = () => {
       }
     };
   }, []);
+  
+  // Función para agregar entrada a la minuta
+  const handleAgregarMinuta = async () => {
+    if (!nuevaEntradaMinuta.trim()) {
+      toast({
+        title: "Error",
+        description: "Debe escribir el contenido de la entrada",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await addMinutaEntrada({
+        tipo_entrada: tipoEntradaMinuta,
+        contenido: nuevaEntradaMinuta,
+        prioridad: tipoEntradaMinuta === 'incidente' ? 'alta' : 'normal'
+      });
+      
+      setNuevaEntradaMinuta("");
+      setTipoEntradaMinuta('general');
+    } catch (error) {
+      console.error('Error al agregar entrada a minuta:', error);
+    }
+  };
 
   const handleSubmitCliente = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -894,57 +927,68 @@ const CentralAlarmasOperador = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2 mb-4">
+            <Select value={tipoEntradaMinuta} onValueChange={(value: any) => setTipoEntradaMinuta(value)}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Tipo de entrada" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">General</SelectItem>
+                <SelectItem value="cambio_turno">Cambio de Turno</SelectItem>
+                <SelectItem value="consigna">Consigna</SelectItem>
+                <SelectItem value="incidente">Incidente</SelectItem>
+                <SelectItem value="mantenimiento">Mantenimiento</SelectItem>
+              </SelectContent>
+            </Select>
             <Input 
               placeholder="Escribir nueva entrada en la minuta..."
               className="flex-1"
+              value={nuevaEntradaMinuta}
+              onChange={(e) => setNuevaEntradaMinuta(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleAgregarMinuta()}
             />
-            <Button>
+            <Button onClick={handleAgregarMinuta} disabled={!nuevaEntradaMinuta.trim()}>
               <Plus className="h-4 w-4 mr-2" />
               Agregar
             </Button>
           </div>
           
           <div className="max-h-64 overflow-y-auto space-y-2">
-            {/* Entradas de ejemplo - estas vendrían de la base de datos */}
-            <div className="border rounded-lg p-3 bg-muted/50">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-medium">{user?.email || 'Operador'}</span>
-                <span className="text-xs text-muted-foreground">
-                  {format(new Date(), "HH:mm:ss")}
-                </span>
+            {minutaLoading ? (
+              <div className="text-center py-4 text-muted-foreground">
+                Cargando entradas...
               </div>
-              <p className="text-sm">Inicio de turno - Revisión de sistemas operativos</p>
-            </div>
-            
-            <div className="border rounded-lg p-3 bg-muted/50">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-medium">{user?.email || 'Operador'}</span>
-                <span className="text-xs text-muted-foreground">
-                  {format(new Date(Date.now() - 300000), "HH:mm:ss")}
-                </span>
+            ) : minutaEntradas.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                No hay entradas en la minuta
               </div>
-              <p className="text-sm">Alarma generada para cliente XYZ - Tipo: Intrusión</p>
-            </div>
-            
-            <div className="border rounded-lg p-3 bg-muted/50">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-medium">Supervisor</span>
-                <span className="text-xs text-muted-foreground">
-                  {format(new Date(Date.now() - 600000), "HH:mm:ss")}
-                </span>
-              </div>
-              <p className="text-sm">Patrulla 101 asignada a servicio en Zona Norte</p>
-            </div>
-            
-            <div className="border rounded-lg p-3 bg-muted/50">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-medium">Sistema</span>
-                <span className="text-xs text-muted-foreground">
-                  {format(new Date(Date.now() - 900000), "HH:mm:ss")}
-                </span>
-              </div>
-              <p className="text-sm">Conexión establecida con central de monitoreo</p>
-            </div>
+            ) : (
+              minutaEntradas.map((entrada) => (
+                <div key={entrada.id} className="border rounded-lg p-3 bg-muted/50">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{entrada.usuario_nombre}</span>
+                      <Badge 
+                        variant={entrada.tipo_entrada === 'incidente' ? 'destructive' : 
+                                entrada.tipo_entrada === 'cambio_turno' ? 'default' : 
+                                entrada.tipo_entrada === 'consigna' ? 'secondary' : 'outline'}
+                        className="text-xs"
+                      >
+                        {entrada.tipo_entrada.replace('_', ' ').toUpperCase()}
+                      </Badge>
+                      {entrada.prioridad === 'alta' && (
+                        <Badge variant="destructive" className="text-xs">
+                          ALTA
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(entrada.created_at), "HH:mm:ss")}
+                    </span>
+                  </div>
+                  <p className="text-sm">{entrada.contenido}</p>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

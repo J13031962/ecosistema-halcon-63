@@ -589,6 +589,39 @@ export type Database = {
         }
         Relationships: []
       }
+      minuta_operaciones: {
+        Row: {
+          contenido: string
+          created_at: string
+          id: string
+          prioridad: string | null
+          tipo_entrada: string
+          turno: string | null
+          usuario_id: string | null
+          usuario_nombre: string
+        }
+        Insert: {
+          contenido: string
+          created_at?: string
+          id?: string
+          prioridad?: string | null
+          tipo_entrada?: string
+          turno?: string | null
+          usuario_id?: string | null
+          usuario_nombre: string
+        }
+        Update: {
+          contenido?: string
+          created_at?: string
+          id?: string
+          prioridad?: string | null
+          tipo_entrada?: string
+          turno?: string | null
+          usuario_id?: string | null
+          usuario_nombre?: string
+        }
+        Relationships: []
+      }
       observaciones_alarmas: {
         Row: {
           alarma_id: string
