@@ -881,6 +881,74 @@ const CentralAlarmasOperador = () => {
         </CardContent>
       </Card>
 
+      {/* Sección de Minuta/Log de Operaciones */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Minuta de Operaciones
+          </CardTitle>
+          <CardDescription>
+            Registro de eventos y actividades en tiempo real
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2 mb-4">
+            <Input 
+              placeholder="Escribir nueva entrada en la minuta..."
+              className="flex-1"
+            />
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar
+            </Button>
+          </div>
+          
+          <div className="max-h-64 overflow-y-auto space-y-2">
+            {/* Entradas de ejemplo - estas vendrían de la base de datos */}
+            <div className="border rounded-lg p-3 bg-muted/50">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-sm font-medium">{user?.email || 'Operador'}</span>
+                <span className="text-xs text-muted-foreground">
+                  {format(new Date(), "HH:mm:ss")}
+                </span>
+              </div>
+              <p className="text-sm">Inicio de turno - Revisión de sistemas operativos</p>
+            </div>
+            
+            <div className="border rounded-lg p-3 bg-muted/50">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-sm font-medium">{user?.email || 'Operador'}</span>
+                <span className="text-xs text-muted-foreground">
+                  {format(new Date(Date.now() - 300000), "HH:mm:ss")}
+                </span>
+              </div>
+              <p className="text-sm">Alarma generada para cliente XYZ - Tipo: Intrusión</p>
+            </div>
+            
+            <div className="border rounded-lg p-3 bg-muted/50">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-sm font-medium">Supervisor</span>
+                <span className="text-xs text-muted-foreground">
+                  {format(new Date(Date.now() - 600000), "HH:mm:ss")}
+                </span>
+              </div>
+              <p className="text-sm">Patrulla 101 asignada a servicio en Zona Norte</p>
+            </div>
+            
+            <div className="border rounded-lg p-3 bg-muted/50">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-sm font-medium">Sistema</span>
+                <span className="text-xs text-muted-foreground">
+                  {format(new Date(Date.now() - 900000), "HH:mm:ss")}
+                </span>
+              </div>
+              <p className="text-sm">Conexión establecida con central de monitoreo</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Estadísticas del operador */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
