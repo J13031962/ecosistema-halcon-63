@@ -221,47 +221,6 @@ const CentralAlarmasOperador = () => {
       </Card>
 
 
-      {/* Calendario de turnos */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Calendario de Turnos</CardTitle>
-              <CardDescription>
-                Gestión de turnos del operador
-              </CardDescription>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setMostrarCalendarioTurnos(!mostrarCalendarioTurnos)}
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              {mostrarCalendarioTurnos ? 'Ocultar' : 'Ver'} Calendario
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            Haz clic en "Ver Calendario" para consultar los turnos programados del equipo.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Calendario de turnos (solo visualización) */}
-      {mostrarCalendarioTurnos && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Calendario de Turnos del Equipo</CardTitle>
-            <CardDescription>
-              Visualización de los turnos programados (solo lectura)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CalendarioTurnosGenerados />
-          </CardContent>
-        </Card>
-      )}
 
     </div>
   );
