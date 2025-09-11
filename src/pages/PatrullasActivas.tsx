@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSupabasePatrullas } from "@/hooks/useSupabasePatrullas";
 import { useSupabaseAlarmasEnhanced } from "@/hooks/useSupabaseAlarmasEnhanced";
+import { useServiciosTecnicos } from "@/hooks/useServiciosTecnicos";
+import { useSupabaseSupervisores } from "@/hooks/useSupabaseSupervisores";
 import CronometroAlarma from "@/components/alarmas/CronometroAlarma";
+import ServicioPendienteCard from "@/components/servicios-tecnicos/ServicioPendienteCard";
+import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorModal";
 import { useToast } from "@/hooks/use-toast";
 import { Car, MapPin, Clock, Search, Filter, Download, Shield, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
@@ -13,12 +17,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 const PatrullasActivas = () => {
   const { patrullas, loading: patrullasLoading, updatePatrulla } = useSupabasePatrullas();
-  const { alarmas, resolverAlarma } = useSupabaseAlarmasEnhanced();
+  const { alarmas, resolverAlarma, asignarPatrulla } = useSupabaseAlarmasEnhanced();
+  const { servicios, loading: serviciosLoading } = useServiciosTecnicos();
+  const { supervisores: supervisoresFromHook } = useSupabaseSupervisores();
   const { toast } = useToast();
   const [realtimeAlarmas, setRealtimeAlarmas] = useState(alarmas);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedAlarmaForAssign, setSelectedAlarmaForAssign] = useState<any>(null);
+  const [lastAssignedTimes, setLastAssignedTimes] = useState<Record<string, number>>({});
   
   // Filtrar solo supervisores (que tienen patrullas asignadas)
-  const supervisores = patrullas.filter(p => p.supervisor_nombre);
+  const supervisoresPatrulla = patrullas.filter(p => p.supervisor_nombre);
   
   // Alarmas ordenadas por hora de creación (más recientes primero)
   const alarmasOrdenadas = React.useMemo(() => {
@@ -34,6 +43,17 @@ const PatrullasActivas = () => {
 
   // Alarmas pendientes ordenadas por tiempo
   const alarmasPendientes = alarmasOrdenadas.filter(a => a.estado === 'activa');
+  
+  // Servicios pendientes de asignación
+  const serviciosPendientes = servicios.filter(s => s.estado === 'pendiente');
+  
+  // Supervisores disponibles (no han sido asignados en los últimos 6 minutos)
+  const supervisoresDisponibles = supervisoresFromHook.filter(supervisor => {
+    const lastAssigned = lastAssignedTimes[supervisor.id];
+    if (!lastAssigned) return true;
+    const minutosTranscurridos = (Date.now() - lastAssigned) / (1000 * 60);
+    return minutosTranscurridos >= 6;
+  });
 
   // Historial de asignaciones completadas
   const historialAsignaciones = alarmasOrdenadas.filter(a => 
@@ -125,6 +145,39 @@ const PatrullasActivas = () => {
     }
   };
 
+  // Función para abrir modal de asignación
+  const handleOpenAssignModal = (alarmaData: any) => {
+    setSelectedAlarmaForAssign(alarmaData);
+    setShowAssignModal(true);
+  };
+
+  // Función para asignar supervisor
+  const handleAssignSupervisor = async (alarmaId: string, supervisorData: { supervisor_id: string; supervisor_nombre: string; patrulla_asignada: string }) => {
+    try {
+      // Obtener información del usuario actual para despachador
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      await asignarPatrulla(alarmaId, {
+        supervisor: supervisorData.supervisor_nombre,
+        patrulla_asignada: supervisorData.patrulla_asignada,
+        despachador_id: user?.id || '',
+        despachador_nombre: user?.email || 'Despachador'
+      });
+
+      // Registrar el tiempo de asignación para el supervisor
+      setLastAssignedTimes(prev => ({
+        ...prev,
+        [supervisorData.supervisor_id]: Date.now()
+      }));
+
+      setShowAssignModal(false);
+      setSelectedAlarmaForAssign(null);
+    } catch (error) {
+      console.error('Error al asignar supervisor:', error);
+      throw error;
+    }
+  };
+
   const getStatusColor = (estado: string) => {
     switch (estado?.toLowerCase()) {
       case "disponible": return "secondary";
@@ -135,7 +188,7 @@ const PatrullasActivas = () => {
     }
   };
 
-  if (patrullasLoading) {
+  if (patrullasLoading || serviciosLoading) {
     return (
       <div className="space-y-6">
         <div className="animate-pulse space-y-4">
@@ -166,7 +219,7 @@ const PatrullasActivas = () => {
             <Car className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{supervisores.length}</div>
+            <div className="text-2xl font-bold text-blue-600">{supervisoresPatrulla.length}</div>
           </CardContent>
         </Card>
         
@@ -177,7 +230,7 @@ const PatrullasActivas = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {supervisores.filter(s => s.estado === 'en servicio').length}
+              {supervisoresPatrulla.filter(s => s.estado === 'en servicio').length}
             </div>
           </CardContent>
         </Card>
@@ -189,7 +242,7 @@ const PatrullasActivas = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {supervisores.filter(s => s.estado === 'disponible').length}
+              {supervisoresPatrulla.filter(s => s.estado === 'disponible').length}
             </div>
           </CardContent>
         </Card>
@@ -240,34 +293,74 @@ const PatrullasActivas = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {alarmasPendientes.length === 0 ? (
+            {/* Alarmas pendientes */}
+            {alarmasPendientes.length === 0 && serviciosPendientes.length === 0 ? (
               <div className="col-span-full text-center py-8 text-muted-foreground">
                 <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <h3 className="text-lg font-medium mb-2">No hay servicios pendientes</h3>
                 <p>Los servicios pendientes de asignación aparecerán aquí</p>
               </div>
             ) : (
-              alarmasPendientes.map((alarma) => (
-                <CronometroAlarma
-                  key={alarma.id}
-                  alarmaId={alarma.id}
-                  tipo={alarma.tipo}
-                  cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
-                  direccion={alarma.direccion}
-                  municipio={alarma.municipio}
-                  telefono={alarma.clientes?.telefono}
-                  prioridad={alarma.prioridad}
-                  estado={alarma.estado as any}
-                  created_at={alarma.created_at}
-                  attended_at={alarma.attended_at || undefined}
-                  tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
-                  tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
-                  tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
-                  supervisor={alarma.supervisor || undefined}
-                  patrulla_asignada={alarma.patrulla_asignada || undefined}
-                  showCancelButton={false}
-                />
-              ))
+              <>
+                {/* Alarmas pendientes */}
+                {alarmasPendientes.map((alarma) => (
+                  <CronometroAlarma
+                    key={`alarma-${alarma.id}`}
+                    alarmaId={alarma.id}
+                    tipo={alarma.tipo}
+                    cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
+                    direccion={alarma.direccion}
+                    municipio={alarma.municipio}
+                    telefono={alarma.clientes?.telefono}
+                    prioridad={alarma.prioridad}
+                    estado={alarma.estado as any}
+                    created_at={alarma.created_at}
+                    attended_at={alarma.attended_at || undefined}
+                    tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                    tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
+                    tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
+                    supervisor={alarma.supervisor || undefined}
+                    patrulla_asignada={alarma.patrulla_asignada || undefined}
+                    showCancelButton={false}
+                    onSelect={() => handleOpenAssignModal({
+                      id: alarma.id,
+                      tipo: alarma.tipo,
+                      cliente: alarma.clientes?.nombre || 'Cliente no especificado',
+                      direccion: alarma.direccion,
+                      prioridad: alarma.prioridad,
+                      created_at: alarma.created_at
+                    })}
+                  />
+                ))}
+                
+                {/* Servicios técnicos pendientes */}
+                {serviciosPendientes.map((servicio) => (
+                  <ServicioPendienteCard
+                    key={`servicio-${servicio.id}`}
+                    servicioId={servicio.id}
+                    tipo={servicio.tipo_servicio}
+                    cliente={servicio.cliente_razon_social}
+                    direccion={servicio.cliente_direccion}
+                    telefono={servicio.cliente_telefono || undefined}
+                    prioridad={servicio.prioridad}
+                    estado={servicio.estado as any}
+                    created_at={servicio.created_at}
+                    fecha_aceptacion={servicio.fecha_aceptacion || undefined}
+                    fecha_inicio={servicio.fecha_inicio || undefined}
+                    fecha_finalizacion={servicio.fecha_finalizacion || undefined}
+                    onAssignSupervisor={() => handleOpenAssignModal({
+                      id: servicio.id,
+                      tipo: servicio.tipo_servicio,
+                      cliente: servicio.cliente_razon_social,
+                      direccion: servicio.cliente_direccion,
+                      prioridad: servicio.prioridad,
+                      created_at: servicio.created_at,
+                      isService: true
+                    })}
+                    showAssignButton={true}
+                  />
+                ))}
+              </>
             )}
           </div>
         </CardContent>
