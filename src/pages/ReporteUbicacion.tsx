@@ -8,6 +8,7 @@ import { useSupabaseSupervisores } from '@/hooks/useSupabaseSupervisores';
 import { useSupabaseAlarmasEnhanced } from '@/hooks/useSupabaseAlarmasEnhanced';
 import { useAuthConsolidated } from '@/hooks/useAuthConsolidated';
 import { format } from 'date-fns';
+import SupervisorMap from '@/components/map/SupervisorMap';
 
 interface SupervisorLocation {
   id: string;
@@ -258,7 +259,7 @@ const ReporteUbicacion = () => {
         <TabsList>
           <TabsTrigger value="eventos">Eventos Activos</TabsTrigger>
           <TabsTrigger value="lista">Lista de Supervisores</TabsTrigger>
-          <TabsTrigger value="mapa">Mapa (Próximamente)</TabsTrigger>
+          <TabsTrigger value="mapa">Mapa Interactivo</TabsTrigger>
         </TabsList>
 
         <TabsContent value="eventos">
@@ -412,64 +413,19 @@ const ReporteUbicacion = () => {
         <TabsContent value="mapa">
           <Card>
             <CardHeader>
-              <CardTitle>Mapa Interactivo</CardTitle>
+              <CardTitle>Mapa de Supervisores en Tiempo Real</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Ubicación en tiempo real de todos los supervisores motorizados
+              </p>
             </CardHeader>
             <CardContent>
-              <div className="relative">
-                {/* Contenedor del mapa simulado */}
-                <div className="w-full h-96 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center relative overflow-hidden">
-                  {/* Fondo del mapa estilo Google Maps */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-green-100 via-blue-50 to-gray-100"></div>
-                  
-                  {/* Icono de moto azul en el centro - más realista */}
-                  <div className="relative z-10 flex flex-col items-center">
-                    <div className="bg-blue-600 p-3 rounded-full shadow-lg mb-2 relative">
-                      {/* Usar emoji de moto en lugar del icono simple */}
-                      <span className="text-2xl">🏍️</span>
-                      {/* Punto de ubicación pequeño */}
-                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-red-500 border-2 border-white rounded-full"></div>
-                    </div>
-                    <div className="bg-white px-3 py-1 rounded-lg shadow-md border">
-                      <span className="text-sm font-medium text-blue-600">Supervisor Motorizado</span>
-                    </div>
-                  </div>
-                  
-                  {/* Indicador de ubicación */}
-                  <div className="absolute top-4 left-4 bg-white px-3 py-2 rounded-lg shadow-md">
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="h-4 w-4 text-blue-500" />
-                      <span className="font-medium">Medellín, Colombia</span>
-                    </div>
-                  </div>
-                  
-                  {/* Botón para abrir en Google Maps */}
-                  <div className="absolute bottom-4 right-4">
-                    <Button 
-                      onClick={() => window.open('https://www.google.com/maps/@6.1760461,-75.5625925,15z?entry=ttu&g_ep=EgoyMDI1MDkwOC4wIKXMDSoASAFQAw%3D%3D', '_blank')}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Ver en Google Maps
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="text-center py-4">
-                  <h3 className="text-lg font-medium mb-2">Mapa en Desarrollo</h3>
-                  <p className="text-muted-foreground mb-4">
-                    El mapa interactivo estará disponible próximamente con:
-                  </p>
-                  <ul className="text-sm text-muted-foreground space-y-1 max-w-md mx-auto">
-                    <li>• Ubicación en tiempo real de supervisores</li>
-                    <li>• Marcadores con código de colores por estado</li>
-                    <li>• Rutas de desplazamiento</li>
-                    <li>• Información detallada en popups</li>
-                  </ul>
-                  <p className="text-xs text-muted-foreground mt-4">
-                    Por ahora, usa la pestaña "Eventos Activos" para ver el recorrido en Google Maps
-                  </p>
-                </div>
-              </div>
+              <SupervisorMap 
+                supervisores={supervisoresUbicacion}
+                onSupervisorClick={(supervisor) => {
+                  // Mostrar más información del supervisor
+                  console.log('Supervisor seleccionado:', supervisor);
+                }}
+              />
             </CardContent>
           </Card>
         </TabsContent>
