@@ -514,7 +514,7 @@ const GenerarAlarma = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2">
                     <Button 
                       onClick={() => openAlarmModal(clienteEncontrado)}
                       className="bg-green-600 hover:bg-green-700"
