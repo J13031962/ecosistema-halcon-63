@@ -215,16 +215,21 @@ const PatrullasActivas = () => {
       
       if (selectedAlarmaForAssign?.isService) {
         // Es un servicio técnico - actualizar directamente
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('servicios_tecnicos_asignados')
           .update({
             tecnico_id: supervisorData.supervisor_id,
             estado: 'aceptado',
             fecha_aceptacion: now
           })
-          .eq('id', alarmaId);
+          .eq('id', alarmaId)
+          .select('*')
+          .single();
         
         if (error) throw error;
+        
+        // Actualización optimista para servicios técnicos
+        console.log('🔄 Servicio técnico asignado:', data);
       } else {
         // Es una alarma
         const result = await asignarPatrulla(alarmaId, {

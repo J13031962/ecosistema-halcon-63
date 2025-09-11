@@ -48,22 +48,9 @@ export const useServiciosTecnicos = () => {
     try {
       console.log('🔍 Fetching servicios técnicos...');
       
-      // Obtener el usuario actual
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('👤 Usuario actual en fetch:', user?.id);
-      
-      // Solo hacer la consulta si tenemos un usuario válido
-      if (!user?.id) {
-        console.log('❌ No hay usuario autenticado');
-        setServicios([]);
-        setLoading(false);
-        return;
-      }
-      
       const { data, error } = await supabase
         .from('servicios_tecnicos_asignados')
         .select('*')
-        .eq('tecnico_id', user.id) // Filtrar por el usuario actual
         .order('fecha_asignacion', { ascending: false });
 
       console.log('📊 Servicios data:', data);
