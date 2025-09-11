@@ -137,7 +137,7 @@ const TurnosOperador = () => {
       )}
 
       <Tabs defaultValue="calendar" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="calendar" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Calendario de Turnos
@@ -146,84 +146,21 @@ const TurnosOperador = () => {
             <Eye className="h-4 w-4" />
             Resumen de Horas
           </TabsTrigger>
-          <TabsTrigger value="generated" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Turnos Generados
-          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="calendar" className="mt-6">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Mis Turnos
-                </CardTitle>
-              </div>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Turnos Generados por Dirección Central
+              </CardTitle>
+              <CardDescription>
+                Consulta los turnos generados automáticamente por la dirección central
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <p>Cargando turnos...</p>
-              ) : error ? (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Error al cargar turnos: {error}
-                  </AlertDescription>
-                </Alert>
-              ) : misTurnos.length > 0 ? (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      Tienes {misTurnos.length} turnos programados en total.
-                    </p>
-                    <div className="text-xs text-muted-foreground">
-                      Próximo turno: {misTurnos.length > 0 ? 
-                        new Date(Math.min(...misTurnos.map(t => new Date(t.fecha).getTime()))).toLocaleDateString() : 
-                        'No programado'
-                      }
-                    </div>
-                  </div>
-                  <CalendarioTurnosPersonal
-                    turnos={misTurnos.map(turno => ({
-                      id: turno.id?.toString() || '',
-                      fecha: new Date(turno.fecha),
-                      operador_id: turno.operador_id || '',
-                      operador_nombre: turno.operador_nombre || `Operador ${turno.operador_id}`,
-                      hora_inicio: turno.horario_inicio || '08:00',
-                      hora_fin: turno.horario_fin || '16:00',
-                      tipo: (turno.turno === 'nocturno' ? 'nocturno' : 'diurno') as 'diurno' | 'nocturno',
-                      horas_diurnas: 8,
-                      horas_nocturnas: turno.turno === 'nocturno' ? 8 : 0,
-                      horas_domingo: 0,
-                      horas_feriado: 0,
-                      horas_extra: 0,
-                      total_horas: 8,
-                      es_domingo: false,
-                      es_feriado: false
-                    }))}
-                    onEditTurno={(turno) => {
-                      console.log('Ver detalles del turno:', turno);
-                    }}
-                    selectedWeek={selectedWeek}
-                    onWeekChange={setSelectedWeek}
-                  />
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <AlertCircle className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500 font-medium">No tienes turnos asignados</p>
-                  <p className="text-sm text-gray-400 mt-2">
-                    Los turnos aparecerán aquí cuando sean asignados por el administrador.
-                  </p>
-                  {currentUser && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      Usuario actual: {currentUser.email}
-                    </p>
-                  )}
-                </div>
-              )}
+              <CalendarioTurnosGenerados />
             </CardContent>
           </Card>
         </TabsContent>
@@ -326,23 +263,6 @@ const TurnosOperador = () => {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        <TabsContent value="generated" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Turnos Generados por Dirección Central
-              </CardTitle>
-              <CardDescription>
-                Consulta los turnos generados automáticamente por la dirección central (solo lectura)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CalendarioTurnosGenerados />
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
