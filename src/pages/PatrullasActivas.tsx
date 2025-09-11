@@ -219,6 +219,7 @@ const PatrullasActivas = () => {
         // Es una alarma
         const result = await asignarPatrulla(alarmaId, {
           supervisor: supervisorData.supervisor_nombre,
+          supervisor_id: supervisorData.supervisor_id,
           patrulla_asignada: supervisorData.patrulla_asignada,
           despachador_id: user?.id || '',
           despachador_nombre: user?.email || 'Despachador'
@@ -230,6 +231,7 @@ const PatrullasActivas = () => {
           ...a,
           estado: 'asignada',
           supervisor: supervisorData.supervisor_nombre,
+          supervisor_id: supervisorData.supervisor_id,
           patrulla_asignada: supervisorData.patrulla_asignada,
           tiempo_asignacion_supervisor: now
         } : a));

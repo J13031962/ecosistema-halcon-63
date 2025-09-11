@@ -71,7 +71,7 @@ export function AsignarSupervisorModal({
       console.error('Error al asignar supervisor:', error);
       toast({
         title: "Error en asignación",
-        description: "No se pudo asignar el supervisor a la alarma",
+        description: (error as any)?.message || "No se pudo asignar el supervisor a la alarma",
         variant: "destructive"
       });
     } finally {

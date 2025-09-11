@@ -53,6 +53,7 @@ interface CreateAlarmaData {
 interface AsignacionPatrullaData {
   patrulla_asignada: string;
   supervisor: string;
+  supervisor_id?: string;
   despachador_id: string;
   despachador_nombre: string;
 }
@@ -198,6 +199,7 @@ export const useSupabaseAlarmasEnhanced = () => {
         .from('alarmas')
         .update({
           ...asignacionData,
+          supervisor_id: asignacionData.supervisor_id || null,
           estado: 'asignada',
           tiempo_asignacion_supervisor: now // Cronómetro 1: "Aceptación Despachador" se detiene aquí
         })
