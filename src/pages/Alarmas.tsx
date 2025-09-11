@@ -1,29 +1,82 @@
-import { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Clock, MapPin, User, Phone, CheckCircle, Siren } from "lucide-react";
-import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
-import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AlertTriangle, Clock, MapPin, User, Phone, CheckCircle, Siren, History, Search, Filter, Download, CalendarIcon } from "lucide-react";
+import { useSupabaseAlarmasEnhanced } from "@/hooks/useSupabaseAlarmasEnhanced";
+import { format, differenceInSeconds, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { es } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 
 const Alarmas = () => {
   const { user } = useAuthConsolidated();
-  const { alarmas, loading } = useSupabaseAlarmas();
+  const { alarmas, loading } = useSupabaseAlarmasEnhanced();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [supervisorFilter, setSupervisorFilter] = useState("todos");
+  const [prioridadFilter, setPrioridadFilter] = useState("todas");
   const [filtroEstado, setFiltroEstado] = useState("todas");
-  const [filtroPrioridad, setFiltroPrioridad] = useState("todas");
-  const [busqueda, setBusqueda] = useState("");
+  const [fechaInicio, setFechaInicio] = useState<Date | undefined>();
+  const [fechaFin, setFechaFin] = useState<Date | undefined>();
+
+  // Obtener lista única de supervisores
+  const supervisores = useMemo(() => {
+    const supervisoresUnicos = Array.from(
+      new Set(alarmas.map(a => a.supervisor).filter(Boolean))
+    );
+    return supervisoresUnicos.sort();
+  }, [alarmas]);
+
+  const formatTiempo = (segundos: number) => {
+    const horas = Math.floor(segundos / 3600);
+    const minutos = Math.floor((segundos % 3600) / 60);
+    const segs = segundos % 60;
+    
+    if (horas > 0) {
+      return `${horas}:${minutos.toString().padStart(2, '0')}:${segs.toString().padStart(2, '0')}`;
+    }
+    return `${minutos}:${segs.toString().padStart(2, '0')}`;
+  };
+
+  const calcularTiempos = (servicio: any) => {
+    const fechaCreacion = new Date(servicio.created_at);
+    const fechaTomaDespachador = servicio.tiempo_toma_despachador ? new Date(servicio.tiempo_toma_despachador) : null;
+    const fechaAsignacion = servicio.tiempo_asignacion_supervisor ? new Date(servicio.tiempo_asignacion_supervisor) : null;
+    const fechaAceptacion = servicio.tiempo_aceptacion_supervisor ? new Date(servicio.tiempo_aceptacion_supervisor) : null;
+    const fechaLlegada = servicio.tiempo_primera_lectura_qr ? new Date(servicio.tiempo_primera_lectura_qr) : null;
+    const fechaSalida = servicio.tiempo_segunda_lectura_qr ? new Date(servicio.tiempo_segunda_lectura_qr) : null;
+
+    return {
+      // 1. Aceptación Despachador: Desde creación hasta clic en alarma
+      aceptacionDespachador: fechaTomaDespachador ? differenceInSeconds(fechaTomaDespachador, fechaCreacion) : 0,
+      
+      // 2. Despachador envío: Desde clic en alarma hasta asignación de supervisor
+      despachadorEnvio: fechaTomaDespachador && fechaAsignacion ? differenceInSeconds(fechaAsignacion, fechaTomaDespachador) : 0,
+      
+      // 3. Supervisor aceptación: Desde asignación hasta que supervisor acepta
+      supervisorAceptacion: fechaAsignacion && fechaAceptacion ? differenceInSeconds(fechaAceptacion, fechaAsignacion) : 0,
+      
+      // 4. Supervisor llegada: Desde aceptación hasta primer QR (llegada)
+      supervisorLlegada: fechaAceptacion && fechaLlegada ? differenceInSeconds(fechaLlegada, fechaAceptacion) : 0,
+      
+      // 5. Supervisor salida: Desde primer QR hasta segundo QR (salida)
+      supervisorSalida: fechaLlegada && fechaSalida ? differenceInSeconds(fechaSalida, fechaLlegada) : 0,
+      
+      // Tiempo Total: Desde creación hasta finalización
+      tiempoTotal: fechaSalida ? differenceInSeconds(fechaSalida, fechaCreacion) : 0
+    };
+  };
 
   const getPriorityColor = (prioridad: string) => {
     switch (prioridad) {
-      case "crítica": return "bg-red-100 text-red-800 border-red-200";
-      case "alta": return "bg-orange-100 text-orange-800 border-orange-200";
-      case "media": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "baja": return "bg-green-100 text-green-800 border-green-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+      case 'alta': return 'destructive';
+      case 'media': return 'default';
+      case 'baja': return 'secondary';
+      default: return 'outline';
     }
   };
 
@@ -37,18 +90,103 @@ const Alarmas = () => {
     }
   };
 
-  const alarmasFiltradas = alarmas.filter(alarma => {
-    const matchesEstado = filtroEstado === "todas" || alarma.estado === filtroEstado;
-    const matchesPrioridad = filtroPrioridad === "todas" || alarma.prioridad === filtroPrioridad;
-    const matchesBusqueda = (alarma.clientes?.nombre || '').toLowerCase().includes(busqueda.toLowerCase()) ||
-                           (alarma.direccion || '').toLowerCase().includes(busqueda.toLowerCase());
-    return matchesEstado && matchesPrioridad && matchesBusqueda;
-  });
+  // Aplicar filtros
+  const alarmasFiltradas = useMemo(() => {
+    return alarmas.filter(alarma => {
+      // Filtro de búsqueda
+      const matchesSearch = !searchTerm || 
+        alarma.clientes?.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        alarma.direccion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        alarma.tipo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        alarma.supervisor?.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const totalAlarmas = alarmas.length;
-  const alarmasActivas = alarmas.filter(a => a.estado === "activa").length;
-  const alarmasEnProceso = alarmas.filter(a => a.estado === "en_proceso").length;
-  const alarmasResueltas = alarmas.filter(a => a.estado === "resuelta").length;
+      // Filtro de supervisor
+      const matchesSupervisor = supervisorFilter === "todos" || alarma.supervisor === supervisorFilter;
+
+      // Filtro de prioridad
+      const matchesPrioridad = prioridadFilter === "todas" || alarma.prioridad === prioridadFilter;
+
+      // Filtro de estado
+      const matchesEstado = filtroEstado === "todas" || alarma.estado === filtroEstado;
+
+      // Filtro de fechas
+      let matchesFecha = true;
+      if (fechaInicio && fechaFin) {
+        const fechaAlarma = new Date(alarma.created_at);
+        matchesFecha = isWithinInterval(fechaAlarma, {
+          start: startOfDay(fechaInicio),
+          end: endOfDay(fechaFin)
+        });
+      }
+
+      return matchesSearch && matchesSupervisor && matchesPrioridad && matchesEstado && matchesFecha;
+    });
+  }, [alarmas, searchTerm, supervisorFilter, prioridadFilter, filtroEstado, fechaInicio, fechaFin]);
+
+  // Ordenar por fecha más reciente
+  const alarmasOrdenadas = useMemo(() => {
+    return [...alarmasFiltradas].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }, [alarmasFiltradas]);
+
+  const totalAlarmas = alarmasFiltradas.length;
+  const alarmasActivas = alarmasFiltradas.filter(a => a.estado === "activa").length;
+  const alarmasEnProceso = alarmasFiltradas.filter(a => a.estado === "en_proceso").length;
+  const alarmasResueltas = alarmasFiltradas.filter(a => a.estado === "resuelta").length;
+
+  const exportarCSV = () => {
+    const headers = [
+      'Fecha/Hora',
+      'Tipo',
+      'Cliente',
+      'Dirección',
+      'Prioridad',
+      'Estado',
+      'Supervisor',
+      'Patrulla',
+      'Aceptación Despachador (min)',
+      'Despachador Envío (min)',
+      'Supervisor Aceptación (min)',
+      'Supervisor Llegada (min)',
+      'Supervisor Salida (min)',
+      'Tiempo Total (min)'
+    ];
+
+    const rows = alarmasOrdenadas.map(alarma => {
+      const tiempos = calcularTiempos(alarma);
+      return [
+        format(new Date(alarma.created_at), 'dd/MM/yyyy HH:mm:ss'),
+        alarma.tipo,
+        alarma.clientes?.nombre || 'N/A',
+        alarma.direccion || 'N/A',
+        alarma.prioridad,
+        alarma.estado,
+        alarma.supervisor || 'N/A',
+        alarma.patrulla_asignada || 'N/A',
+        Math.round(tiempos.aceptacionDespachador / 60),
+        Math.round(tiempos.despachadorEnvio / 60),
+        Math.round(tiempos.supervisorAceptacion / 60),
+        Math.round(tiempos.supervisorLlegada / 60),
+        Math.round(tiempos.supervisorSalida / 60),
+        Math.round(tiempos.tiempoTotal / 60)
+      ];
+    });
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `historial_alarmas_${format(new Date(), 'dd-MM-yyyy')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   if (loading) {
     return (
@@ -67,15 +205,15 @@ const Alarmas = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold flex items-center gap-2">
+          <h1 className="text-3xl font-bold flex items-center gap-2">
             <Siren className="h-8 w-8 text-primary" />
             Historial de Alarmas
-          </h2>
+          </h1>
           <p className="text-muted-foreground">
-            Monitoreo y gestión de todas las alarmas del sistema
+            Monitoreo y gestión de todas las alarmas del sistema con análisis detallado de tiempos
           </p>
         </div>
         <Button onClick={() => window.location.href = '/generar-alarma'}>
@@ -84,68 +222,66 @@ const Alarmas = () => {
         </Button>
       </div>
 
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Alarmas</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalAlarmas}</div>
-            <p className="text-xs text-muted-foreground">Últimas 24 horas</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Activas</CardTitle>
-            <Clock className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{alarmasActivas}</div>
-            <p className="text-xs text-muted-foreground">Requieren atención</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En Proceso</CardTitle>
-            <User className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{alarmasEnProceso}</div>
-            <p className="text-xs text-muted-foreground">Siendo atendidas</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resueltas</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{alarmasResueltas}</div>
-            <p className="text-xs text-muted-foreground">Completadas hoy</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Filtros */}
       <Card>
         <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros de Búsqueda
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Buscar por cliente o dirección..."
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Buscar</label>
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Cliente, dirección, tipo..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
             </div>
-            <div className="w-full md:w-48">
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Supervisor</label>
+              <Select value={supervisorFilter} onValueChange={setSupervisorFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos los supervisores</SelectItem>
+                  {supervisores.map(supervisor => (
+                    <SelectItem key={supervisor} value={supervisor}>
+                      {supervisor}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Prioridad</label>
+              <Select value={prioridadFilter} onValueChange={setPrioridadFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas las prioridades</SelectItem>
+                  <SelectItem value="alta">Alta</SelectItem>
+                  <SelectItem value="media">Media</SelectItem>
+                  <SelectItem value="baja">Baja</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Estado</label>
               <Select value={filtroEstado} onValueChange={setFiltroEstado}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Estado" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todos los estados</SelectItem>
@@ -156,115 +292,296 @@ const Alarmas = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-full md:w-48">
-              <Select value={filtroPrioridad} onValueChange={setFiltroPrioridad}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Prioridad" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas las prioridades</SelectItem>
-                  <SelectItem value="crítica">Crítica</SelectItem>
-                  <SelectItem value="alta">Alta</SelectItem>
-                  <SelectItem value="media">Media</SelectItem>
-                  <SelectItem value="baja">Baja</SelectItem>
-                </SelectContent>
-              </Select>
+          </div>
+
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Fecha Inicio</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[180px] justify-start text-left font-normal",
+                      !fechaInicio && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {fechaInicio ? format(fechaInicio, "dd/MM/yyyy") : "Seleccionar"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={fechaInicio}
+                    onSelect={setFechaInicio}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Fecha Fin</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[180px] justify-start text-left font-normal",
+                      !fechaFin && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {fechaFin ? format(fechaFin, "dd/MM/yyyy") : "Seleccionar"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={fechaFin}
+                    onSelect={setFechaFin}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <Button 
+              onClick={() => {
+                setFechaInicio(undefined);
+                setFechaFin(undefined);
+                setSearchTerm("");
+                setSupervisorFilter("todos");
+                setPrioridadFilter("todas");
+                setFiltroEstado("todas");
+              }}
+              variant="outline"
+              className="h-10"
+            >
+              Limpiar Filtros
+            </Button>
+
+            <Button onClick={exportarCSV} variant="default" className="h-10">
+              <Download className="w-4 h-4 mr-2" />
+              Exportar CSV
+            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Lista de alarmas */}
+      {/* Resumen */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <History className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Total Alarmas</p>
+                <p className="text-2xl font-bold">{totalAlarmas}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Tiempo Promedio</p>
+                <p className="text-2xl font-bold">
+                  {alarmasFiltradas.length > 0 ? 
+                    formatTiempo(
+                      alarmasFiltradas.reduce((acc, s) => acc + calcularTiempos(s).tiempoTotal, 0) / alarmasFiltradas.length
+                    ) : '0:00'
+                  }
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <User className="h-5 w-5 text-purple-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Supervisores Activos</p>
+                <p className="text-2xl font-bold">{supervisores.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Resueltas</p>
+                <p className="text-2xl font-bold">{alarmasResueltas}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Lista de Alarmas */}
       <Card>
         <CardHeader>
-          <CardTitle>Alarmas Activas</CardTitle>
+          <CardTitle>Historial de Alarmas</CardTitle>
           <CardDescription>
-            Lista completa de todas las alarmas del sistema
+            {alarmasOrdenadas.length} alarmas encontradas con análisis detallado de tiempos
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Dirección</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Prioridad</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Operador</TableHead>
-                <TableHead>Patrulla</TableHead>
-                <TableHead>Fecha/Hora</TableHead>
-                <TableHead>Tiempo Resp.</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {alarmasFiltradas.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8">
-                    <div className="text-muted-foreground">
-                      <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                      <p>No se encontraron alarmas</p>
-                      <p className="text-sm">Ajusta los filtros o genera nuevas alarmas</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                alarmasFiltradas.map((alarma) => (
-                  <TableRow key={alarma.id}>
-                    <TableCell className="font-medium">
-                      {alarma.clientes?.nombre || 'Cliente no especificado'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <MapPin className="h-3 w-3 mr-1 text-muted-foreground" />
-                        {alarma.direccion || 'Sin dirección'}
+          <div className="space-y-4">
+            {alarmasOrdenadas.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">No hay alarmas que coincidan con los filtros</h3>
+                <p>Ajusta los filtros para ver más resultados</p>
+              </div>
+            ) : (
+              alarmasOrdenadas.map((alarma) => {
+                const tiempos = calcularTiempos(alarma);
+                const borderColor = alarma.estado === 'resuelta' ? 'border-l-green-500' : 
+                                  alarma.estado === 'en_proceso' ? 'border-l-yellow-500' : 
+                                  'border-l-red-500';
+                return (
+                  <Card key={alarma.id} className={`border-l-4 ${borderColor}`}>
+                    <CardContent className="p-4">
+                      <div className="space-y-4">
+                        {/* Header */}
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-bold text-lg">{alarma.tipo}</h3>
+                              <Badge variant={getPriorityColor(alarma.prioridad)}>
+                                {alarma.prioridad}
+                              </Badge>
+                              <Badge className={getStatusColor(alarma.estado)}>
+                                {alarma.estado.replace('_', ' ').toUpperCase()}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {format(new Date(alarma.created_at), 'dd/MM/yyyy HH:mm:ss')}
+                            </p>
+                          </div>
+                          {tiempos.tiempoTotal > 0 && (
+                            <div className="text-right">
+                              <p className="text-sm text-muted-foreground">Tiempo Total</p>
+                              <p className="text-2xl font-bold text-primary">
+                                {formatTiempo(tiempos.tiempoTotal)}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Cliente y Detalles */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <h4 className="font-medium">Información del Cliente</h4>
+                            <div className="space-y-1 text-sm">
+                              <p className="font-medium">{alarma.clientes?.nombre || 'Cliente no especificado'}</p>
+                              {alarma.direccion && (
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  <span>{alarma.direccion}</span>
+                                </div>
+                              )}
+                              {alarma.clientes?.telefono && (
+                                <div className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  <span>{alarma.clientes.telefono}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <h4 className="font-medium">Detalles del Servicio</h4>
+                            <div className="space-y-1 text-sm">
+                              {alarma.supervisor && (
+                                <div className="flex items-center gap-1">
+                                  <User className="h-3 w-3" />
+                                  <span>Supervisor: {alarma.supervisor}</span>
+                                </div>
+                              )}
+                              {alarma.patrulla_asignada && (
+                                <p>Patrulla: {alarma.patrulla_asignada}</p>
+                              )}
+                              {alarma.operador_nombre && (
+                                <p>Operador: {alarma.operador_nombre}</p>
+                              )}
+                              {alarma.despachador_nombre && (
+                                <p>Despachador: {alarma.despachador_nombre}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Análisis de Tiempos - Solo para alarmas con tiempos */}
+                        {(tiempos.aceptacionDespachador > 0 || tiempos.despachadorEnvio > 0 || tiempos.supervisorAceptacion > 0 || tiempos.supervisorLlegada > 0 || tiempos.supervisorSalida > 0) && (
+                          <div className="space-y-3">
+                            <h4 className="font-medium flex items-center gap-2">
+                              <Clock className="h-4 w-4" />
+                              Análisis de Tiempos
+                            </h4>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                              {tiempos.aceptacionDespachador > 0 && (
+                                <div className="bg-blue-50 border border-blue-200 rounded p-3 text-center">
+                                  <p className="text-xs text-blue-600 font-medium">Aceptación Despachador</p>
+                                  <p className="text-lg font-bold text-blue-800">{formatTiempo(tiempos.aceptacionDespachador)}</p>
+                                </div>
+                              )}
+                              {tiempos.despachadorEnvio > 0 && (
+                                <div className="bg-purple-50 border border-purple-200 rounded p-3 text-center">
+                                  <p className="text-xs text-purple-600 font-medium">Despachador Envío</p>
+                                  <p className="text-lg font-bold text-purple-800">{formatTiempo(tiempos.despachadorEnvio)}</p>
+                                </div>
+                              )}
+                              {tiempos.supervisorAceptacion > 0 && (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-center">
+                                  <p className="text-xs text-yellow-600 font-medium">Supervisor Aceptación</p>
+                                  <p className="text-lg font-bold text-yellow-800">{formatTiempo(tiempos.supervisorAceptacion)}</p>
+                                </div>
+                              )}
+                              {tiempos.supervisorLlegada > 0 && (
+                                <div className="bg-orange-50 border border-orange-200 rounded p-3 text-center">
+                                  <p className="text-xs text-orange-600 font-medium">Supervisor Llegada</p>
+                                  <p className="text-lg font-bold text-orange-800">{formatTiempo(tiempos.supervisorLlegada)}</p>
+                                </div>
+                              )}
+                              {tiempos.supervisorSalida > 0 && (
+                                <div className="bg-green-50 border border-green-200 rounded p-3 text-center">
+                                  <p className="text-xs text-green-600 font-medium">Supervisor Salida</p>
+                                  <p className="text-lg font-bold text-green-800">{formatTiempo(tiempos.supervisorSalida)}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Descripción si existe */}
+                        {alarma.descripcion && (
+                          <div className="space-y-2">
+                            <h4 className="font-medium">Descripción</h4>
+                            <p className="text-sm text-muted-foreground bg-muted p-3 rounded">
+                              {alarma.descripcion}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    </TableCell>
-                    <TableCell>{alarma.tipo}</TableCell>
-                    <TableCell>
-                      <Badge className={getPriorityColor(alarma.prioridad)}>
-                        {alarma.prioridad}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(alarma.estado)}>
-                        {alarma.estado.replace('_', ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <User className="h-3 w-3 mr-1 text-muted-foreground" />
-                        {alarma.operador_id || 'Sin asignar'}
-                      </div>
-                    </TableCell>
-                    <TableCell>{alarma.patrulla_asignada || 'Sin asignar'}</TableCell>
-                    <TableCell>
-                      {format(new Date(alarma.created_at), 'dd/MM/yyyy HH:mm')}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {alarma.tiempo_respuesta_segundos 
-                          ? `${Math.floor(alarma.tiempo_respuesta_segundos / 60)}m ${alarma.tiempo_respuesta_segundos % 60}s`
-                          : 'Pendiente'
-                        }
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="outline" size="sm" title="Contactar cliente">
-                          <Phone className="h-3 w-3" />
-                        </Button>
-                        <Button variant="outline" size="sm" title="Ver ubicación">
-                          <MapPin className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
