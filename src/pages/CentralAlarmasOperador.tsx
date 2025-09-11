@@ -66,6 +66,10 @@ const CentralAlarmasOperador = () => {
   const [mostrarCalendarioTurnos, setMostrarCalendarioTurnos] = useState(false);
   const [realtimeAlarmas, setRealtimeAlarmas] = useState([]);
   
+  // Estado para la barra rápida
+  const [showQuickBar, setShowQuickBar] = useState(false);
+  const mainSectionRef = useRef<HTMLDivElement>(null);
+  
   // Estados para generación de alarmas
   const [searchTerm, setSearchTerm] = useState("");
   const [clienteId, setClienteId] = useState("");
@@ -134,6 +138,29 @@ const CentralAlarmasOperador = () => {
 
   // Hook para patrullas
   const { patrullas, loading: loadingPatrullas } = useSupabasePatrullas();
+
+  // Intersection Observer para la barra rápida
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowQuickBar(!entry.isIntersecting);
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '-100px 0px 0px 0px'
+      }
+    );
+
+    if (mainSectionRef.current) {
+      observer.observe(mainSectionRef.current);
+    }
+
+    return () => {
+      if (mainSectionRef.current) {
+        observer.unobserve(mainSectionRef.current);
+      }
+    };
+  }, []);
 
   // Configurar actualizaciones en tiempo real
   useEffect(() => {
@@ -650,7 +677,53 @@ const CentralAlarmasOperador = () => {
   const loadingAlarmasVista = loadingAll;
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-background">
+      {/* Barra rápida fija */}
+      {showQuickBar && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b shadow-md transition-all duration-300">
+          <div className="max-w-7xl mx-auto p-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 flex-1">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar cliente por ID o nombre..."
+                  value={clienteId}
+                  onChange={(e) => setClienteId(e.target.value)}
+                  className="flex-1 max-w-md"
+                  onKeyPress={(e) => e.key === 'Enter' && buscarClientePorId()}
+                />
+                <Button onClick={buscarClientePorId} size="sm">
+                  Buscar
+                </Button>
+              </div>
+              
+              {clienteEncontrado && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {clienteEncontrado.nombre}
+                  </Badge>
+                  <Button 
+                    onClick={() => openAlarmModal(clienteEncontrado)}
+                    size="sm"
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Siren className="h-4 w-4 mr-1" />
+                    Generar Alarma
+                  </Button>
+                </div>
+              )}
+              
+              {clienteNoEncontrado && (
+                <Badge variant="destructive" className="text-xs">
+                  Cliente no encontrado
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div className="space-y-6 p-4" style={{ paddingTop: showQuickBar ? '80px' : '0' }}>
       <div>
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <Phone className="h-8 w-8 text-primary" />
@@ -709,7 +782,7 @@ const CentralAlarmasOperador = () => {
       )}
 
       {/* Sección Generar Nueva Alarma - Flotante */}
-      <div className="sticky top-4 z-50">
+      <div className="sticky top-4 z-50" ref={mainSectionRef}>
         <Card className="shadow-lg border-2">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -1401,6 +1474,7 @@ const CentralAlarmasOperador = () => {
         </DialogContent>
       </Dialog>
 
+      </div>
     </div>
   );
 };
