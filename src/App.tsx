@@ -64,6 +64,7 @@ import { RoleBasedDashboard } from "@/components/auth/RoleBasedDashboard";
 import ClientesDirCentral from "./pages/ClientesDirCentral";
 import ElementosCotizables from "./pages/ElementosCotizables";
 import ReporteUbicacion from "./pages/ReporteUbicacion";
+import MinutaOperador from "./pages/MinutaOperador";
 
 const queryClient = new QueryClient();
 
@@ -181,6 +182,14 @@ const AppContent = () => {
         <ProtectedRoute>
           <MainLayout>
             <CentralAlarmasOperador />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/minuta-operador" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <MinutaOperador />
           </MainLayout>
         </ProtectedRoute>
       } />
