@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Users, Activity, Route, RefreshCw } from 'lucide-react';
+import { MapPin, Users, Activity, Route, RefreshCw, Navigation, ExternalLink } from 'lucide-react';
 import LeafletMap from '@/components/map/LeafletMap';
 import { useSupabaseSupervisores } from '@/hooks/useSupabaseSupervisores';
 import { useSupabaseAlarmasEnhanced } from '@/hooks/useSupabaseAlarmasEnhanced';
@@ -14,10 +14,23 @@ interface SupervisorLocation {
   id: string;
   name: string;
   position: [number, number];
-  status: 'disponible' | 'en_servicio' | 'en_ruta';
+  status: 'disponible' | 'en_servicio' | 'en_ruta' | 'desconectado';
   alarmaId?: string;
   destino?: string;
   ultimaActualizacion: string;
+  isOnline: boolean;
+}
+
+interface SupervisorEvent {
+  id: string;
+  supervisorId: string;
+  supervisorName: string;
+  evento: string;
+  ubicacionOrigen: [number, number];
+  ubicacionDestino?: [number, number];
+  timestamp: string;
+  alarmaId?: string;
+  clienteNombre?: string;
 }
 
 const ReporteUbicacion = () => {
@@ -26,13 +39,23 @@ const ReporteUbicacion = () => {
   const { userRole } = useAuthConsolidated();
   
   const [supervisoresUbicacion, setSupervisoresUbicacion] = useState<SupervisorLocation[]>([]);
-  const [selectedSupervisor, setSelectedSupervisor] = useState<string | null>(null);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([25.674, -100.309]); // Monterrey por defecto
+  const [eventosSupervision, setEventosSupervision] = useState<SupervisorEvent[]>([]);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([25.674, -100.309]);
   const [activeTab, setActiveTab] = useState('mapa');
 
-  // Simular ubicaciones de supervisores (en producción esto vendría de GPS/tracking)
+  // Simular estado de conexión de supervisores
+  const getOnlineStatus = () => {
+    const onlineStates: Record<string, boolean> = {};
+    supervisores.forEach(supervisor => {
+      // Simular algunos supervisores online/offline
+      onlineStates[supervisor.id] = Math.random() > 0.3; // 70% probabilidad de estar online
+    });
+    return onlineStates;
+  };
+
+  // Generar ubicaciones y eventos de supervisores
   useEffect(() => {
-    const generarUbicacionesSupervisores = () => {
+    const generarUbicacionesYEventos = () => {
       const ubicacionesBase = [
         [25.6866, -100.3161], // Centro de Monterrey
         [25.6515, -100.2895], // San Pedro
@@ -42,15 +65,17 @@ const ReporteUbicacion = () => {
         [25.5922, -100.2596]  // San Nicolás
       ];
 
+      const onlineStates = getOnlineStatus();
       const ubicacionesSupervisores: SupervisorLocation[] = supervisores.map((supervisor, index) => {
         const alarmaAsignada = alarmas.find(a => 
           a.supervisor_id === supervisor.id && ['asignada', 'en_proceso'].includes(a.estado)
         );
         
-        let status: 'disponible' | 'en_servicio' | 'en_ruta' = 'disponible';
+        const isOnline = onlineStates[supervisor.id];
+        let status: 'disponible' | 'en_servicio' | 'en_ruta' | 'desconectado' = isOnline ? 'disponible' : 'desconectado';
         let destino = '';
         
-        if (alarmaAsignada) {
+        if (isOnline && alarmaAsignada) {
           if (alarmaAsignada.estado === 'asignada') {
             status = 'en_ruta';
             destino = alarmaAsignada.direccion || 'Ubicación del cliente';
@@ -61,7 +86,6 @@ const ReporteUbicacion = () => {
         }
 
         const baseLocation = ubicacionesBase[index % ubicacionesBase.length];
-        // Agregar variación aleatoria pequeña para simular movimiento
         const lat = baseLocation[0] + (Math.random() - 0.5) * 0.01;
         const lng = baseLocation[1] + (Math.random() - 0.5) * 0.01;
 
@@ -72,22 +96,50 @@ const ReporteUbicacion = () => {
           status,
           alarmaId: alarmaAsignada?.id,
           destino,
-          ultimaActualizacion: new Date().toISOString()
+          ultimaActualizacion: new Date().toISOString(),
+          isOnline
         };
       });
 
+      // Generar eventos de supervisores activos
+      const eventos: SupervisorEvent[] = [];
+      supervisoresUbicacion.forEach(supervisor => {
+        if (supervisor.status === 'en_ruta' || supervisor.status === 'en_servicio') {
+          const alarma = alarmas.find(a => a.id === supervisor.alarmaId);
+          if (alarma && alarma.clientes) {
+            eventos.push({
+              id: `evento-${supervisor.id}`,
+              supervisorId: supervisor.id,
+              supervisorName: supervisor.name,
+              evento: supervisor.status === 'en_ruta' ? 'Dirigiéndose al cliente' : 'Atendiendo cliente',
+              ubicacionOrigen: supervisor.position,
+              ubicacionDestino: supervisor.status === 'en_ruta' ? [
+                supervisor.position[0] + (Math.random() - 0.5) * 0.02,
+                supervisor.position[1] + (Math.random() - 0.5) * 0.02
+              ] : undefined,
+              timestamp: new Date().toISOString(),
+              alarmaId: supervisor.alarmaId,
+              clienteNombre: alarma.clientes?.nombre
+            });
+          }
+        }
+      });
+
       setSupervisoresUbicacion(ubicacionesSupervisores);
+      setEventosSupervision(eventos);
     };
 
-    generarUbicacionesSupervisores();
-    
-    // Actualizar cada 30 segundos
-    const interval = setInterval(generarUbicacionesSupervisores, 30000);
-    
-    return () => clearInterval(interval);
+    if (supervisores.length > 0) {
+      generarUbicacionesYEventos();
+      
+      // Actualizar cada 30 segundos
+      const interval = setInterval(generarUbicacionesYEventos, 30000);
+      return () => clearInterval(interval);
+    }
   }, [supervisores, alarmas]);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string, isOnline: boolean) => {
+    if (!isOnline) return 'destructive';
     switch (status) {
       case 'disponible': return 'secondary';
       case 'en_ruta': return 'default';
@@ -96,7 +148,8 @@ const ReporteUbicacion = () => {
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getStatusText = (status: string, isOnline: boolean) => {
+    if (!isOnline) return 'Desconectado';
     switch (status) {
       case 'disponible': return 'Disponible';
       case 'en_ruta': return 'En Ruta';
@@ -105,29 +158,55 @@ const ReporteUbicacion = () => {
     }
   };
 
+  // Crear marcadores para el mapa con diferentes colores
   const mapMarkers = supervisoresUbicacion.map(supervisor => ({
     position: supervisor.position,
     title: supervisor.name,
     popupContent: (
-      <div>
-        <strong>{supervisor.name}</strong><br/>
-        Estado: {getStatusText(supervisor.status)}<br/>
+      <div className="space-y-2">
+        <div className="font-semibold">{supervisor.name}</div>
+        <div className="flex items-center gap-2">
+          <div className={`w-3 h-3 rounded-full ${
+            supervisor.isOnline 
+              ? supervisor.status === 'disponible' ? 'bg-blue-500' 
+                : supervisor.status === 'en_ruta' ? 'bg-orange-500'
+                : 'bg-green-500'
+              : 'bg-red-500'
+          }`}></div>
+          <span className="text-sm">{getStatusText(supervisor.status, supervisor.isOnline)}</span>
+        </div>
         {supervisor.destino && (
-          <>Destino: {supervisor.destino}<br/></>
+          <div className="text-sm text-muted-foreground">
+            Destino: {supervisor.destino}
+          </div>
         )}
-        Última actualización: {format(new Date(supervisor.ultimaActualizacion), 'HH:mm:ss')}
+        <div className="text-xs text-muted-foreground">
+          Última actualización: {format(new Date(supervisor.ultimaActualizacion), 'HH:mm:ss')}
+        </div>
       </div>
     )
   }));
 
   const handleRefresh = () => {
-    // Forzar actualización de ubicaciones
-    const event = new CustomEvent('refreshLocations');
-    window.dispatchEvent(event);
+    window.location.reload();
   };
 
-  const supervisoresActivos = supervisoresUbicacion.filter(s => s.status !== 'disponible');
-  const supervisoresDisponibles = supervisoresUbicacion.filter(s => s.status === 'disponible');
+  const abrirEnGoogleMaps = (evento: SupervisorEvent) => {
+    if (evento.ubicacionDestino) {
+      const origen = `${evento.ubicacionOrigen[0]},${evento.ubicacionOrigen[1]}`;
+      const destino = `${evento.ubicacionDestino[0]},${evento.ubicacionDestino[1]}`;
+      const url = `https://www.google.com/maps/dir/${origen}/${destino}`;
+      window.open(url, '_blank');
+    } else {
+      const ubicacion = `${evento.ubicacionOrigen[0]},${evento.ubicacionOrigen[1]}`;
+      const url = `https://www.google.com/maps?q=${ubicacion}`;
+      window.open(url, '_blank');
+    }
+  };
+
+  const supervisoresOnline = supervisoresUbicacion.filter(s => s.isOnline);
+  const supervisoresOffline = supervisoresUbicacion.filter(s => !s.isOnline);
+  const supervisoresActivos = supervisoresUbicacion.filter(s => s.isOnline && s.status !== 'disponible');
 
   return (
     <div className="space-y-6">
@@ -161,37 +240,31 @@ const ReporteUbicacion = () => {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En Servicio</CardTitle>
-            <Activity className="h-4 w-4 text-red-500" />
+            <CardTitle className="text-sm font-medium">Conectados</CardTitle>
+            <Activity className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {supervisoresUbicacion.filter(s => s.status === 'en_servicio').length}
-            </div>
+            <div className="text-2xl font-bold text-green-600">{supervisoresOnline.length}</div>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En Ruta</CardTitle>
+            <CardTitle className="text-sm font-medium">En Actividad</CardTitle>
             <Route className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {supervisoresUbicacion.filter(s => s.status === 'en_ruta').length}
-            </div>
+            <div className="text-2xl font-bold text-orange-600">{supervisoresActivos.length}</div>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Disponibles</CardTitle>
-            <Users className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium">Desconectados</CardTitle>
+            <Users className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {supervisoresDisponibles.length}
-            </div>
+            <div className="text-2xl font-bold text-red-600">{supervisoresOffline.length}</div>
           </CardContent>
         </Card>
       </div>
@@ -199,14 +272,32 @@ const ReporteUbicacion = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="mapa">Mapa en Tiempo Real</TabsTrigger>
+          <TabsTrigger value="eventos">Eventos Activos</TabsTrigger>
           <TabsTrigger value="lista">Lista de Supervisores</TabsTrigger>
-          <TabsTrigger value="recorridos">Historial de Recorridos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="mapa">
           <Card>
             <CardHeader>
               <CardTitle>Ubicaciones en Tiempo Real</CardTitle>
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <span>Disponible</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                  <span>En Ruta</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span>En Servicio</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <span>Desconectado</span>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-[600px] w-full">
@@ -223,41 +314,90 @@ const ReporteUbicacion = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="eventos">
+          <Card>
+            <CardHeader>
+              <CardTitle>Eventos de Supervisión Activos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {eventosSupervision.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No hay eventos activos en este momento</p>
+                  </div>
+                ) : (
+                  eventosSupervision.map((evento) => (
+                    <div
+                      key={evento.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent cursor-pointer"
+                      onClick={() => abrirEnGoogleMaps(evento)}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline">{evento.supervisorName}</Badge>
+                          <span className="text-sm font-medium">{evento.evento}</span>
+                        </div>
+                        {evento.clienteNombre && (
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Cliente: {evento.clienteNombre}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(evento.timestamp), 'HH:mm:ss')}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm">
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Ver en Google Maps
+                        </Button>
+                        <Navigation className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="lista">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Supervisores Activos */}
+            {/* Supervisores Conectados */}
             <Card>
               <CardHeader>
-                <CardTitle>Supervisores Activos</CardTitle>
+                <CardTitle>Supervisores Conectados</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {supervisoresActivos.length === 0 ? (
+                  {supervisoresOnline.length === 0 ? (
                     <p className="text-muted-foreground text-center py-4">
-                      No hay supervisores activos en este momento
+                      No hay supervisores conectados
                     </p>
                   ) : (
-                    supervisoresActivos.map((supervisor) => (
+                    supervisoresOnline.map((supervisor) => (
                       <div
                         key={supervisor.id}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
                         onClick={() => {
                           setMapCenter(supervisor.position);
-                          setSelectedSupervisor(supervisor.id);
                           setActiveTab('mapa');
                         }}
                       >
                         <div>
                           <p className="font-medium">{supervisor.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {supervisor.destino}
-                          </p>
+                          {supervisor.destino && (
+                            <p className="text-sm text-muted-foreground">
+                              {supervisor.destino}
+                            </p>
+                          )}
                           <p className="text-xs text-muted-foreground">
                             Actualizado: {format(new Date(supervisor.ultimaActualizacion), 'HH:mm:ss')}
                           </p>
                         </div>
-                        <Badge variant={getStatusColor(supervisor.status)}>
-                          {getStatusText(supervisor.status)}
+                        <Badge variant={getStatusColor(supervisor.status, supervisor.isOnline)}>
+                          {getStatusText(supervisor.status, supervisor.isOnline)}
                         </Badge>
                       </div>
                     ))
@@ -266,36 +406,31 @@ const ReporteUbicacion = () => {
               </CardContent>
             </Card>
 
-            {/* Supervisores Disponibles */}
+            {/* Supervisores Desconectados */}
             <Card>
               <CardHeader>
-                <CardTitle>Supervisores Disponibles</CardTitle>
+                <CardTitle>Supervisores Desconectados</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {supervisoresDisponibles.length === 0 ? (
+                  {supervisoresOffline.length === 0 ? (
                     <p className="text-muted-foreground text-center py-4">
-                      No hay supervisores disponibles
+                      Todos los supervisores están conectados
                     </p>
                   ) : (
-                    supervisoresDisponibles.map((supervisor) => (
+                    supervisoresOffline.map((supervisor) => (
                       <div
                         key={supervisor.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
-                        onClick={() => {
-                          setMapCenter(supervisor.position);
-                          setSelectedSupervisor(supervisor.id);
-                          setActiveTab('mapa');
-                        }}
+                        className="flex items-center justify-between p-3 border rounded-lg opacity-60"
                       >
                         <div>
                           <p className="font-medium">{supervisor.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            Actualizado: {format(new Date(supervisor.ultimaActualizacion), 'HH:mm:ss')}
+                            Última conexión: {format(new Date(supervisor.ultimaActualizacion), 'HH:mm:ss')}
                           </p>
                         </div>
-                        <Badge variant={getStatusColor(supervisor.status)}>
-                          {getStatusText(supervisor.status)}
+                        <Badge variant="destructive">
+                          Desconectado
                         </Badge>
                       </div>
                     ))
@@ -304,26 +439,6 @@ const ReporteUbicacion = () => {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        <TabsContent value="recorridos">
-          <Card>
-            <CardHeader>
-              <CardTitle>Historial de Recorridos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <Route className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-medium mb-2">Historial de Recorridos</h3>
-                <p className="text-muted-foreground">
-                  Esta funcionalidad mostrará el historial completo de recorridos de cada supervisor
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Próximamente: Integración con datos GPS y rutas completas
-                </p>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
