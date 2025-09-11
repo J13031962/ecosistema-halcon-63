@@ -625,163 +625,6 @@ const CentralAlarmasOperador = () => {
         </p>
       </div>
 
-      {/* Estadísticas del operador */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Alarmas Activas</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {alarmasActivas.length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Requieren atención inmediata
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resueltas Hoy</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {alarmasResueltas.filter(a => 
-                new Date(a.resolved_at || a.created_at).toDateString() === new Date().toDateString()
-              ).length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Alarmas resueltas hoy
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Canceladas Hoy</CardTitle>
-            <UserCheck className="h-4 w-4 text-gray-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-600">
-              {fuenteAlarmas.filter(a => 
-                a.estado === 'cancelada' && 
-                new Date(a.created_at).toDateString() === new Date().toDateString()
-              ).length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Alarmas canceladas hoy
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En Proceso</CardTitle>
-            <Car className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {alarmasEnProceso.length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Servicios en desarrollo
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Alarmas activas */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Alarmas Activas</CardTitle>
-          <CardDescription>
-            Alarmas que requieren atención inmediata
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loadingAlarmasVista ? (
-            <div className="animate-pulse space-y-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-16 bg-muted rounded"></div>
-              ))}
-            </div>
-          ) : alarmasActivas.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-              <p>No tienes alarmas activas en este momento</p>
-              <p className="text-sm">¡Excelente trabajo!</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {alarmasActivas.map((alarma) => (
-                <AlarmaActivaCard key={alarma.id} alarma={alarma} onCancelar={cancelAlarma} />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Servicios en Proceso */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Servicios en Proceso</CardTitle>
-          <CardDescription>
-            Servicios asignados y en desarrollo con seguimiento de tiempos
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loadingEnhanced ? (
-            <div className="animate-pulse space-y-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-16 bg-muted rounded"></div>
-              ))}
-            </div>
-          ) : alarmasEnProceso.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Car className="h-12 w-12 mx-auto mb-4 text-blue-500" />
-              <p>No hay servicios en proceso en este momento</p>
-              <p className="text-sm">Los servicios asignados aparecerán aquí</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {alarmasEnProceso.map((alarma) => (
-                <CronometroAlarma
-                  key={alarma.id}
-                  alarmaId={alarma.id}
-                  tipo={alarma.tipo}
-                  cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
-                  direccion={alarma.direccion}
-                  municipio={alarma.municipio}
-                  telefono={alarma.clientes?.telefono}
-                  prioridad={alarma.prioridad}
-                  estado={alarma.estado as any}
-                  created_at={alarma.created_at}
-                  attended_at={alarma.attended_at || undefined}
-                  tiempo_toma_despachador={alarma.tiempo_toma_despachador || undefined}
-                  tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
-                  tiempo_aceptacion_supervisor={alarma.tiempo_aceptacion_supervisor || undefined}
-                  tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
-                  tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
-                  supervisor={alarma.supervisor || undefined}
-                  supervisor_id={alarma.supervisor_id || undefined}
-                  patrulla_asignada={alarma.patrulla_asignada || undefined}
-                  showCancelButton={false}
-                  onSupervisorAccept={handleSupervisorAccept}
-                  onSupervisorArrive={handleSupervisorArrive}
-                  onSupervisorLeave={handleSupervisorLeave}
-                  userRole={user?.role}
-                  currentUserId={user?.id}
-                  currentUserName={user?.email}
-                />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Botón de cancelar alarma (activo por 5 minutos) */}
       {canCancel && alarmaGenerada && (
         <Card className="bg-red-50 border-red-200">
@@ -1035,6 +878,163 @@ const CentralAlarmasOperador = () => {
               </Card>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Estadísticas del operador */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Alarmas Activas</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {alarmasActivas.length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Requieren atención inmediata
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Resueltas Hoy</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {alarmasResueltas.filter(a => 
+                new Date(a.resolved_at || a.created_at).toDateString() === new Date().toDateString()
+              ).length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Alarmas resueltas hoy
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Canceladas Hoy</CardTitle>
+            <UserCheck className="h-4 w-4 text-gray-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-600">
+              {fuenteAlarmas.filter(a => 
+                a.estado === 'cancelada' && 
+                new Date(a.created_at).toDateString() === new Date().toDateString()
+              ).length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Alarmas canceladas hoy
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">En Proceso</CardTitle>
+            <Car className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {alarmasEnProceso.length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Servicios en desarrollo
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Alarmas activas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Alarmas Activas</CardTitle>
+          <CardDescription>
+            Alarmas que requieren atención inmediata
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingAlarmasVista ? (
+            <div className="animate-pulse space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-16 bg-muted rounded"></div>
+              ))}
+            </div>
+          ) : alarmasActivas.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+              <p>No tienes alarmas activas en este momento</p>
+              <p className="text-sm">¡Excelente trabajo!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {alarmasActivas.map((alarma) => (
+                <AlarmaActivaCard key={alarma.id} alarma={alarma} onCancelar={cancelAlarma} />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Servicios en Proceso */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Servicios en Proceso</CardTitle>
+          <CardDescription>
+            Servicios asignados y en desarrollo con seguimiento de tiempos
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingEnhanced ? (
+            <div className="animate-pulse space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-16 bg-muted rounded"></div>
+              ))}
+            </div>
+          ) : alarmasEnProceso.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Car className="h-12 w-12 mx-auto mb-4 text-blue-500" />
+              <p>No hay servicios en proceso en este momento</p>
+              <p className="text-sm">Los servicios asignados aparecerán aquí</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {alarmasEnProceso.map((alarma) => (
+                <CronometroAlarma
+                  key={alarma.id}
+                  alarmaId={alarma.id}
+                  tipo={alarma.tipo}
+                  cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
+                  direccion={alarma.direccion}
+                  municipio={alarma.municipio}
+                  telefono={alarma.clientes?.telefono}
+                  prioridad={alarma.prioridad}
+                  estado={alarma.estado as any}
+                  created_at={alarma.created_at}
+                  attended_at={alarma.attended_at || undefined}
+                  tiempo_toma_despachador={alarma.tiempo_toma_despachador || undefined}
+                  tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                  tiempo_aceptacion_supervisor={alarma.tiempo_aceptacion_supervisor || undefined}
+                  tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
+                  tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
+                  supervisor={alarma.supervisor || undefined}
+                  supervisor_id={alarma.supervisor_id || undefined}
+                  patrulla_asignada={alarma.patrulla_asignada || undefined}
+                  showCancelButton={false}
+                  onSupervisorAccept={handleSupervisorAccept}
+                  onSupervisorArrive={handleSupervisorArrive}
+                  onSupervisorLeave={handleSupervisorLeave}
+                  userRole={user?.role}
+                  currentUserId={user?.id}
+                  currentUserName={user?.email}
+                />
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
