@@ -27,6 +27,7 @@ const Auth = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [backgroundImage, setBackgroundImage] = useState('/lovable-uploads/b189fbe2-9643-4103-bb16-bf1857b39c78.png');
   const { login, isAuthenticated } = useAuthConsolidatedContext();
   const navigate = useNavigate();
 
@@ -42,6 +43,12 @@ const Auth = () => {
           console.log('Usuarios de prueba creados automáticamente');
         }).catch(console.error);
       }
+    }
+
+    // Cargar imagen de fondo desde localStorage
+    const savedBackground = localStorage.getItem('backgroundImage');
+    if (savedBackground) {
+      setBackgroundImage(savedBackground);
     }
   }, [isAuthenticated, navigate]);
 
@@ -114,14 +121,17 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4" 
-         style={{
-           backgroundImage: "url('https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=1920&q=80')",
-           backgroundSize: 'cover',
-           backgroundPosition: 'center',
-           backgroundRepeat: 'no-repeat'
-         }}>
-      <div className="absolute inset-0 bg-black/60"></div>
+    <div className="min-h-screen relative flex items-center justify-center bg-background p-4" data-page="auth">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-80"
+        style={{
+          backgroundImage: `url(${backgroundImage})`
+        }}
+      />
+      
+      {/* Dark overlay for better text readability */}
+      <div className="absolute inset-0 bg-black/50" />
       
       <div className="w-full max-w-md space-y-6 relative z-10">
         <Button
