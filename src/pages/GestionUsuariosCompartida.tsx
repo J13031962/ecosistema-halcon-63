@@ -216,6 +216,7 @@ const GestionUsuariosCompartida: React.FC<GestionUsuariosCompartidaProps> = ({ i
               userData={newUserData}
               setUserData={setNewUserData}
               isEdit={false}
+              availableRoles={getAvailableRoles()}
             />
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>

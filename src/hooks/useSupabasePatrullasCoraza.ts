@@ -29,6 +29,18 @@ export interface ServiciosClienteResumen {
   revistas_restantes: number;
 }
 
+const DEFAULT_SERVICIOS: ServiciosClienteResumen = {
+  patrullas_disponibles: 0,
+  patrullas_usadas: 0,
+  patrullas_restantes: 0,
+  acompanamientos_disponibles: 0,
+  acompanamientos_usados: 0,
+  acompanamientos_restantes: 0,
+  revistas_disponibles: 0,
+  revistas_usadas: 0,
+  revistas_restantes: 0,
+};
+
 export const useSupabasePatrullasCoraza = () => {
   const [patrullasCoraza, setPatrullasCoraza] = useState<PatrullaCorazaData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -118,7 +130,7 @@ export const useSupabasePatrullasCoraza = () => {
     clienteId: string, 
     year: number = new Date().getFullYear(), 
     month: number = new Date().getMonth() + 1
-  ): Promise<ServiciosClienteResumen | null> => {
+  ): Promise<ServiciosClienteResumen> => {
     try {
       const { data, error } = await supabase
         .rpc('get_cliente_servicios_mes', {
@@ -127,12 +139,15 @@ export const useSupabasePatrullasCoraza = () => {
           month_param: month
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching servicios:', error);
+        return DEFAULT_SERVICIOS;
+      }
       
-      return data && data.length > 0 ? data[0] : null;
+      return data?.[0] || DEFAULT_SERVICIOS;
     } catch (error) {
       console.error('Error getting cliente servicios mes:', error);
-      return null;
+      return DEFAULT_SERVICIOS;
     }
   };
 

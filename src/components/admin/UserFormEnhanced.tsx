@@ -24,6 +24,7 @@ interface UserFormEnhancedProps {
   userData: UserFormData;
   setUserData: (data: UserFormData) => void;
   isEdit?: boolean;
+  availableRoles?: UserRole[];
   userId?: string;
 }
 
@@ -226,6 +227,7 @@ export const UserFormEnhanced: React.FC<UserFormEnhancedProps> = ({
   userData, 
   setUserData, 
   isEdit = false,
+  availableRoles,
   userId 
 }) => {
   const [uploading, setUploading] = useState(false);
@@ -406,11 +408,13 @@ export const UserFormEnhanced: React.FC<UserFormEnhancedProps> = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {Object.entries(roleNames).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
+            {Object.entries(roleNames)
+              .filter(([value]) => availableRoles?.includes(value as UserRole) ?? true)
+              .map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground">

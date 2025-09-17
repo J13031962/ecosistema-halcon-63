@@ -226,7 +226,17 @@ export const useAuthConsolidated = (): AuthContextConsolidated => {
             try {
               const parsedUser = JSON.parse(storedUser) as ConsolidatedUser;
               console.log('📦 Usuario encontrado en localStorage:', parsedUser);
-              setUser(parsedUser);
+              
+              // Verificar si el usuario está activo ANTES de autenticar
+              if (parsedUser.active === false) {
+                console.log('❌ Usuario inactivo, limpiando localStorage y redirigiendo');
+                localStorage.removeItem('teleguardia_user');
+                setUser(null);
+                // Usuario inactivo, no autenticar
+              } else {
+                setUser(parsedUser);
+                // Usuario activo, autenticar
+              }
             } catch (error) {
               console.error('❌ Error parsing stored user:', error);
               localStorage.removeItem('teleguardia_user');
