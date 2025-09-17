@@ -502,38 +502,11 @@ const GenerarAlarma = () => {
                     <p className="text-sm text-green-700">🏙️ {clienteEncontrado.municipio}</p>
                     <p className="text-sm text-green-700">📄 Cuenta: {clienteEncontrado.numero_cuenta}</p>
                   </div>
-                  <div className="border border-green-300 bg-white rounded-lg p-3 min-w-48">
-                    <h4 className="font-semibold text-green-800 mb-2 text-center">Atenciones mes</h4>
-                    <div className="space-y-1 text-sm">
-                      <div className={
-                        (clienteEncontrado.servicios_contratados?.alarmas_mes || 0) > (clienteEncontrado.servicios_contratados?.cantidad_patrullas || 0)
-                          ? "text-red-600" 
-                          : "text-green-800"
-                      }>
-                        <strong>Alarmas mes</strong> {clienteEncontrado.servicios_contratados?.alarmas_mes || 0}/{clienteEncontrado.servicios_contratados?.cantidad_patrullas || 0}
-                      </div>
-                      <div className={
-                        (clienteEncontrado.servicios_contratados?.revistas_mes || 0) > (clienteEncontrado.servicios_contratados?.cantidad_revistas || 0)
-                          ? "text-red-600" 
-                          : "text-green-800"
-                      }>
-                        <strong>Revistas pagas mes</strong> {clienteEncontrado.servicios_contratados?.revistas_mes || 0}/{clienteEncontrado.servicios_contratados?.cantidad_revistas || 0}
-                      </div>
-                      <div className={
-                        (clienteEncontrado.servicios_contratados?.acompañamientos_mes || 0) > (clienteEncontrado.servicios_contratados?.acompañamientos || 1)
-                          ? "text-red-600" 
-                          : "text-green-800"
-                      }>
-                        <strong>Acompañamiento mes</strong> {clienteEncontrado.servicios_contratados?.acompañamientos_mes || 0}/{clienteEncontrado.servicios_contratados?.acompañamientos || 1}
-                      </div>
-                      <div className={
-                        (clienteEncontrado.servicios_contratados?.smarturban_mes || 0) > (clienteEncontrado.servicios_contratados?.smarturban || 0)
-                          ? "text-red-600" 
-                          : "text-green-800"
-                      }>
-                        <strong>Llamadas SmartUrban</strong> {clienteEncontrado.servicios_contratados?.smarturban_mes || 0}/{clienteEncontrado.servicios_contratados?.smarturban || 0}
-                      </div>
-                    </div>
+                  <div className="min-w-48">
+                    <ClienteServiciosDisplay 
+                      clienteId={clienteEncontrado.id}
+                      clienteNombre={clienteEncontrado.nombre}
+                    />
                   </div>
                   <div className="flex flex-col gap-2">
                     <Button 
