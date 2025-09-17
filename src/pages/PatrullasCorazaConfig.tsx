@@ -92,7 +92,6 @@ export default function PatrullasCorazaConfig() {
     try {
       await createConfiguracion({
         ...formData,
-        empresa_contratada_id: empresaId || '',
         patrullas_usadas: 0,
         acompanamientos_usados: 0,
         revistas_usadas: 0

@@ -137,11 +137,28 @@ export const useConfiguracionEmpresa = (empresaId: string) => {
     }
   };
 
-  const createConfiguracion = async (configData: Omit<ConfiguracionEmpresa, 'id' | 'created_at' | 'updated_at'>) => {
+  const createConfiguracion = async (configData: Omit<ConfiguracionEmpresa, 'id' | 'created_at' | 'updated_at' | 'empresa_contratada_id'>) => {
     try {
+      if (!empresaId) {
+        throw new Error('ID de empresa no válido');
+      }
+
+      const insertData = {
+        empresa_contratada_id: empresaId,
+        cliente_id: null,
+        year: configData.year,
+        month: configData.month,
+        patrullas_disponibles: configData.patrullas_disponibles,
+        acompanamientos_disponibles: configData.acompanamientos_disponibles,
+        revistas_disponibles: configData.revistas_disponibles,
+        patrullas_usadas: configData.patrullas_usadas || 0,
+        acompanamientos_usados: configData.acompanamientos_usados || 0,
+        revistas_usadas: configData.revistas_usadas || 0
+      };
+
       const { data, error } = await supabase
         .from('patrullas_coraza')
-        .insert([{ ...configData, empresa_contratada_id: empresaId, cliente_id: null }])
+        .insert([insertData])
         .select()
         .single();
       

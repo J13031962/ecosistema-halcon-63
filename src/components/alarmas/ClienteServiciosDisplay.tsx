@@ -159,8 +159,8 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
               <span className="text-sm font-medium">Patrullas</span>
             </div>
             <div className="space-y-1">
-              <div className="text-lg font-bold">
-                {servicios.patrullas_usadas} utilizadas
+            <div className="text-lg font-bold">
+                {servicios.cliente_patrullas_usadas || 0} utilizadas
               </div>
               <div className="text-sm text-muted-foreground">
                 este mes
@@ -175,8 +175,8 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
               <span className="text-sm font-medium">Acompañ.</span>
             </div>
             <div className="space-y-1">
-              <div className="text-lg font-bold">
-                {servicios.acompanamientos_usados} utilizados
+            <div className="text-lg font-bold">
+                {servicios.cliente_acompanamientos_usados || 0} utilizados
               </div>
               <div className="text-sm text-muted-foreground">
                 este mes
@@ -191,8 +191,8 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
               <span className="text-sm font-medium">Revistas</span>
             </div>
             <div className="space-y-1">
-              <div className="text-lg font-bold">
-                {servicios.revistas_usadas} utilizadas
+            <div className="text-lg font-bold">
+                {servicios.cliente_revistas_usadas || 0} utilizadas
               </div>
               <div className="text-sm text-muted-foreground">
                 este mes
@@ -206,7 +206,7 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
           <div className="text-xs text-muted-foreground space-y-1">
             <div>• Servicios utilizados por este cliente en el mes actual</div>
             <div>• Los servicios se descuentan del pool global automáticamente</div>
-            <div>• Consulta la página "Patrullas Coraza" para gestionar el pool global</div>
+            <div>• Consulta la página "Patrullas Contratadas" para gestionar el pool global</div>
           </div>
         </div>
       </CardContent>
