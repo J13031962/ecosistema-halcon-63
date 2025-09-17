@@ -20,8 +20,8 @@ export const HistorialTurnos: React.FC<HistorialTurnosProps> = ({ onClose }) => 
   const { users } = useSupabaseUsuarios();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedOperador, setSelectedOperador] = useState<string>('');
-  const [selectedTipoTurno, setSelectedTipoTurno] = useState<string>('');
+  const [selectedOperador, setSelectedOperador] = useState<string>('all');
+  const [selectedTipoTurno, setSelectedTipoTurno] = useState<string>('all');
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [tipoPersonal, setTipoPersonal] = useState<'todos' | 'operador' | 'supervisor'>('todos');
@@ -50,10 +50,10 @@ export const HistorialTurnos: React.FC<HistorialTurnosProps> = ({ onClose }) => 
       turno.fecha.toLowerCase().includes(searchTerm.toLowerCase());
 
     // Filtro por operador específico
-    const matchesOperador = !selectedOperador || turno.persona_id === selectedOperador;
+    const matchesOperador = selectedOperador === 'all' || turno.persona_id === selectedOperador;
 
     // Filtro por tipo de turno
-    const matchesTipoTurno = !selectedTipoTurno || turno.turno === selectedTipoTurno;
+    const matchesTipoTurno = selectedTipoTurno === 'all' || turno.turno === selectedTipoTurno;
 
     // Filtro por tipo de personal
     const matchesTipoPersonal = tipoPersonal === 'todos' || turno.tipo_personal === tipoPersonal;
@@ -267,7 +267,7 @@ export const HistorialTurnos: React.FC<HistorialTurnosProps> = ({ onClose }) => 
                   <SelectValue placeholder="Seleccionar persona" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas las personas</SelectItem>
+                  <SelectItem value="all">Todas las personas</SelectItem>
                   {users.map(user => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.full_name} ({user.user_roles?.[0]?.role})
@@ -284,7 +284,7 @@ export const HistorialTurnos: React.FC<HistorialTurnosProps> = ({ onClose }) => 
                   <SelectValue placeholder="Todos los turnos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los turnos</SelectItem>
+                  <SelectItem value="all">Todos los turnos</SelectItem>
                   <SelectItem value="mañana">Mañana</SelectItem>
                   <SelectItem value="tarde">Tarde</SelectItem>
                   <SelectItem value="noche">Noche</SelectItem>

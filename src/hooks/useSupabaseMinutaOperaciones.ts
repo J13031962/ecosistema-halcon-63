@@ -59,7 +59,7 @@ export const useSupabaseMinutaOperaciones = () => {
           usuario_nombre: userData.user.email || 'Usuario',
           tipo_entrada: entradaData.tipo_entrada,
           contenido: entradaData.contenido,
-          turno: entradaData.turno,
+          turno: entradaData.turno === 'none' ? null : entradaData.turno,
           prioridad: entradaData.prioridad || 'normal'
         }])
         .select()

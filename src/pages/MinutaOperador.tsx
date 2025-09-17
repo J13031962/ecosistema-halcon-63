@@ -20,7 +20,7 @@ export default function MinutaOperador() {
   const [nuevaEntrada, setNuevaEntrada] = useState({
     tipo_entrada: 'general' as 'general' | 'cambio_turno' | 'consigna' | 'incidente' | 'mantenimiento',
     contenido: '',
-    turno: '',
+    turno: 'none',
     prioridad: 'normal' as 'normal' | 'alta' | 'critica'
   });
 
@@ -41,7 +41,7 @@ export default function MinutaOperador() {
       setNuevaEntrada({
         tipo_entrada: 'general',
         contenido: '',
-        turno: '',
+        turno: 'none',
         prioridad: 'normal'
       });
     } catch (error) {
@@ -152,7 +152,7 @@ export default function MinutaOperador() {
                     <SelectValue placeholder="Seleccionar turno" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin especificar</SelectItem>
+                    <SelectItem value="none">Sin especificar</SelectItem>
                     <SelectItem value="mañana">Mañana (06:00 - 14:00)</SelectItem>
                     <SelectItem value="tarde">Tarde (14:00 - 22:00)</SelectItem>
                     <SelectItem value="noche">Noche (22:00 - 06:00)</SelectItem>
