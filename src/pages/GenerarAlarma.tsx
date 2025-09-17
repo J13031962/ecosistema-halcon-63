@@ -767,18 +767,30 @@ const GenerarAlarma = () => {
             // Pantalla de selección de tipo de alarma
             <div className="space-y-4">
               <div className="p-3 bg-muted rounded-lg">
-                <h4 className="font-semibold mb-2">Cliente Seleccionado</h4>
-                <p className="text-sm"><strong>{selectedClienteForAlarm.nombre}</strong></p>
-                <p className="text-sm">📍 {selectedClienteForAlarm.direccion}</p>
-                <p className="text-sm">🏙️ {selectedClienteForAlarm.municipio}</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2"
-                  onClick={() => setSelectedClienteForAlarm(null)}
-                >
-                  Cambiar Cliente
-                </Button>
+                <div className="flex flex-col md:flex-row gap-3 items-start">
+                  <div className="flex-1">
+                    <h4 className="font-semibold mb-2">Cliente Seleccionado</h4>
+                    <p className="text-sm"><strong>{selectedClienteForAlarm.nombre}</strong></p>
+                    <p className="text-sm">📍 {selectedClienteForAlarm.direccion}</p>
+                    <p className="text-sm">🏙️ {selectedClienteForAlarm.municipio}</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2"
+                      onClick={() => setSelectedClienteForAlarm(null)}
+                    >
+                      Cambiar Cliente
+                    </Button>
+                  </div>
+                  <div className="w-full md:max-w-sm">
+                    
+                    <ClienteServiciosDisplay 
+                      key={selectedClienteForAlarm.id}
+                      clienteId={selectedClienteForAlarm.id}
+                      clienteNombre={selectedClienteForAlarm.nombre}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3">

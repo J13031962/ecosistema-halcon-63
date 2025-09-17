@@ -20,6 +20,7 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
   const currentMonth = new Date().getMonth() + 1;
 
   useEffect(() => {
+    console.log('[ClienteServiciosDisplay] clienteId changed:', clienteId)
     if (clienteId) {
       fetchServiciosCliente();
     }
@@ -27,6 +28,7 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
 
   const fetchServiciosCliente = async () => {
     setLoading(true);
+    console.log('[ClienteServiciosDisplay] fetching servicios for:', { clienteId, currentYear, currentMonth });
     try {
       // Obtener la empresa contratada del cliente
       const { data: clienteData, error: clienteError } = await supabase
@@ -87,6 +89,7 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
           cliente_revistas_usadas: usados.revista
         };
         
+        console.log('[ClienteServiciosDisplay] serviciosCompletos:', serviciosCompletos);
         setServicios(serviciosCompletos);
       }
     } catch (error) {
