@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSupabaseClientes } from "@/hooks/useSupabaseClientes";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
+import { useEmpresasContratadas } from "@/hooks/useEmpresasContratadas";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building, MapPin, Plus, QrCode, Download, Eye, Edit, Power, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import QRCode from 'qrcode';
@@ -26,10 +28,12 @@ interface ClienteFormData {
   cantidad_patrullas: string;
   cantidad_revistas: string;
   cantidad_smarturban: string;
+  empresa_contratada_id: string;
 }
 
 const ClientesDirCentral = () => {
   const { clientes, loading, addCliente, updateCliente, deleteCliente, refetch } = useSupabaseClientes();
+  const { empresas } = useEmpresasContratadas();
   const { user } = useAuthConsolidated();
   const [showModal, setShowModal] = useState(false);
   const [editingCliente, setEditingCliente] = useState<any>(null);
@@ -51,7 +55,8 @@ const ClientesDirCentral = () => {
     contacto_alarma_celular: '',
     cantidad_patrullas: '',
     cantidad_revistas: '',
-    cantidad_smarturban: ''
+    cantidad_smarturban: '',
+    empresa_contratada_id: ''
   });
 
   const handleInputChange = (field: keyof ClienteFormData, value: string) => {
@@ -134,6 +139,7 @@ const ClientesDirCentral = () => {
         municipio: formData.municipio || '',
         email: formData.contacto_alarma_nombre || undefined,
         estado: 'activo',
+        empresa_contratada_id: formData.empresa_contratada_id || undefined,
         observaciones: `Ciudad: ${formData.ciudad}, Departamento: ${formData.departamento}, Contacto Alarma: ${formData.contacto_alarma_nombre} - ${formData.contacto_alarma_celular}, Coordenadas: ${formData.latitud}, ${formData.longitud}, Patrullas: ${formData.cantidad_patrullas}, Revistas: ${formData.cantidad_revistas}, SmartUrban: ${formData.cantidad_smarturban}`,
         servicios_contratados: {
           alarmas: 0,
@@ -187,7 +193,8 @@ const ClientesDirCentral = () => {
         contacto_alarma_celular: '',
         cantidad_patrullas: '',
         cantidad_revistas: '',
-        cantidad_smarturban: ''
+        cantidad_smarturban: '',
+        empresa_contratada_id: ''
       });
       setShowModal(false);
       setEditingCliente(null);
@@ -229,7 +236,8 @@ const ClientesDirCentral = () => {
       contacto_alarma_celular: contactoCelular,
       cantidad_patrullas: extractFromObservaciones(observacionesData, 'Patrullas') || (cliente.servicios_contratados?.acompañamientos?.toString() || ''),
       cantidad_revistas: extractFromObservaciones(observacionesData, 'Revistas') || (cliente.servicios_contratados?.revistas?.toString() || ''),
-      cantidad_smarturban: extractFromObservaciones(observacionesData, 'SmartUrban') || (cliente.servicios_contratados?.smarturban?.toString() || '')
+      cantidad_smarturban: extractFromObservaciones(observacionesData, 'SmartUrban') || (cliente.servicios_contratados?.smarturban?.toString() || ''),
+      empresa_contratada_id: cliente.empresa_contratada_id || ''
     });
     
     setEditingCliente(cliente);
@@ -456,6 +464,26 @@ const ClientesDirCentral = () => {
                     step="any"
                   />
                 </div>
+
+                <div className="md:col-span-2">
+                  <Label htmlFor="empresa_contratada_id">Empresa Contratada</Label>
+                  <Select
+                    value={formData.empresa_contratada_id}
+                    onValueChange={(value) => handleInputChange('empresa_contratada_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar empresa contratada" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sin empresa asignada</SelectItem>
+                      {empresas.map((empresa) => (
+                        <SelectItem key={empresa.id} value={empresa.id}>
+                          {empresa.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="flex justify-end space-x-2 pt-4">
@@ -478,7 +506,8 @@ const ClientesDirCentral = () => {
                       contacto_alarma_celular: '',
                       cantidad_patrullas: '',
                       cantidad_revistas: '',
-                      cantidad_smarturban: ''
+                      cantidad_smarturban: '',
+                      empresa_contratada_id: ''
                     });
                   }}
                 >

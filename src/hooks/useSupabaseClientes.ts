@@ -17,6 +17,7 @@ export interface Cliente {
   tipo_servicio?: string;
   estado: string;
   numero_cuenta?: string;
+  empresa_contratada_id?: string;
   servicios_contratados?: {
     alarmas: number;
     revistas: number;

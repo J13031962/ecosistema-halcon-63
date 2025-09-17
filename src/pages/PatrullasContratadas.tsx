@@ -61,9 +61,10 @@ export default function PatrullasContratadas() {
       setIsCreateModalOpen(false);
       resetForm();
     } catch (error) {
+      console.error('Error en handleCreateSubmit:', error);
       toast({
         title: "Error",
-        description: "Error al crear la empresa contratada",
+        description: error instanceof Error ? error.message : "Error al crear la empresa contratada",
         variant: "destructive",
       });
     }
@@ -83,9 +84,10 @@ export default function PatrullasContratadas() {
       setSelectedEmpresa(null);
       resetForm();
     } catch (error) {
+      console.error('Error en handleEditSubmit:', error);
       toast({
         title: "Error",
-        description: "Error al actualizar la empresa contratada",
+        description: error instanceof Error ? error.message : "Error al actualizar la empresa contratada",
         variant: "destructive",
       });
     }
@@ -261,30 +263,34 @@ export default function PatrullasContratadas() {
               )}
 
               {/* Acciones */}
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
                 <Button 
                   variant="default" 
                   size="sm" 
-                  className="flex-1"
+                  className="w-full"
                   onClick={() => handleConfigureEmpresa(empresa.id, empresa.nombre)}
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Configurar
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleEdit(empresa)}
-                >
-                  Editar
-                </Button>
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={() => handleDelete(empresa.id)}
-                >
-                  Eliminar
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleEdit(empresa)}
+                  >
+                    Editar
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleDelete(empresa.id)}
+                  >
+                    Eliminar
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

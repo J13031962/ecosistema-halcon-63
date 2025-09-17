@@ -40,36 +40,76 @@ export const useEmpresasContratadas = () => {
 
   const createEmpresa = async (empresaData: Omit<EmpresaContratada, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      setLoading(true);
+      console.log('🔄 Creando empresa con datos:', empresaData);
+      
       const { data, error } = await supabase
         .from('empresas_contratadas')
-        .insert([empresaData])
+        .insert(empresaData)
         .select()
         .single();
+
+      console.log('📊 Respuesta de creación:', data);
+      console.log('❌ Error de creación:', error);
+
+      if (error) {
+        console.error('❌ Error detallado:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw new Error(`Error al crear empresa: ${error.message}`);
+      }
       
-      if (error) throw error;
-      await fetchEmpresas();
+      setEmpresas(prev => [data, ...prev]);
       return data;
-    } catch (err) {
-      console.error('Error creating empresa:', err);
-      throw new Error('Error al crear empresa contratada');
+    } catch (error) {
+      console.error('❌ Error creating empresa:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al crear empresa';
+      setError(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const updateEmpresa = async (id: string, empresaData: Partial<EmpresaContratada>) => {
     try {
+      setLoading(true);
+      console.log('🔄 Actualizando empresa con ID:', id, 'Datos:', empresaData);
+      
       const { data, error } = await supabase
         .from('empresas_contratadas')
         .update({ ...empresaData, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select()
         .single();
+
+      console.log('📊 Respuesta de actualización:', data);
+      console.log('❌ Error de actualización:', error);
+
+      if (error) {
+        console.error('❌ Error detallado:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw new Error(`Error al actualizar empresa: ${error.message}`);
+      }
       
-      if (error) throw error;
-      await fetchEmpresas();
+      setEmpresas(prev => prev.map(empresa => 
+        empresa.id === id ? data : empresa
+      ));
       return data;
-    } catch (err) {
-      console.error('Error updating empresa:', err);
-      throw new Error('Error al actualizar empresa contratada');
+    } catch (error) {
+      console.error('❌ Error updating empresa:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al actualizar empresa';
+      setError(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
