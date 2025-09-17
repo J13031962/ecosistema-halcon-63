@@ -13,6 +13,7 @@ import { useSupabaseClientes } from "@/hooks/useSupabaseClientes";
 import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
 import { useSupabaseLlamadas } from "@/hooks/useSupabaseLlamadas";
 import { useAuthConsolidatedContext } from "@/contexts/AuthContextConsolidated";
+import { ClienteServiciosDisplay } from "@/components/alarmas/ClienteServiciosDisplay";
 
 interface ClienteFormData {
   id_numerico: string;

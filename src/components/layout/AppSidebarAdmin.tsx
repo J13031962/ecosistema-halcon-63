@@ -76,6 +76,7 @@ const adminMenuItems: MenuCategory[] = [
     items: [
       { title: "Dashboard Principal", url: "/dashboard", icon: Home },
       { title: "Gestión de Usuarios", url: "/gestion-usuarios", icon: Users },
+      { title: "Patrullas Coraza", url: "/patrullas-coraza", icon: Shield },
       { title: "Configuración Sistema", url: "/configuracion", icon: Settings },
     ]
   },
@@ -89,6 +90,8 @@ const adminMenuItems: MenuCategory[] = [
       { title: "Turnos Operador", url: "/turnos-operador", icon: Clock },
       { title: "Turnos Supervisor", url: "/turnos-supervisor", icon: Clock },
       { title: "Ingresar Clientes", url: "/ingresar-clientes", icon: UserPlus },
+      { title: "Gestión de Usuarios", url: "/gestion-usuarios-director", icon: Users },
+      { title: "Patrullas Coraza", url: "/patrullas-coraza", icon: Shield },
     ]
   },
   { 

@@ -24,6 +24,8 @@ import ReportesTecnicos from "./pages/ReportesTecnicos";
 import Configuracion from "./pages/Configuracion";
 import NotFound from "./pages/NotFound";
 import Usuarios from "./pages/Usuarios";
+import GestionUsuariosCompartida from "./pages/GestionUsuariosCompartida";
+import PatrullasCoraza from "./pages/PatrullasCoraza";
 import Alarmas from "./pages/Alarmas";
 import Patrullas from "./pages/Patrullas";
 import Ubicaciones from "./pages/Ubicaciones";
@@ -55,7 +57,7 @@ import ReporteDetallado from "./pages/ReporteDetallado";
 import RutasAsignadas from "./pages/RutasAsignadas";
 import GenerarAlarma from "./pages/GenerarAlarma";
 import Auth from "./pages/Auth";
-import GestionUsuarios from "./pages/GestionUsuarios";
+
 import RegistroIncidentes from "./pages/RegistroIncidentes";
 import RegistroActividades from "./pages/RegistroActividades";
 import ReportesSupervisor from "./pages/ReportesSupervisor";
@@ -115,7 +117,7 @@ const AppContent = () => {
       <Route path="/gestion-usuarios" element={
         <ProtectedRoute requiredRoles={['administrador']}>
           <MainLayout>
-            <GestionUsuarios />
+            <GestionUsuariosCompartida />
           </MainLayout>
         </ProtectedRoute>
       } />

@@ -744,6 +744,59 @@ export type Database = {
         }
         Relationships: []
       }
+      patrullas_coraza: {
+        Row: {
+          acompanamientos_disponibles: number
+          acompanamientos_usados: number
+          cliente_id: string | null
+          created_at: string
+          id: string
+          month: number
+          patrullas_disponibles: number
+          patrullas_usadas: number
+          revistas_disponibles: number
+          revistas_usadas: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          acompanamientos_disponibles?: number
+          acompanamientos_usados?: number
+          cliente_id?: string | null
+          created_at?: string
+          id?: string
+          month?: number
+          patrullas_disponibles?: number
+          patrullas_usadas?: number
+          revistas_disponibles?: number
+          revistas_usadas?: number
+          updated_at?: string
+          year?: number
+        }
+        Update: {
+          acompanamientos_disponibles?: number
+          acompanamientos_usados?: number
+          cliente_id?: string | null
+          created_at?: string
+          id?: string
+          month?: number
+          patrullas_disponibles?: number
+          patrullas_usadas?: number
+          revistas_disponibles?: number
+          revistas_usadas?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patrullas_coraza_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       personal: {
         Row: {
           cargo: string | null
@@ -1209,6 +1262,24 @@ export type Database = {
       fix_users_without_roles: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_cliente_servicios_mes: {
+        Args: {
+          cliente_id_param: string
+          month_param?: number
+          year_param?: number
+        }
+        Returns: {
+          acompanamientos_disponibles: number
+          acompanamientos_restantes: number
+          acompanamientos_usados: number
+          patrullas_disponibles: number
+          patrullas_restantes: number
+          patrullas_usadas: number
+          revistas_disponibles: number
+          revistas_restantes: number
+          revistas_usadas: number
+        }[]
       }
       get_consolidated_user_data: {
         Args: { user_email: string }
