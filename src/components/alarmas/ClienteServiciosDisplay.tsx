@@ -102,14 +102,11 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
             </div>
             <div className="space-y-1">
               <div className="text-lg font-bold">
-                {servicios.patrullas_restantes} / {servicios.patrullas_disponibles}
+                {servicios.patrullas_usadas} utilizadas
               </div>
-              <Badge 
-                variant={getStatusColor(servicios.patrullas_usadas, servicios.patrullas_disponibles)}
-                className="text-xs"
-              >
-                {getStatusText(servicios.patrullas_usadas, servicios.patrullas_disponibles)}
-              </Badge>
+              <div className="text-sm text-muted-foreground">
+                este mes
+              </div>
             </div>
           </div>
 
@@ -121,14 +118,11 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
             </div>
             <div className="space-y-1">
               <div className="text-lg font-bold">
-                {servicios.acompanamientos_restantes} / {servicios.acompanamientos_disponibles}
+                {servicios.acompanamientos_usados} utilizados
               </div>
-              <Badge 
-                variant={getStatusColor(servicios.acompanamientos_usados, servicios.acompanamientos_disponibles)}
-                className="text-xs"
-              >
-                {getStatusText(servicios.acompanamientos_usados, servicios.acompanamientos_disponibles)}
-              </Badge>
+              <div className="text-sm text-muted-foreground">
+                este mes
+              </div>
             </div>
           </div>
 
@@ -140,14 +134,11 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
             </div>
             <div className="space-y-1">
               <div className="text-lg font-bold">
-                {servicios.revistas_restantes} / {servicios.revistas_disponibles}
+                {servicios.revistas_usadas} utilizadas
               </div>
-              <Badge 
-                variant={getStatusColor(servicios.revistas_usadas, servicios.revistas_disponibles)}
-                className="text-xs"
-              >
-                {getStatusText(servicios.revistas_usadas, servicios.revistas_disponibles)}
-              </Badge>
+              <div className="text-sm text-muted-foreground">
+                este mes
+              </div>
             </div>
           </div>
         </div>
@@ -155,10 +146,9 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
         {/* Información adicional */}
         <div className="mt-4 pt-3 border-t">
           <div className="text-xs text-muted-foreground space-y-1">
-            <div>• Los servicios se descontarán automáticamente al generar alarmas</div>
-            <div>• Patrullas: Siempre se descuentan</div>
-            <div>• Acompañamientos: Tipos "acompañamiento" o "escolta"</div>
-            <div>• Revistas: Tipos "revista" o "inspección"</div>
+            <div>• Servicios utilizados por este cliente en el mes actual</div>
+            <div>• Los servicios se descuentan del pool global automáticamente</div>
+            <div>• Consulta la página "Patrullas Coraza" para gestionar el pool global</div>
           </div>
         </div>
       </CardContent>

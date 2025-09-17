@@ -994,6 +994,48 @@ export type Database = {
         }
         Relationships: []
       }
+      servicios_utilizados: {
+        Row: {
+          alarma_id: string
+          cliente_id: string
+          created_at: string
+          fecha_uso: string
+          id: string
+          month: number
+          operador_id: string | null
+          operador_nombre: string | null
+          tipo_alarma: string
+          tipo_servicio: string
+          year: number
+        }
+        Insert: {
+          alarma_id: string
+          cliente_id: string
+          created_at?: string
+          fecha_uso?: string
+          id?: string
+          month?: number
+          operador_id?: string | null
+          operador_nombre?: string | null
+          tipo_alarma: string
+          tipo_servicio: string
+          year?: number
+        }
+        Update: {
+          alarma_id?: string
+          cliente_id?: string
+          created_at?: string
+          fecha_uso?: string
+          id?: string
+          month?: number
+          operador_id?: string | null
+          operador_nombre?: string | null
+          tipo_alarma?: string
+          tipo_servicio?: string
+          year?: number
+        }
+        Relationships: []
+      }
       supervisor_actividades: {
         Row: {
           created_at: string
@@ -1292,6 +1334,18 @@ export type Database = {
           role: string
         }[]
       }
+      get_historial_servicios_utilizados: {
+        Args: { month_param?: number; year_param?: number }
+        Returns: {
+          cliente_nombre: string
+          cliente_numero_cuenta: string
+          fecha_uso: string
+          id: string
+          operador_nombre: string
+          tipo_alarma: string
+          tipo_servicio: string
+        }[]
+      }
       get_monthly_comparisons: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1311,6 +1365,20 @@ export type Database = {
           en_proceso: number
           pendientes: number
           tiempo_promedio_resolucion: number
+        }[]
+      }
+      get_servicios_globales_mes: {
+        Args: { month_param?: number; year_param?: number }
+        Returns: {
+          acompanamientos_disponibles: number
+          acompanamientos_restantes: number
+          acompanamientos_usados: number
+          patrullas_disponibles: number
+          patrullas_restantes: number
+          patrullas_usadas: number
+          revistas_disponibles: number
+          revistas_restantes: number
+          revistas_usadas: number
         }[]
       }
       get_top_clients_consumption: {
