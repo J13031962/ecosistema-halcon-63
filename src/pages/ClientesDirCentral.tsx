@@ -56,7 +56,7 @@ const ClientesDirCentral = () => {
     cantidad_patrullas: '',
     cantidad_revistas: '',
     cantidad_smarturban: '',
-    empresa_contratada_id: ''
+    empresa_contratada_id: 'none'
   });
 
   const handleInputChange = (field: keyof ClienteFormData, value: string) => {
@@ -139,7 +139,7 @@ const ClientesDirCentral = () => {
         municipio: formData.municipio || '',
         email: formData.contacto_alarma_nombre || undefined,
         estado: 'activo',
-        empresa_contratada_id: formData.empresa_contratada_id || undefined,
+        empresa_contratada_id: formData.empresa_contratada_id !== 'none' ? formData.empresa_contratada_id : undefined,
         observaciones: `Ciudad: ${formData.ciudad}, Departamento: ${formData.departamento}, Contacto Alarma: ${formData.contacto_alarma_nombre} - ${formData.contacto_alarma_celular}, Coordenadas: ${formData.latitud}, ${formData.longitud}, Patrullas: ${formData.cantidad_patrullas}, Revistas: ${formData.cantidad_revistas}, SmartUrban: ${formData.cantidad_smarturban}`,
         servicios_contratados: {
           alarmas: 0,
@@ -194,7 +194,7 @@ const ClientesDirCentral = () => {
         cantidad_patrullas: '',
         cantidad_revistas: '',
         cantidad_smarturban: '',
-        empresa_contratada_id: ''
+        empresa_contratada_id: 'none'
       });
       setShowModal(false);
       setEditingCliente(null);
@@ -237,7 +237,7 @@ const ClientesDirCentral = () => {
       cantidad_patrullas: extractFromObservaciones(observacionesData, 'Patrullas') || (cliente.servicios_contratados?.acompañamientos?.toString() || ''),
       cantidad_revistas: extractFromObservaciones(observacionesData, 'Revistas') || (cliente.servicios_contratados?.revistas?.toString() || ''),
       cantidad_smarturban: extractFromObservaciones(observacionesData, 'SmartUrban') || (cliente.servicios_contratados?.smarturban?.toString() || ''),
-      empresa_contratada_id: cliente.empresa_contratada_id || ''
+      empresa_contratada_id: cliente.empresa_contratada_id || 'none'
     });
     
     setEditingCliente(cliente);
@@ -475,7 +475,7 @@ const ClientesDirCentral = () => {
                       <SelectValue placeholder="Seleccionar empresa contratada" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin empresa asignada</SelectItem>
+                      <SelectItem value="none">Sin empresa asignada</SelectItem>
                       {empresas.map((empresa) => (
                         <SelectItem key={empresa.id} value={empresa.id}>
                           {empresa.nombre}
@@ -507,7 +507,7 @@ const ClientesDirCentral = () => {
                       cantidad_patrullas: '',
                       cantidad_revistas: '',
                       cantidad_smarturban: '',
-                      empresa_contratada_id: ''
+                      empresa_contratada_id: 'none'
                     });
                   }}
                 >
