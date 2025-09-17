@@ -84,6 +84,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
             { title: "Reportes Ejecutivos", url: "/reportes-ejecutivos", icon: BarChart3 },
             { title: "Análisis Avanzado", url: "/analisis", icon: FileText },
             { title: "Estado General", url: "/estado-general", icon: Shield },
+            { title: "Patrullas Coraza", url: "/patrullas-coraza", icon: Shield },
             { title: "Gestión Personal Operadores", url: "/personal", icon: Users },
             { title: "Clientes", url: "/clientes-dir-central", icon: Building },
           ]
@@ -171,7 +172,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
     case 'director':
       return [
         { 
-          category: "🎯 Panel Director", 
+          category: "🎯 Panel Director Central", 
           items: [
             { title: "Dashboard Ejecutivo", url: "/dashboard", icon: Home },
             { title: "Reportes Ejecutivos", url: "/reportes-ejecutivos", icon: BarChart3 },
@@ -180,11 +181,77 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           ]
         },
         { 
-          category: "👥 Gestión Personal", 
+          category: "👥 Gestión de Usuarios", 
+          items: [
+            { title: "Gestión de Usuarios", url: "/gestion-usuarios-director", icon: Users },
+          ]
+        },
+        { 
+          category: "🚔 Patrullas Coraza", 
+          items: [
+            { title: "Patrullas Coraza", url: "/patrullas-coraza", icon: Shield },
+          ]
+        },
+        { 
+          category: "🏢 Gestión Clientes", 
+          items: [
+            { title: "Clientes Dir Central", url: "/clientes-dir-central", icon: Building },
+            { title: "Ingresar Clientes", url: "/ingresar-clientes", icon: UserPlus },
+            { title: "Gestión de Clientes", url: "/gestion-clientes", icon: Users },
+          ]
+        },
+        { 
+          category: "🚨 Monitoreo Operaciones", 
+          items: [
+            { title: "Monitoreo de Alarmas", url: "/central-alarmas", icon: AlertTriangle },
+            { title: "Patrullas Activas", url: "/patrullas-activas", icon: Car },
+            { title: "Todas las Patrullas", url: "/patrullas", icon: Car },
+            { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
+            { title: "Reporte de Ubicación", url: "/reporte-ubicacion", icon: MapPin },
+          ]
+        },
+        { 
+          category: "📊 Turnos y Horarios", 
           items: [
             { title: "Gestión Personal Operadores", url: "/personal", icon: Users },
+            { title: "Gestión Personal Supervisores", url: "/personal-supervisores", icon: UserCheck },
             { title: "Turnos Operador", url: "/turnos-operador", icon: Clock },
             { title: "Turnos Supervisor", url: "/turnos-supervisor", icon: Clock },
+          ]
+        },
+        { 
+          category: "📈 Reportes y Análisis", 
+          items: [
+            { title: "Reportes Generales", url: "/reportes", icon: FileText },
+            { title: "Reportes Supervisor", url: "/reportes-supervisor", icon: FileText },
+            { title: "Reportes Técnicos", url: "/reportes-tecnicos", icon: FileText },
+            { title: "Reporte Detallado", url: "/reporte-detallado", icon: FileText },
+            { title: "Ubicaciones", url: "/ubicaciones", icon: MapPin },
+          ]
+        },
+        { 
+          category: "🔧 Servicios Técnicos", 
+          items: [
+            { title: "Servicios Técnicos", url: "/servicios-tecnicos", icon: Wrench },
+            { title: "Inventario", url: "/inventario", icon: Package },
+            { title: "Ingresar Material", url: "/ingresar-material", icon: Package },
+            { title: "Mantenimiento", url: "/mantenimiento", icon: Wrench },
+          ]
+        },
+        { 
+          category: "💼 Ventas", 
+          items: [
+            { title: "Generar Cotizaciones", url: "/generar-cotizaciones", icon: FileSignature },
+            { title: "Elementos Cotizables", url: "/elementos-cotizables", icon: DollarSign },
+          ]
+        },
+        { 
+          category: "🌐 Enlaces Externos", 
+          items: [
+            { title: "WhatsApp Web", url: "https://web.whatsapp.com/", icon: MessageCircle, external: true },
+            { title: "Plataforma de Monitoreo", url: "https://monitoreo.miscuentas24hs.com/", icon: Monitor, external: true },
+            { title: "Plataforma GPS FullTrack", url: "https://fultrack.com", icon: Navigation, external: true },
+            { title: "Plataforma GPS ProTrack", url: "https://www.protrack365.com/?lang=es-es", icon: Navigation, external: true },
           ]
         }
       ];
