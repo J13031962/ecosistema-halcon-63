@@ -782,7 +782,7 @@ const GenerarAlarma = () => {
                       Cambiar Cliente
                     </Button>
                   </div>
-                  <div className="w-full md:max-w-sm">
+                  <div className="w-full md:max-w-sm shrink-0">
                     
                     <ClienteServiciosDisplay 
                       key={selectedClienteForAlarm.id}

@@ -50,6 +50,7 @@ import CronometroAlarma from "@/components/alarmas/CronometroAlarma";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSupabaseMinutaOperaciones } from "@/hooks/useSupabaseMinutaOperaciones";
+import { ClienteServiciosDisplay } from "@/components/alarmas/ClienteServiciosDisplay";
 
 interface ClienteFormData {
   id_numerico: string;
@@ -84,7 +85,13 @@ const CentralAlarmasOperador = () => {
   const [selectedAlarmType, setSelectedAlarmType] = useState<string>("");
   const [showClienteForm, setShowClienteForm] = useState(false);
   
-  // Estados para el formulario de llamadas
+useEffect(() => {
+  if (selectedClienteForAlarm) {
+    console.log('[CentralAlarmasOperador] Selected cliente:', selectedClienteForAlarm.id, selectedClienteForAlarm.nombre);
+  }
+}, [selectedClienteForAlarm]);
+
+// Estados para el formulario de llamadas
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [selectedClienteForCall, setSelectedClienteForCall] = useState<any>(null);
   const [callFormData, setCallFormData] = useState({
@@ -1304,17 +1311,28 @@ const CentralAlarmasOperador = () => {
               <div className="space-y-4">
                 <Card className="bg-green-50 border-green-200">
                   <CardContent className="p-4">
-                    <h3 className="font-semibold text-green-800">Cliente Seleccionado</h3>
-                    <p className="text-green-700">{selectedClienteForAlarm.nombre}</p>
-                    <p className="text-sm text-green-600">{selectedClienteForAlarm.direccion}</p>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => setSelectedClienteForAlarm(null)}
-                      className="mt-2"
-                    >
-                      Cambiar Cliente
-                    </Button>
+                    <div className="flex flex-col md:flex-row gap-3 items-start">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-green-800">Cliente Seleccionado</h3>
+                        <p className="text-green-700">{selectedClienteForAlarm.nombre}</p>
+                        <p className="text-sm text-green-600">{selectedClienteForAlarm.direccion}</p>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => setSelectedClienteForAlarm(null)}
+                          className="mt-2"
+                        >
+                          Cambiar Cliente
+                        </Button>
+                      </div>
+                      <div className="w-full md:max-w-sm">
+                        <ClienteServiciosDisplay 
+                          key={selectedClienteForAlarm.id}
+                          clienteId={selectedClienteForAlarm.id}
+                          clienteNombre={selectedClienteForAlarm.nombre}
+                        />
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 
