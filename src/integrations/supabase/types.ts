@@ -185,10 +185,14 @@ export type Database = {
           created_at: string | null
           direccion: string | null
           email: string | null
+          empresa_contratada_id: string | null
           estado: string | null
           fecha_contrato: string | null
           id: string
           latitud: number | null
+          limite_acompanamientos_personalizado: number | null
+          limite_patrullas_personalizado: number | null
+          limite_revistas_personalizado: number | null
           longitud: number | null
           municipio: string | null
           nombre: string
@@ -203,10 +207,14 @@ export type Database = {
           created_at?: string | null
           direccion?: string | null
           email?: string | null
+          empresa_contratada_id?: string | null
           estado?: string | null
           fecha_contrato?: string | null
           id?: string
           latitud?: number | null
+          limite_acompanamientos_personalizado?: number | null
+          limite_patrullas_personalizado?: number | null
+          limite_revistas_personalizado?: number | null
           longitud?: number | null
           municipio?: string | null
           nombre: string
@@ -221,10 +229,14 @@ export type Database = {
           created_at?: string | null
           direccion?: string | null
           email?: string | null
+          empresa_contratada_id?: string | null
           estado?: string | null
           fecha_contrato?: string | null
           id?: string
           latitud?: number | null
+          limite_acompanamientos_personalizado?: number | null
+          limite_patrullas_personalizado?: number | null
+          limite_revistas_personalizado?: number | null
           longitud?: number | null
           municipio?: string | null
           nombre?: string
@@ -235,7 +247,15 @@ export type Database = {
           tipo_servicio?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clientes_empresa_contratada_id_fkey"
+            columns: ["empresa_contratada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_contratadas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cotizacion_items: {
         Row: {
@@ -369,6 +389,45 @@ export type Database = {
           observaciones?: string | null
           precio?: number
           unidad?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      empresas_contratadas: {
+        Row: {
+          contacto: string | null
+          created_at: string
+          descripcion: string | null
+          email: string | null
+          estado: string
+          id: string
+          nombre: string
+          telefono: string | null
+          tipo_servicio: string
+          updated_at: string
+        }
+        Insert: {
+          contacto?: string | null
+          created_at?: string
+          descripcion?: string | null
+          email?: string | null
+          estado?: string
+          id?: string
+          nombre: string
+          telefono?: string | null
+          tipo_servicio?: string
+          updated_at?: string
+        }
+        Update: {
+          contacto?: string | null
+          created_at?: string
+          descripcion?: string | null
+          email?: string | null
+          estado?: string
+          id?: string
+          nombre?: string
+          telefono?: string | null
+          tipo_servicio?: string
           updated_at?: string
         }
         Relationships: []
@@ -750,6 +809,7 @@ export type Database = {
           acompanamientos_usados: number
           cliente_id: string | null
           created_at: string
+          empresa_contratada_id: string | null
           id: string
           month: number
           patrullas_disponibles: number
@@ -764,6 +824,7 @@ export type Database = {
           acompanamientos_usados?: number
           cliente_id?: string | null
           created_at?: string
+          empresa_contratada_id?: string | null
           id?: string
           month?: number
           patrullas_disponibles?: number
@@ -778,6 +839,7 @@ export type Database = {
           acompanamientos_usados?: number
           cliente_id?: string | null
           created_at?: string
+          empresa_contratada_id?: string | null
           id?: string
           month?: number
           patrullas_disponibles?: number
@@ -793,6 +855,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patrullas_coraza_empresa_contratada_id_fkey"
+            columns: ["empresa_contratada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_contratadas"
             referencedColumns: ["id"]
           },
         ]
@@ -999,6 +1068,7 @@ export type Database = {
           alarma_id: string
           cliente_id: string
           created_at: string
+          empresa_contratada_id: string | null
           fecha_uso: string
           id: string
           month: number
@@ -1012,6 +1082,7 @@ export type Database = {
           alarma_id: string
           cliente_id: string
           created_at?: string
+          empresa_contratada_id?: string | null
           fecha_uso?: string
           id?: string
           month?: number
@@ -1025,6 +1096,7 @@ export type Database = {
           alarma_id?: string
           cliente_id?: string
           created_at?: string
+          empresa_contratada_id?: string | null
           fecha_uso?: string
           id?: string
           month?: number
@@ -1034,7 +1106,15 @@ export type Database = {
           tipo_servicio?: string
           year?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "servicios_utilizados_empresa_contratada_id_fkey"
+            columns: ["empresa_contratada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_contratadas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       supervisor_actividades: {
         Row: {
@@ -1357,6 +1437,22 @@ export type Database = {
           servicios_tecnicos: number
         }[]
       }
+      get_resumen_global_empresas: {
+        Args: { month_param?: number; year_param?: number }
+        Returns: {
+          acompanamientos_disponibles: number
+          acompanamientos_restantes: number
+          acompanamientos_usados: number
+          empresa_id: string
+          empresa_nombre: string
+          patrullas_disponibles: number
+          patrullas_restantes: number
+          patrullas_usadas: number
+          revistas_disponibles: number
+          revistas_restantes: number
+          revistas_usadas: number
+        }[]
+      }
       get_service_tech_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1369,6 +1465,24 @@ export type Database = {
       }
       get_servicios_globales_mes: {
         Args: { month_param?: number; year_param?: number }
+        Returns: {
+          acompanamientos_disponibles: number
+          acompanamientos_restantes: number
+          acompanamientos_usados: number
+          patrullas_disponibles: number
+          patrullas_restantes: number
+          patrullas_usadas: number
+          revistas_disponibles: number
+          revistas_restantes: number
+          revistas_usadas: number
+        }[]
+      }
+      get_servicios_por_empresa: {
+        Args: {
+          empresa_id_param: string
+          month_param?: number
+          year_param?: number
+        }
         Returns: {
           acompanamientos_disponibles: number
           acompanamientos_restantes: number

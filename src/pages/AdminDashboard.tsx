@@ -6,6 +6,7 @@ import { ExecutiveMetrics } from "@/components/dashboard/ExecutiveMetrics";
 import { MonthlyComparisons } from "@/components/dashboard/MonthlyComparisons";
 import { ClientAnalytics } from "@/components/dashboard/ClientAnalytics";
 import { ServiceTechnicalStats } from "@/components/dashboard/ServiceTechnicalStats";
+import { PatrullasCorazaStats } from "@/components/dashboard/PatrullasCorazaStats";
 import { RefreshCw, TrendingUp, Users, BarChart3, Wrench, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -136,6 +137,13 @@ const AdminDashboard = () => {
           topClients={analytics.topClients} 
           alarmsByType={analytics.alarmsByType} 
         />
+      </section>
+
+      <Separator />
+
+      {/* Estadísticas de Patrullas Contratadas */}
+      <section className="space-y-4">
+        <PatrullasCorazaStats />
       </section>
 
       <Separator />

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Car, Users, Eye } from 'lucide-react';
-import { useSupabasePatrullasCoraza, ServiciosClienteResumen } from '@/hooks/useSupabasePatrullasCoraza';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ClienteServiciosDisplayProps {
   clienteId: string;
@@ -13,8 +13,7 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
   clienteId, 
   clienteNombre 
 }) => {
-  const { getClienteServiciosMes } = useSupabasePatrullasCoraza();
-  const [servicios, setServicios] = useState<ServiciosClienteResumen | null>(null);
+  const [servicios, setServicios] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   const currentYear = new Date().getFullYear();
@@ -29,8 +28,67 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
   const fetchServiciosCliente = async () => {
     setLoading(true);
     try {
-      const data = await getClienteServiciosMes(clienteId, currentYear, currentMonth);
-      setServicios(data);
+      // Obtener la empresa contratada del cliente
+      const { data: clienteData, error: clienteError } = await supabase
+        .from('clientes')
+        .select('empresa_contratada_id')
+        .eq('id', clienteId)
+        .single();
+      
+      if (clienteError) throw clienteError;
+      
+      let empresaId = clienteData?.empresa_contratada_id;
+      
+      // Si no tiene empresa asignada, usar la primera empresa activa
+      if (!empresaId) {
+        const { data: empresaData, error: empresaError } = await supabase
+          .from('empresas_contratadas')
+          .select('id')
+          .eq('estado', 'activo')
+          .order('nombre')
+          .limit(1)
+          .single();
+        
+        if (!empresaError && empresaData) {
+          empresaId = empresaData.id;
+        }
+      }
+      
+      if (empresaId) {
+        const { data: serviciosData, error: serviciosError } = await supabase.rpc('get_servicios_por_empresa', {
+          empresa_id_param: empresaId,
+          year_param: currentYear,
+          month_param: currentMonth
+        });
+        
+        if (serviciosError) throw serviciosError;
+        
+        // Obtener servicios utilizados por este cliente específico
+        const { data: utilizadosData, error: utilizadosError } = await supabase
+          .from('servicios_utilizados')
+          .select('tipo_servicio')
+          .eq('cliente_id', clienteId)
+          .eq('year', currentYear)
+          .eq('month', currentMonth);
+        
+        if (utilizadosError) throw utilizadosError;
+        
+        // Contar servicios utilizados por tipo
+        const usados = {
+          patrulla: utilizadosData?.filter(s => s.tipo_servicio === 'patrulla').length || 0,
+          acompanamiento: utilizadosData?.filter(s => s.tipo_servicio === 'acompanamiento').length || 0,
+          revista: utilizadosData?.filter(s => s.tipo_servicio === 'revista').length || 0
+        };
+        
+        const serviciosCompletos = {
+          ...serviciosData?.[0],
+          cliente_patrullas_usadas: usados.patrulla,
+          cliente_acompanamientos_usados: usados.acompanamiento,
+          cliente_revistas_usadas: usados.revista
+        };
+        
+        setServicios(serviciosCompletos);
+      }
     } catch (error) {
       console.error('Error fetching servicios cliente:', error);
     } finally {

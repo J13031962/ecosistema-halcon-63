@@ -25,7 +25,8 @@ import Configuracion from "./pages/Configuracion";
 import NotFound from "./pages/NotFound";
 import Usuarios from "./pages/Usuarios";
 import GestionUsuariosCompartida from "./pages/GestionUsuariosCompartida";
-import PatrullasCoraza from "./pages/PatrullasCoraza";
+import PatrullasContratadas from "./pages/PatrullasContratadas";
+import PatrullasCorazaConfig from "./pages/PatrullasCorazaConfig";
 import Alarmas from "./pages/Alarmas";
 import Patrullas from "./pages/Patrullas";
 import Ubicaciones from "./pages/Ubicaciones";
@@ -130,10 +131,18 @@ const AppContent = () => {
         </ProtectedRoute>
       } />
       
-      <Route path="/patrullas-coraza" element={
+      <Route path="/patrullas-contratadas" element={
         <ProtectedRoute requiredRoles={['administrador', 'director']}>
           <MainLayout>
-            <PatrullasCoraza />
+            <PatrullasContratadas />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/patrullas-contratadas/:empresaId" element={
+        <ProtectedRoute requiredRoles={['administrador', 'director']}>
+          <MainLayout>
+            <PatrullasCorazaConfig />
           </MainLayout>
         </ProtectedRoute>
       } />
