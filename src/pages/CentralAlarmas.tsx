@@ -10,6 +10,7 @@ import { useUserSpecificData } from "@/hooks/useUserSpecificData";
 import { format, differenceInSeconds, differenceInMinutes } from "date-fns";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorModal";
+import { ClienteServiciosDisplay } from "@/components/alarmas/ClienteServiciosDisplay";
 import { supabase } from "@/integrations/supabase/client";
 
 const CentralAlarmas = () => {
@@ -489,6 +490,14 @@ const CentralAlarmas = () => {
                           <p className="text-sm font-medium text-muted-foreground mb-1">
                             {alarma.clientes?.nombre || 'TELEGUARDIA LTDA'}
                           </p>
+                          
+                          {/* Servicios del cliente */}
+                          <div className="mb-4">
+                            <ClienteServiciosDisplay 
+                              clienteId={alarma.cliente_id}
+                              clienteNombre={alarma.clientes?.nombre}
+                            />
+                          </div>
                           
                           <div className="flex flex-wrap gap-4 mb-3">
                             <p className="text-sm text-muted-foreground">
