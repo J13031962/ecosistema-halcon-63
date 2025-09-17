@@ -122,6 +122,22 @@ const AppContent = () => {
         </ProtectedRoute>
       } />
       
+      <Route path="/gestion-usuarios-director" element={
+        <ProtectedRoute requiredRoles={['director']}>
+          <MainLayout>
+            <GestionUsuariosCompartida isDirectorCentral={true} />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/patrullas-coraza" element={
+        <ProtectedRoute requiredRoles={['administrador', 'director']}>
+          <MainLayout>
+            <PatrullasCoraza />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+      
       <Route path="/configuracion" element={
         <ProtectedRoute requiredRoles={['administrador']}>
           <MainLayout>
