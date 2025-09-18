@@ -35,37 +35,54 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
         .from('clientes')
         .select('empresa_contratada_id')
         .eq('id', clienteId)
-        .single();
+        .maybeSingle();
       
-      if (clienteError) throw clienteError;
+      if (clienteError) {
+        console.error('[ClienteServiciosDisplay] Error al obtener cliente:', clienteError);
+        throw clienteError;
+      }
       
       let empresaId = clienteData?.empresa_contratada_id;
+      console.log('[ClienteServiciosDisplay] Cliente empresa_contratada_id:', empresaId);
       
       // Si no tiene empresa asignada, usar la primera empresa activa
       if (!empresaId) {
+        console.log('[ClienteServiciosDisplay] No tiene empresa asignada, buscando empresa por defecto...');
         const { data: empresaData, error: empresaError } = await supabase
           .from('empresas_contratadas')
           .select('id')
           .eq('estado', 'activo')
           .order('nombre')
           .limit(1)
-          .single();
+          .maybeSingle();
         
-        if (!empresaError && empresaData) {
+        if (empresaError) {
+          console.error('[ClienteServiciosDisplay] Error al obtener empresa por defecto:', empresaError);
+        } else if (empresaData) {
           empresaId = empresaData.id;
+          console.log('[ClienteServiciosDisplay] Empresa por defecto encontrada:', empresaId);
+        } else {
+          console.warn('[ClienteServiciosDisplay] No se encontró empresa activa por defecto');
         }
       }
       
       if (empresaId) {
+        console.log('[ClienteServiciosDisplay] Llamando get_servicios_por_empresa con:', { empresaId, currentYear, currentMonth });
         const { data: serviciosData, error: serviciosError } = await supabase.rpc('get_servicios_por_empresa', {
           empresa_id_param: empresaId,
           year_param: currentYear,
           month_param: currentMonth
         });
         
-        if (serviciosError) throw serviciosError;
+        if (serviciosError) {
+          console.error('[ClienteServiciosDisplay] Error en get_servicios_por_empresa:', serviciosError);
+          throw serviciosError;
+        }
+        
+        console.log('[ClienteServiciosDisplay] serviciosData obtenidos:', serviciosData);
         
         // Obtener servicios utilizados por este cliente específico
+        console.log('[ClienteServiciosDisplay] Obteniendo servicios utilizados...');
         const { data: utilizadosData, error: utilizadosError } = await supabase
           .from('servicios_utilizados')
           .select('tipo_servicio')
@@ -73,7 +90,12 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
           .eq('year', currentYear)
           .eq('month', currentMonth);
         
-        if (utilizadosError) throw utilizadosError;
+        if (utilizadosError) {
+          console.error('[ClienteServiciosDisplay] Error al obtener servicios utilizados:', utilizadosError);
+          throw utilizadosError;
+        }
+        
+        console.log('[ClienteServiciosDisplay] utilizadosData obtenidos:', utilizadosData);
         
         // Contar servicios utilizados por tipo
         const usados = {
@@ -81,6 +103,8 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
           acompanamiento: utilizadosData?.filter(s => s.tipo_servicio === 'acompanamiento').length || 0,
           revista: utilizadosData?.filter(s => s.tipo_servicio === 'revista').length || 0
         };
+        
+        console.log('[ClienteServiciosDisplay] Servicios usados contados:', usados);
         
         const serviciosCompletos = {
           ...serviciosData?.[0],
@@ -91,6 +115,36 @@ export const ClienteServiciosDisplay: React.FC<ClienteServiciosDisplayProps> = (
         
         console.log('[ClienteServiciosDisplay] serviciosCompletos:', serviciosCompletos);
         setServicios(serviciosCompletos);
+      } else {
+        console.warn('[ClienteServiciosDisplay] No se pudo obtener empresa_id, mostrando solo servicios utilizados');
+        
+        // Si no hay empresa, al menos mostrar los servicios utilizados
+        const { data: utilizadosData, error: utilizadosError } = await supabase
+          .from('servicios_utilizados')
+          .select('tipo_servicio')
+          .eq('cliente_id', clienteId)
+          .eq('year', currentYear)
+          .eq('month', currentMonth);
+        
+        if (utilizadosError) {
+          console.error('[ClienteServiciosDisplay] Error al obtener servicios utilizados sin empresa:', utilizadosError);
+          throw utilizadosError;
+        }
+        
+        const usados = {
+          patrulla: utilizadosData?.filter(s => s.tipo_servicio === 'patrulla').length || 0,
+          acompanamiento: utilizadosData?.filter(s => s.tipo_servicio === 'acompanamiento').length || 0,
+          revista: utilizadosData?.filter(s => s.tipo_servicio === 'revista').length || 0
+        };
+        
+        const serviciosSinEmpresa = {
+          cliente_patrullas_usadas: usados.patrulla,
+          cliente_acompanamientos_usados: usados.acompanamiento,
+          cliente_revistas_usadas: usados.revista
+        };
+        
+        console.log('[ClienteServiciosDisplay] serviciosSinEmpresa:', serviciosSinEmpresa);
+        setServicios(serviciosSinEmpresa);
       }
     } catch (error) {
       console.error('Error fetching servicios cliente:', error);
