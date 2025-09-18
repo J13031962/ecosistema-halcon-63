@@ -48,7 +48,7 @@ const clienteSchema = z.object({
 type ClienteFormData = z.infer<typeof clienteSchema>;
 
 const GestionClientes = () => {
-  const { clientes, loading, addCliente, updateCliente, deleteCliente } = useSupabaseClientes();
+  const { clientes, loading, error, addCliente, updateCliente, deleteCliente } = useSupabaseClientes();
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState<any>(null);
@@ -75,38 +75,35 @@ const GestionClientes = () => {
 
   const filteredClientes = clientes.filter(cliente =>
     cliente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (cliente.email && cliente.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    cliente.direccion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cliente.municipio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cliente.numero_cuenta?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const generateQRCode = async (cliente: any) => {
-    const qrData = {
-      id_cliente: cliente.id,
-      nombre: cliente.nombre,
-      direccion: cliente.direccion,
-      coordenadas: {
-        latitud: cliente.latitud || "0",
-        longitud: cliente.longitud || "0"
-      }
-    };
-    
     try {
-      const qrString = await QRCode.toDataURL(JSON.stringify(qrData), {
-        width: 300,
-        margin: 2
+      const qrData = JSON.stringify({
+        id: cliente.numero_cuenta || cliente.id,
+        nombre: cliente.nombre,
+        direccion: cliente.direccion,
+        coordenadas: {
+          lat: cliente.latitud || 0,
+          lng: cliente.longitud || 0
+        }
       });
-      return qrString;
-    } catch (error) {
-      console.error('Error generating QR:', error);
-      return null;
-    }
-  };
-
-  const showClienteQR = async (cliente: any) => {
-    const qrString = await generateQRCode(cliente);
-    if (qrString) {
-      setQrDataURL(qrString);
+      
+      const qrCodeDataURL = await QRCode.toDataURL(qrData, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      
+      setQrDataURL(qrCodeDataURL);
       setShowQR(cliente);
-    } else {
+    } catch (error) {
       toast({
         title: "Error",
         description: "No se pudo generar el código QR",
@@ -117,53 +114,51 @@ const GestionClientes = () => {
 
   const onSubmit = async (data: ClienteFormData) => {
     try {
+      const clienteData = {
+        ...data,
+        nombre: capitalizeWords(data.nombre),
+        direccion: capitalizeText(data.direccion),
+        municipio: capitalizeWords(data.municipio),
+        numero_cuenta: data.numero_cuenta?.toUpperCase(),
+        observaciones: data.observaciones ? capitalizeText(data.observaciones) : undefined,
+        latitud: data.latitud ? parseFloat(data.latitud) : null,
+        longitud: data.longitud ? parseFloat(data.longitud) : null,
+        estado: 'activo'
+      };
+
       if (editingCliente) {
-        await updateCliente(editingCliente.id, {
-          ...data,
-          latitud: data.latitud ? parseFloat(data.latitud) : null,
-          longitud: data.longitud ? parseFloat(data.longitud) : null,
-          estado: 'activo'
+        await updateCliente(editingCliente.id, clienteData);
+        toast({
+          title: "Cliente actualizado",
+          description: "Los datos del cliente se han actualizado correctamente",
         });
       } else {
-        const newClienteData = {
-          nombre: data.nombre,
-          numero_cuenta: data.numero_cuenta,
-          direccion: data.direccion,
-          telefono: data.telefono,
-          email: data.email,
-          municipio: data.municipio,
-          latitud: data.latitud ? parseFloat(data.latitud) : null,
-          longitud: data.longitud ? parseFloat(data.longitud) : null,
-          tipo_servicio: data.tipo_servicio,
-          observaciones: data.observaciones,
-          estado: 'activo'
-        };
-        
-        const result = await addCliente(newClienteData);
-        
-        if (result.success) {
-          toast({
-            title: "Cliente creado",
-            description: "El cliente ha sido registrado exitosamente con código QR generado",
-          });
-        }
+        await addCliente(clienteData);
+        toast({
+          title: "Cliente registrado",
+          description: "El cliente se ha registrado correctamente",
+        });
       }
 
       form.reset();
       setIsModalOpen(false);
       setEditingCliente(null);
     } catch (error) {
-      // Error is handled by the hook
+      toast({
+        title: "Error",
+        description: "No se pudo guardar el cliente",
+        variant: "destructive"
+      });
     }
   };
 
   const handleEdit = (cliente: any) => {
     setEditingCliente(cliente);
     form.reset({
-      nombre: cliente.nombre,
+      nombre: cliente.nombre || "",
       numero_cuenta: cliente.numero_cuenta || "",
-      direccion: cliente.direccion,
-      municipio: cliente.municipio,
+      direccion: cliente.direccion || "",
+      municipio: cliente.municipio || "",
       latitud: cliente.latitud?.toString() || "",
       longitud: cliente.longitud?.toString() || "",
       telefono: cliente.telefono || "",
@@ -175,9 +170,20 @@ const GestionClientes = () => {
   };
 
   const handleDelete = async (clienteId: string) => {
-    await deleteCliente(clienteId);
+    try {
+      await deleteCliente(clienteId);
+      toast({
+        title: "Cliente eliminado",
+        description: "El cliente se ha eliminado correctamente",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el cliente",
+        variant: "destructive"
+      });
+    }
   };
-
 
   const openNewClientModal = () => {
     setEditingCliente(null);
@@ -185,24 +191,22 @@ const GestionClientes = () => {
     setIsModalOpen(true);
   };
 
+  if (loading) return <div className="p-6">Cargando...</div>;
+  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
+
   return (
     <OperationalThemeWrapper>
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <Users className="h-8 w-8 text-primary" />
-            Gestión de Clientes
-          </h1>
-          <p className="text-muted-foreground">Administra los clientes del sistema de seguridad</p>
-        </div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+              <Users className="h-8 w-8 text-primary" />
+              Gestión de Clientes
+            </h1>
+            <p className="text-muted-foreground">Administra los clientes del sistema de seguridad</p>
+          </div>
 
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openNewClientModal} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Registrar Nuevo Cliente
-            </Button>
+          <div className="flex gap-3">
             <Button 
               variant="outline" 
               onClick={() => setShowQRReport(true)}
@@ -212,405 +216,408 @@ const GestionClientes = () => {
               <QrCode className="h-4 w-4" />
               Generar QRs
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                {editingCliente ? "Editar Cliente" : "Registrar Nuevo Cliente"}
-              </DialogTitle>
-              <DialogDescription>
-                {editingCliente 
-                  ? "Modifica la información del cliente"
-                  : "Complete los datos del nuevo cliente"
-                }
-              </DialogDescription>
-            </DialogHeader>
+            
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openNewClientModal} className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Registrar Nuevo Cliente
+                </Button>
+              </DialogTrigger>
 
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="nombre"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nombre o Razón Social *</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Nombre del cliente" 
-                          {...field}
-                          onChange={(e) => field.onChange(capitalizeWords(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingCliente ? "Editar Cliente" : "Registrar Nuevo Cliente"}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {editingCliente 
+                      ? "Modifica la información del cliente"
+                      : "Complete los datos del nuevo cliente"
+                    }
+                  </DialogDescription>
+                </DialogHeader>
 
-                <FormField
-                  control={form.control}
-                  name="numero_cuenta"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número de Cuenta</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Número de cuenta del cliente" 
-                          {...field}
-                          onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="nombre"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nombre *</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="Nombre del cliente"
+                                {...field}
+                                onChange={(e) => field.onChange(capitalizeWords(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="telefono"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Teléfono</FormLabel>
-                        <FormControl>
-                          <Input placeholder="300 123 4567" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      <FormField
+                        control={form.control}
+                        name="numero_cuenta"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Número de Cuenta</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="Número de cuenta"
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="cliente@empresa.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="direccion"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Dirección *</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Dirección completa" 
-                          {...field}
-                          onChange={(e) => field.onChange(capitalizeWords(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="municipio"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Municipio *</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Municipio" 
-                            {...field}
-                            onChange={(e) => field.onChange(capitalizeText(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="tipo_servicio"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tipo de Servicio *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                    <FormField
+                      control={form.control}
+                      name="direccion"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Dirección *</FormLabel>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecciona el tipo de servicio" />
-                            </SelectTrigger>
+                            <Input 
+                              placeholder="Dirección completa"
+                              {...field}
+                              onChange={(e) => field.onChange(capitalizeText(e.target.value))}
+                            />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="vigilancia">Vigilancia</SelectItem>
-                            <SelectItem value="alarmas">Alarmas</SelectItem>
-                            <SelectItem value="patrullaje">Patrullaje</SelectItem>
-                            <SelectItem value="escolta">Escolta</SelectItem>
-                            <SelectItem value="cctv">CCTV</SelectItem>
-                            <SelectItem value="control_acceso">Control de Acceso</SelectItem>
-                            <SelectItem value="revision_rutinaria">Revisión Rutinaria</SelectItem>
-                            <SelectItem value="otros">Otros</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="latitud"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Latitud (GPS)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Ej: 6.2442" 
-                            type="number" 
-                            step="any"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="longitud"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Longitud (GPS)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Ej: -75.5812" 
-                            type="number" 
-                            step="any"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="municipio"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Municipio *</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="Municipio"
+                                {...field}
+                                onChange={(e) => field.onChange(capitalizeWords(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                <FormField
-                  control={form.control}
-                  name="observaciones"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Observaciones</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Observaciones adicionales sobre el cliente..."
-                          className="min-h-[80px]"
-                          {...field}
-                          onChange={(e) => field.onChange(capitalizeText(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      <FormField
+                        control={form.control}
+                        name="tipo_servicio"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Tipo de Servicio *</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Seleccionar servicio" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Seguridad Residencial">Seguridad Residencial</SelectItem>
+                                <SelectItem value="Seguridad Empresarial">Seguridad Empresarial</SelectItem>
+                                <SelectItem value="Seguridad Industrial">Seguridad Industrial</SelectItem>
+                                <SelectItem value="Seguridad Comercial">Seguridad Comercial</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
-                <div className="flex gap-4 pt-4">
-                  <Button type="submit" className="flex-1">
-                    {editingCliente ? "Actualizar Cliente" : "Registrar Cliente"}
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsModalOpen(false)}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="telefono"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Teléfono</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Número de teléfono" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-      {/* Estadística Principal */}
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-4 max-w-sm">
-        <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium text-blue-800">Total de Clientes Registrados</CardTitle>
-            <Building2 className="h-6 w-6 text-blue-600" />
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="correo@ejemplo.com" type="email" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="latitud"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Latitud</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ej: 10.391049" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="longitud"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Longitud</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ej: -75.479426" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="observaciones"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Observaciones</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Observaciones adicionales..."
+                              {...field}
+                              onChange={(e) => field.onChange(capitalizeText(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="flex gap-3 pt-4">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => setIsModalOpen(false)}
+                        className="flex-1"
+                      >
+                        Cancelar
+                      </Button>
+                      <Button type="submit" className="flex-1">
+                        {editingCliente ? "Actualizar Cliente" : "Registrar Cliente"}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* Estadísticas */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Resumen</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-blue-700">{clientes.length}</div>
-            <p className="text-sm text-blue-600 mt-1">Clientes activos en el sistema</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">{clientes.length}</div>
+                <div className="text-sm text-muted-foreground">Total Clientes</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {clientes.filter(c => c.estado === 'activo').length}
+                </div>
+                <div className="text-sm text-muted-foreground">Activos</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">
+                  {clientes.filter(c => c.estado === 'inactivo').length}
+                </div>
+                <div className="text-sm text-muted-foreground">Inactivos</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Buscador */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Listado de Clientes</CardTitle>
-          <CardDescription>Gestiona todos los clientes registrados en el sistema</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-2 mb-6">
-            <Search className="h-4 w-4 text-muted-foreground" />
+        {/* Búsqueda */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              Buscar Clientes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <Input
-              placeholder="Buscar por nombre o número de cuenta..."
+              placeholder="Buscar por nombre, dirección, municipio o número de cuenta..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
+              className="w-full"
             />
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="space-y-4">
-            {filteredClientes.map((cliente) => (
-              <div key={cliente.id} className="p-4 border rounded-lg">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
-                  <div className="lg:col-span-8">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Nombre</p>
-                        <p className="font-semibold">{cliente.nombre}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Municipio</p>
-                        <p className="font-semibold">{cliente.municipio}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Estado</p>
-                        <Badge variant="outline">{cliente.estado}</Badge>
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <p className="text-sm text-muted-foreground">Dirección</p>
-                      <p className="text-sm">{cliente.direccion}</p>
-                    </div>
-                    {cliente.telefono && (
-                      <div className="mt-2">
-                        <p className="text-sm text-muted-foreground">Teléfono: {cliente.telefono}</p>
-                      </div>
-                    )}
-                    {cliente.tipo_servicio && (
-                      <div className="mt-2">
-                        <Badge variant="secondary">
-                          {cliente.tipo_servicio}
-                        </Badge>
-                      </div>
-                    )}
+        {/* Lista de Clientes */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredClientes.map((cliente) => (
+            <Card key={cliente.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">{cliente.nombre}</CardTitle>
+                    <CardDescription className="flex items-center gap-1 mt-1">
+                      <Building2 className="h-4 w-4" />
+                      Cuenta: {cliente.numero_cuenta || 'Sin asignar'}
+                    </CardDescription>
                   </div>
-
-                  <div className="lg:col-span-4 flex flex-wrap gap-2 justify-end">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => showClienteQR(cliente)}
-                      className="flex items-center gap-1"
-                    >
-                      <QrCode className="h-4 w-4" />
-                      Ver QR
-                    </Button>
-                    
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEdit(cliente)}
-                      className="flex items-center gap-1"
-                    >
-                      <Edit className="h-4 w-4" />
-                      Editar
-                    </Button>
-                    
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="h-4 w-4" />
-                          Eliminar
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta acción no se puede deshacer. El cliente será eliminado permanentemente del sistema.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(cliente.id)}>
-                            Eliminar
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
+                  <Badge variant={cliente.estado === 'activo' ? 'default' : 'secondary'}>
+                    {cliente.estado}
+                  </Badge>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {filteredClientes.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-              <p>No se encontraron clientes</p>
-              <p className="text-sm">Intenta con otros términos de búsqueda</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Modal QR Code */}
-      <Dialog open={!!showQR} onOpenChange={() => setShowQR(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <QrCode className="h-5 w-5" />
-              Código QR - {showQR?.nombre}
-            </DialogTitle>
-            <DialogDescription>
-              Código QR para confirmar llegada del supervisor
-            </DialogDescription>
-          </DialogHeader>
-          
-          {qrDataURL && (
-            <div className="space-y-4">
-              <div className="flex justify-center">
-                <img 
-                  src={qrDataURL} 
-                  alt="Código QR del cliente" 
-                  className="border rounded-lg"
-                />
-              </div>
-              
-              <div className="text-center space-y-2">
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  <span>ID Cliente: {showQR?.id}</span>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div className="text-sm">
+                    <div>{cliente.direccion}</div>
+                    <div className="text-muted-foreground">{cliente.municipio}</div>
+                  </div>
                 </div>
                 
-                {showQR?.latitud && showQR?.longitud && (
-                  <div className="text-sm text-muted-foreground">
-                    Coordenadas: {showQR.latitud}, {showQR.longitud}
+                {cliente.telefono && (
+                  <div className="text-sm">
+                    <strong>Tel:</strong> {cliente.telefono}
                   </div>
                 )}
                 
-                <p className="text-sm text-muted-foreground">
-                  El supervisor debe escanear este código para confirmar su llegada
-                </p>
+                {cliente.email && (
+                  <div className="text-sm">
+                    <strong>Email:</strong> {cliente.email}
+                  </div>
+                )}
+                
+                <div className="text-sm">
+                  <strong>Servicio:</strong> {cliente.tipo_servicio}
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => generateQRCode(cliente)}
+                    className="flex-1"
+                  >
+                    <QrCode className="h-4 w-4 mr-1" />
+                    QR
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(cliente)}
+                    className="flex-1"
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción no se puede deshacer. Se eliminará permanentemente 
+                          la información del cliente.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => handleDelete(cliente.id)}
+                          className="bg-destructive hover:bg-destructive/90"
+                        >
+                          Eliminar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {filteredClientes.length === 0 && (
+          <Card>
+            <CardContent className="text-center py-8">
+              <p className="text-muted-foreground">No se encontraron clientes</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Modal QR */}
+      <Dialog open={!!showQR} onOpenChange={() => setShowQR(null)}>
+        <DialogContent className="max-w-md">
+          {showQR && (
+            <div className="text-center space-y-4">
+              <DialogHeader>
+                <DialogTitle>Código QR</DialogTitle>
+                <DialogDescription>
+                  Código QR para {showQR.nombre}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="flex justify-center">
+                <img src={qrDataURL} alt="Código QR" className="border rounded" />
+              </div>
+              
+              <div className="text-sm text-muted-foreground">
+                <div><strong>Cliente:</strong> {showQR.nombre}</div>
+                <div><strong>Cuenta:</strong> {showQR.numero_cuenta || 'Sin asignar'}</div>
+                <div><strong>Dirección:</strong> {showQR.direccion}</div>
               </div>
               
               <div className="flex gap-2">
                 <Button 
-                  onClick={() => window.print()} 
-                  variant="outline" 
-                  size="sm" 
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.download = `qr-${showQR.nombre.replace(/\s+/g, '-')}.png`;
+                    link.href = qrDataURL;
+                    link.click();
+                  }}
                   className="flex-1"
                 >
-                  Imprimir QR
+                  Descargar
                 </Button>
                 <Button 
                   onClick={() => setShowQR(null)} 
@@ -622,19 +629,17 @@ const GestionClientes = () => {
               </div>
             </div>
           )}
-         </DialogContent>
-       </Dialog>
+        </DialogContent>
+      </Dialog>
 
-       {/* QR Report Generator */}
-       <QRReportGenerator
-         isOpen={showQRReport}
-         onClose={() => setShowQRReport(false)}
-         clientes={clientes}
-       />
-
-     </div>
-     </OperationalThemeWrapper>
-   );
- };
+      {/* QR Report Generator */}
+      <QRReportGenerator
+        isOpen={showQRReport}
+        onClose={() => setShowQRReport(false)}
+        clientes={clientes}
+      />
+    </OperationalThemeWrapper>
+  );
+};
 
 export default GestionClientes;
