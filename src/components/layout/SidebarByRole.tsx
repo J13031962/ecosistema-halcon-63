@@ -187,7 +187,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           ]
         },
         { 
-          category: "🚔 Patrullas Coraza", 
+          category: "🚔 Patrullas", 
           items: [
             { title: "Patrullas Contratadas", url: "/patrullas-contratadas", icon: Shield },
           ]
