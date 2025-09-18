@@ -195,8 +195,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
         { 
           category: "🏢 Gestión Clientes", 
           items: [
-            { title: "Clientes Dir Central", url: "/clientes-dir-central", icon: Building },
-            { title: "Ingresar Clientes", url: "/ingresar-clientes", icon: UserPlus },
             { title: "Gestión de Clientes", url: "/gestion-clientes", icon: Users },
           ]
         },
