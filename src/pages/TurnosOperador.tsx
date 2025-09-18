@@ -45,44 +45,12 @@ const TurnosOperador = () => {
       console.log('📊 Total turnos operador en BD:', turnosOperador.length);
       console.log('📊 Turnos operador completos:', turnosOperador);
       
-      // Filtrar turnos del usuario actual - múltiples criterios
-      const userTurnos = turnosOperador.filter(turno => {
-        const matchesUserId = turno.operador_id === currentUser.id;
-        const matchesEmail = turno.operador_nombre?.toLowerCase().includes(currentUser.email?.split('@')[0] || '');
-        const emailName = currentUser.email?.split('@')[0]?.toLowerCase();
-        const turnoName = turno.operador_nombre?.toLowerCase();
-        const matchesPartialName = emailName && turnoName && (
-          turnoName.includes(emailName) || 
-          emailName.includes(turnoName.split(' ')[0]) ||
-          turnoName.includes('luis') && emailName.includes('luis')
-        );
-        
-        console.log(`🔍 Evaluando turno ${turno.id}:`, {
-          operador_id: turno.operador_id,
-          operador_nombre: turno.operador_nombre,
-          user_id: currentUser.id,
-          user_email: currentUser.email,
-          matchesUserId,
-          matchesEmail,
-          matchesPartialName
-        });
-        
-        return matchesUserId || matchesEmail || matchesPartialName;
-      });
+      // MOSTRAR TODOS LOS TURNOS - sin filtrar por usuario
+      setMisTurnos(turnosOperador);
       
-      console.log('✅ Turnos filtrados para el usuario:', userTurnos);
-      setMisTurnos(userTurnos);
-      
-      // Si no hay turnos, mostrar mensaje de debug
-      if (userTurnos.length === 0 && turnosOperador.length > 0) {
-        toast({
-          title: "Debug - Turnos no encontrados",
-          description: `No se encontraron turnos para ${currentUser.email}. Total turnos en BD: ${turnosOperador.length}`,
-          variant: "destructive"
-        });
-      }
+      console.log('✅ Mostrando TODOS los turnos para el operador:', turnosOperador.length);
     }
-  }, [currentUser, turnosOperador, toast]);
+  }, [currentUser, turnosOperador]);
 
   // Convertir TurnoOperador a formato Turno para el calendario
   const turnosAdaptados = turnosOperador.map(turno => ({
@@ -108,9 +76,9 @@ const TurnosOperador = () => {
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-bold">Mis Turnos - Operador</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Turnos de Todo el Personal</h1>
           <p className="text-sm text-muted-foreground">
-            Consulta y visualización de tus turnos asignados
+            Consulta los turnos de todos los compañeros operadores y supervisores
           </p>
           {currentUser && (
             <div className="flex items-center gap-2 mt-2">
@@ -119,7 +87,7 @@ const TurnosOperador = () => {
                 {currentUser.email}
               </Badge>
               <Badge variant="outline">
-                {misTurnos.length} turnos encontrados
+                {misTurnos.length} turnos de operadores
               </Badge>
             </div>
           )}
@@ -132,7 +100,7 @@ const TurnosOperador = () => {
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             <strong>Debug:</strong> Total turnos en BD: {turnosOperador.length} | 
-            Mis turnos: {misTurnos.length} | 
+            Todos los turnos mostrados: {misTurnos.length} | 
             Usuario: {currentUser?.email || 'No autenticado'}
           </AlertDescription>
         </Alert>
@@ -176,10 +144,10 @@ const TurnosOperador = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                Vista Detallada de Mis Turnos
+                Vista Detallada de Todos los Turnos
               </CardTitle>
               <CardDescription>
-                Visualización detallada de tus turnos asignados con cálculo de horas trabajadas
+                Visualización detallada de los turnos de todos los operadores con cálculo de horas trabajadas
               </CardDescription>
             </CardHeader>
             <CardContent>
