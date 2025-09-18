@@ -118,120 +118,38 @@ export const useSupabaseUsuarios = () => {
 
   const createUser = async (userData: CreateUserData) => {
     try {
-      console.log('🚀 INICIANDO CREACIÓN DE USUARIO:', {
-        email: userData.email,
-        role: userData.role,
-        fullName: userData.fullName
-      });
-
-      // Guardar la sesión actual del administrador
-      const { data: currentSession } = await supabase.auth.getSession();
-      console.log('💾 Guardando sesión actual del administrador');
-
-      // Sign up the user using admin API
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: userData.fullName
-          }
+      console.log('🚀 Iniciando creación de usuario con Edge Function:', userData.email);
+      
+      // Usar Edge Function para crear el usuario sin afectar la sesión
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: userData.email,
+          password: userData.password,
+          fullName: userData.fullName,
+          role: userData.role,
+          numeroDocumento: userData.numeroDocumento,
+          fotoUrl: userData.fotoUrl
         }
       });
 
-      if (authError) {
-        console.error('❌ Error en autenticación:', authError);
-        
-        // Si el usuario ya existe, intentar asignar el rol usando la función segura
-        if (authError.message.includes('User already registered')) {
-          console.log('📧 Usuario ya existe, intentando asignar rol de forma segura...');
-          
-          const { data: result, error: functionError } = await supabase
-            .rpc('assign_user_role_safely', {
-              target_email: userData.email,
-              target_role: userData.role
-            });
-          
-          if (functionError) {
-            console.error('❌ Error en asignación segura de rol:', functionError);
-            throw new Error(`Usuario existe pero no se pudo asignar el rol: ${functionError.message}`);
-          }
-          
-          if (result) {
-            console.log('✅ Rol asignado de forma segura al usuario existente');
-            toast({
-              title: "Usuario actualizado",
-              description: `Rol ${userData.role} asignado a usuario existente ${userData.email}`,
-            });
-            await fetchUsers();
-            return { success: true };
-          } else {
-            throw new Error('No se pudo encontrar o actualizar el usuario existente');
-          }
-        }
-        
-        throw authError;
+      if (error) {
+        console.error('❌ Error en Edge Function:', error);
+        throw error;
       }
 
-      if (authData.user) {
-        console.log('👤 Usuario creado en Auth:', authData.user.id, 'Email:', userData.email);
-        
-        // Usar la función segura para asignar el rol al nuevo usuario
-        console.log('🔄 Asignando rol de forma segura:', userData.role);
-        
-        const { data: result, error: functionError } = await supabase
-          .rpc('assign_user_role_safely', {
-            target_email: userData.email,
-            target_role: userData.role
-          });
-        
-        if (functionError) {
-          console.error('❌ Error en asignación segura de rol:', functionError);
-          throw new Error(`Usuario creado pero no se pudo asignar el rol: ${functionError.message}`);
-        }
-
-        if (!result) {
-          throw new Error('Usuario creado pero no se pudo asignar el rol correctamente');
-        }
-
-        console.log('✅ Usuario creado y rol asignado de forma segura');
-
-        // Actualizar el perfil con información adicional si es necesaria
-        if (userData.numeroDocumento || userData.fotoUrl) {
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .update({
-              numero_documento: userData.numeroDocumento,
-              foto_url: userData.fotoUrl
-            })
-            .eq('user_id', authData.user.id);
-
-          if (profileError) {
-            console.warn('⚠️ Error actualizando datos adicionales del perfil:', profileError);
-            // No falla la creación por esto, solo es información adicional
-          } else {
-            console.log('✅ Datos adicionales del perfil actualizados');
-          }
-        }
-
-        // Hacer logout del usuario recién creado y restaurar la sesión del administrador
-        console.log('🔄 Restaurando sesión del administrador');
-        await supabase.auth.signOut();
-        
-        if (currentSession?.session) {
-          await supabase.auth.setSession(currentSession.session);
-          console.log('✅ Sesión del administrador restaurada');
-        }
-
-        toast({
-          title: "Usuario creado",
-          description: `Usuario ${userData.email} creado exitosamente con rol ${userData.role}`,
-        });
-
-        await fetchUsers();
-        return { success: true };
+      if (!data?.success) {
+        throw new Error(data?.error || 'Error desconocido al crear usuario');
       }
+
+      console.log('✅ Usuario creado exitosamente sin cambiar sesión');
+
+      toast({
+        title: "Usuario creado",
+        description: `Usuario ${userData.email} creado exitosamente con rol ${userData.role}`,
+      });
+
+      await fetchUsers();
+      return { success: true };
     } catch (error: any) {
       console.error('Error creating user:', error);
       toast({

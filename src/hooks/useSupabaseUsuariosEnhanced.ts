@@ -53,71 +53,34 @@ export const useSupabaseUsuariosEnhanced = () => {
 
   const createUser = async (userData: CreateUserData) => {
     try {
-      // Guardar la sesión actual del administrador
-      const { data: currentSession } = await supabase.auth.getSession();
-      console.log('💾 Guardando sesión actual del administrador');
-
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: userData.fullName,
-            numero_documento: userData.numeroDocumento,
-            foto_url: userData.fotoUrl
-          }
+      console.log('🚀 Iniciando creación de usuario con Edge Function:', userData.email);
+      
+      // Usar Edge Function para crear el usuario sin afectar la sesión
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: userData.email,
+          password: userData.password,
+          fullName: userData.fullName,
+          role: userData.role,
+          numeroDocumento: userData.numeroDocumento,
+          fotoUrl: userData.fotoUrl
         }
       });
 
-      if (authError) throw authError;
-
-      if (authData.user) {
-        // Crear perfil si no existe
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            user_id: authData.user.id,
-            email: userData.email,
-            full_name: userData.fullName,
-            numero_documento: userData.numeroDocumento,
-            foto_url: userData.fotoUrl,
-            active: true
-          });
-
-        if (profileError && !profileError.message.includes('duplicate key')) {
-          console.error('Error creating profile:', profileError);
-        }
-
-        // Asignar rol
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: authData.user.id,
-            role: userData.role
-          });
-
-        if (roleError) {
-          console.error('Error assigning role:', roleError);
-          throw roleError;
-        }
-
-        // Hacer logout del usuario recién creado y restaurar la sesión del administrador
-        console.log('🔄 Restaurando sesión del administrador');
-        await supabase.auth.signOut();
-        
-        if (currentSession?.session) {
-          await supabase.auth.setSession(currentSession.session);
-          console.log('✅ Sesión del administrador restaurada');
-        }
-
-        toast.success('Usuario creado exitosamente');
-        await fetchUsers();
-        return { success: true };
+      if (error) {
+        console.error('❌ Error en Edge Function:', error);
+        throw error;
       }
 
-      return { success: false, error: 'No se pudo crear el usuario' };
+      if (!data?.success) {
+        throw new Error(data?.error || 'Error desconocido al crear usuario');
+      }
+
+      console.log('✅ Usuario creado exitosamente sin cambiar sesión');
+
+      toast.success('Usuario creado exitosamente');
+      await fetchUsers();
+      return { success: true };
     } catch (error: any) {
       console.error('Error creating user:', error);
       const errorMessage = error.message || 'Error al crear usuario';
