@@ -5,6 +5,8 @@ import { OperationalButton as Button } from "@/components/ui/operational-button"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -18,18 +20,26 @@ import QRCode from "qrcode";
 
 const clienteSchema = z.object({
   nombre: z.string().min(2, "El nombre es obligatorio"),
+  numero_cuenta: z.string().optional(),
   direccion: z.string().min(5, "La dirección es obligatoria"),
   municipio: z.string().min(2, "El municipio es obligatorio"),
-  latitud: z.string().optional(),
-  longitud: z.string().optional(),
+  latitud: z.string().optional().refine((val) => {
+    if (!val || val === "") return true;
+    const num = parseFloat(val);
+    return !isNaN(num) && num >= -90 && num <= 90;
+  }, "La latitud debe estar entre -90 y 90"),
+  longitud: z.string().optional().refine((val) => {
+    if (!val || val === "") return true;
+    const num = parseFloat(val);
+    return !isNaN(num) && num >= -180 && num <= 180;
+  }, "La longitud debe estar entre -180 y 180"),
   telefono: z.string().optional(),
   email: z.string().optional().refine((val) => {
-    if (!val || val === "") return true; // Permite email vacío
-    // Validación más flexible que acepta cualquier dominio
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!val || val === "") return true;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     return emailRegex.test(val);
   }, "Formato de email inválido"),
-  tipo_servicio: z.string().optional(),
+  tipo_servicio: z.string().min(1, "El tipo de servicio es obligatorio"),
   observaciones: z.string().optional()
 });
 
@@ -48,6 +58,7 @@ const GestionClientes = () => {
     resolver: zodResolver(clienteSchema),
     defaultValues: {
       nombre: "",
+      numero_cuenta: "",
       direccion: "",
       municipio: "",
       latitud: "",
@@ -113,6 +124,7 @@ const GestionClientes = () => {
       } else {
         const newClienteData = {
           nombre: data.nombre,
+          numero_cuenta: data.numero_cuenta,
           direccion: data.direccion,
           telefono: data.telefono,
           email: data.email,
@@ -146,6 +158,7 @@ const GestionClientes = () => {
     setEditingCliente(cliente);
     form.reset({
       nombre: cliente.nombre,
+      numero_cuenta: cliente.numero_cuenta || "",
       direccion: cliente.direccion,
       municipio: cliente.municipio,
       latitud: cliente.latitud?.toString() || "",
@@ -217,6 +230,20 @@ const GestionClientes = () => {
                   )}
                 />
 
+                <FormField
+                  control={form.control}
+                  name="numero_cuenta"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número de Cuenta</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Número de cuenta del cliente" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -281,10 +308,24 @@ const GestionClientes = () => {
                     name="tipo_servicio"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tipo de Servicio</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Tipo de servicio" {...field} />
-                        </FormControl>
+                        <FormLabel>Tipo de Servicio *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona el tipo de servicio" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="vigilancia">Vigilancia</SelectItem>
+                            <SelectItem value="alarmas">Alarmas</SelectItem>
+                            <SelectItem value="patrullaje">Patrullaje</SelectItem>
+                            <SelectItem value="escolta">Escolta</SelectItem>
+                            <SelectItem value="cctv">CCTV</SelectItem>
+                            <SelectItem value="control_acceso">Control de Acceso</SelectItem>
+                            <SelectItem value="revision_rutinaria">Revisión Rutinaria</SelectItem>
+                            <SelectItem value="otros">Otros</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -296,7 +337,7 @@ const GestionClientes = () => {
                     name="latitud"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Latitud</FormLabel>
+                        <FormLabel>Latitud (GPS)</FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="Ej: 6.2442" 
@@ -315,7 +356,7 @@ const GestionClientes = () => {
                     name="longitud"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Longitud</FormLabel>
+                        <FormLabel>Longitud (GPS)</FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="Ej: -75.5812" 
@@ -337,7 +378,11 @@ const GestionClientes = () => {
                     <FormItem>
                       <FormLabel>Observaciones</FormLabel>
                       <FormControl>
-                        <Input placeholder="Observaciones adicionales sobre el cliente" {...field} />
+                        <Textarea 
+                          placeholder="Observaciones adicionales sobre el cliente..."
+                          className="min-h-[80px]"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
