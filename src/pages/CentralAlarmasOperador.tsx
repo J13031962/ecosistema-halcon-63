@@ -1264,7 +1264,7 @@ useEffect(() => {
         <CardHeader>
           <CardTitle>Servicios en Proceso</CardTitle>
           <CardDescription>
-            Servicios asignados y en desarrollo con seguimiento de tiempos
+            Servicios asignados y en desarrollo con seguimiento de tiempos total y tiempo hasta llegada del supervisor
           </CardDescription>
         </CardHeader>
         <CardContent>

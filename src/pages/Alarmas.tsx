@@ -146,16 +146,21 @@ const Alarmas = () => {
       'Estado',
       'Supervisor',
       'Patrulla',
+      'Tiempo Total (min)',
+      'Tiempo Hasta Llegada (min)',
       'Aceptación Despachador (min)',
       'Despachador Envío (min)',
       'Supervisor Aceptación (min)',
       'Supervisor Llegada (min)',
-      'Supervisor Salida (min)',
-      'Tiempo Total (min)'
+      'Supervisor Salida (min)'
     ];
 
     const rows = alarmasOrdenadas.map(alarma => {
       const tiempos = calcularTiempos(alarma);
+      const tiempoHastaLlegada = alarma.tiempo_primera_lectura_qr
+        ? differenceInSeconds(new Date(alarma.tiempo_primera_lectura_qr), new Date(alarma.created_at))
+        : tiempos.tiempoTotal;
+      
       return [
         format(new Date(alarma.created_at), 'dd/MM/yyyy HH:mm:ss'),
         alarma.tipo,
@@ -165,12 +170,13 @@ const Alarmas = () => {
         alarma.estado,
         alarma.supervisor || 'N/A',
         alarma.patrulla_asignada || 'N/A',
+        Math.round(tiempos.tiempoTotal / 60),
+        Math.round(tiempoHastaLlegada / 60),
         Math.round(tiempos.aceptacionDespachador / 60),
         Math.round(tiempos.despachadorEnvio / 60),
         Math.round(tiempos.supervisorAceptacion / 60),
         Math.round(tiempos.supervisorLlegada / 60),
-        Math.round(tiempos.supervisorSalida / 60),
-        Math.round(tiempos.tiempoTotal / 60)
+        Math.round(tiempos.supervisorSalida / 60)
       ];
     });
 
@@ -473,12 +479,32 @@ const Alarmas = () => {
                               {format(new Date(alarma.created_at), 'dd/MM/yyyy HH:mm:ss')}
                             </p>
                           </div>
-                          {tiempos.tiempoTotal > 0 && (
-                            <div className="text-right">
-                              <p className="text-sm text-muted-foreground">Tiempo Total</p>
-                              <p className="text-2xl font-bold text-primary">
-                                {formatTiempo(tiempos.tiempoTotal)}
-                              </p>
+                           {tiempos.tiempoTotal > 0 && (
+                            <div className="text-right space-y-2">
+                              <div>
+                                <p className="text-sm text-muted-foreground flex items-center justify-end gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  Tiempo Total
+                                </p>
+                                <p className="text-xl font-bold text-primary">
+                                  {formatTiempo(tiempos.tiempoTotal)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground flex items-center justify-end gap-1">
+                                  <MapPin className="h-3 w-3 text-blue-500" />
+                                  Hasta Llegada
+                                </p>
+                                <p className="text-xl font-bold text-blue-600">
+                                  {formatTiempo(alarma.tiempo_primera_lectura_qr
+                                    ? differenceInSeconds(new Date(alarma.tiempo_primera_lectura_qr), new Date(alarma.created_at))
+                                    : tiempos.tiempoTotal
+                                  )}
+                                  {alarma.tiempo_primera_lectura_qr && (
+                                    <span className="text-xs text-green-600 ml-1">(Finalizado)</span>
+                                  )}
+                                </p>
+                              </div>
                             </div>
                           )}
                         </div>

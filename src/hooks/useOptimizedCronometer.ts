@@ -168,6 +168,16 @@ export const useOptimizedCronometer = ({
       : differenceInSeconds(ahora, fechaCreacion);
   }, [currentTime, dateObjects]);
 
+  // Calculate time until supervisor arrival (freezes when supervisor arrives)
+  const tiempoHastaLlegada = useMemo(() => {
+    const { fechaCreacion, fechaPrimeraLectura } = dateObjects;
+    const ahora = new Date(currentTime);
+    
+    return fechaPrimeraLectura
+      ? differenceInSeconds(fechaPrimeraLectura, fechaCreacion)
+      : differenceInSeconds(ahora, fechaCreacion);
+  }, [currentTime, dateObjects]);
+
   // Calculate specific phase timers
   const cronometrosEspecificos = useMemo((): CronometroPorFases => {
     const ahora = new Date(currentTime);
@@ -252,6 +262,7 @@ export const useOptimizedCronometer = ({
   return {
     tiempoActual,
     tiempoTotal,
+    tiempoHastaLlegada,
     cronometrosEspecificos,
     formatTiempo,
     getFaseTexto
