@@ -61,19 +61,22 @@ export function CreateTestUsers() {
 
   const createUser = async (user: TestUser): Promise<boolean> => {
     try {
-      const { error } = await supabase.auth.signUp({
-        email: user.email,
-        password: user.password,
-        options: {
-          data: {
-            full_name: user.fullName
-          },
-          emailRedirectTo: `${window.location.origin}/auth`
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: user.email,
+          password: user.password,
+          fullName: user.fullName,
+          role: user.role
         }
       });
 
       if (error) {
         console.error(`Error creating user ${user.email}:`, error);
+        return false;
+      }
+
+      if (!data?.success) {
+        console.error(`Error creating user ${user.email}:`, data?.error);
         return false;
       }
 

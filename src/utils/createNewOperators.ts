@@ -35,50 +35,31 @@ export const createNewOperators = async () => {
     try {
       console.log(`Creando usuario: ${user.email}`);
       
-      // Sign up user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: user.email,
-        password: user.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: user.fullName
-          }
+      // Create user using Edge Function
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: user.email,
+          password: user.password,
+          fullName: user.fullName,
+          role: user.role
         }
       });
 
-      if (authError) {
-        if (authError.message.includes('already registered')) {
+      if (error) {
+        console.error(`Error creating user ${user.email}:`, error);
+        continue;
+      }
+
+      if (!data?.success) {
+        if (data?.error?.includes('already registered') || data?.error?.includes('User already registered')) {
           console.log(`Usuario ${user.email} ya existe`);
           continue;
         }
-        throw authError;
+        console.error(`Error creating user ${user.email}:`, data?.error);
+        continue;
       }
 
-      if (authData.user) {
-        console.log(`Usuario ${user.email} creado exitosamente`);
-        
-        // Wait for trigger to create profile
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Update profile with full name
-        await supabase
-          .from('profiles')
-          .update({
-            full_name: user.fullName
-          })
-          .eq('user_id', authData.user.id);
-
-        // Insert correct role
-        await supabase
-          .from('user_roles')
-          .insert({
-            user_id: authData.user.id,
-            role: user.role as any
-          });
-        
-        console.log(`Rol ${user.role} asignado a ${user.email}`);
-      }
+      console.log(`Usuario ${user.email} creado exitosamente con rol ${user.role}`);
     } catch (error) {
       console.error(`Error creando usuario ${user.email}:`, error);
     }
