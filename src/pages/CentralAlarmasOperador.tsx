@@ -85,11 +85,30 @@ const CentralAlarmasOperador = () => {
   const [selectedAlarmType, setSelectedAlarmType] = useState<string>("");
   const [showClienteForm, setShowClienteForm] = useState(false);
   
+  // Estados para información de zonas (para alarmas tipo Fuego y Alarma)
+  const [numeroZona, setNumeroZona] = useState("");
+  const [nombreZona, setNombreZona] = useState("");
+  const [tipoSensor, setTipoSensor] = useState("");
+  const [mostrarCamposZona, setMostrarCamposZona] = useState(false);
+  
 useEffect(() => {
   if (selectedClienteForAlarm) {
     console.log('[CentralAlarmasOperador] Selected cliente:', selectedClienteForAlarm.id, selectedClienteForAlarm.nombre);
   }
 }, [selectedClienteForAlarm]);
+
+// Effect para mostrar/ocultar campos de zona según el tipo de alarma
+useEffect(() => {
+  const shouldShowZoneFields = selectedAlarmType === 'Fuego' || selectedAlarmType === 'Alarma';
+  setMostrarCamposZona(shouldShowZoneFields);
+  
+  // Limpiar campos cuando no son necesarios
+  if (!shouldShowZoneFields) {
+    setNumeroZona("");
+    setNombreZona("");
+    setTipoSensor("");
+  }
+}, [selectedAlarmType]);
 
 // Estados para el formulario de llamadas
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
@@ -441,6 +460,11 @@ useEffect(() => {
       setSelectedClienteForAlarm(null);
     }
     setSelectedAlarmType("");
+    // Reset zone fields
+    setNumeroZona("");
+    setNombreZona("");
+    setTipoSensor("");
+    setMostrarCamposZona(false);
     setIsAlarmModalOpen(true);
   };
 
@@ -497,15 +521,35 @@ useEffect(() => {
       return;
     }
 
+    // Validar campos de zona para tipos Fuego y Alarma
+    if ((selectedAlarmType === 'Fuego' || selectedAlarmType === 'Alarma') && 
+        (!numeroZona || !nombreZona || !tipoSensor)) {
+      toast({
+        title: "Error",
+        description: "Para alarmas de tipo Fuego y Alarma debe completar la información de zona",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      const nuevaAlarma = await addAlarma({
+      const alarmaData: any = {
         cliente_id: selectedClienteForAlarm.id,
         tipo: selectedAlarmType,
         prioridad: 'alta',
         direccion: selectedClienteForAlarm.direccion,
         municipio: selectedClienteForAlarm.municipio,
         descripcion: `Alarma generada para ${selectedClienteForAlarm.nombre}`
-      });
+      };
+
+      // Agregar información de zona si es necesaria
+      if (selectedAlarmType === 'Fuego' || selectedAlarmType === 'Alarma') {
+        alarmaData.numero_zona = numeroZona;
+        alarmaData.nombre_zona = nombreZona;
+        alarmaData.tipo_sensor = tipoSensor;
+      }
+
+      const nuevaAlarma = await addAlarma(alarmaData);
       
       if (nuevaAlarma) {
         // Activar el botón de cancelar por 5 minutos
@@ -533,6 +577,11 @@ useEffect(() => {
       setIsAlarmModalOpen(false);
       setSelectedClienteForAlarm(null);
       setSelectedAlarmType("");
+      // Limpiar campos de zona
+      setNumeroZona("");
+      setNombreZona("");
+      setTipoSensor("");
+      setMostrarCamposZona(false);
       // Limpiar búsqueda
       setClienteId("");
       setClienteEncontrado(null);
@@ -1351,6 +1400,61 @@ useEffect(() => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Campos de zona para alarmas tipo Fuego y Alarma */}
+                {mostrarCamposZona && (
+                  <Card className="bg-amber-50 border-amber-200">
+                    <CardHeader>
+                      <CardTitle className="text-amber-800 flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Información de Zona
+                      </CardTitle>
+                      <CardDescription className="text-amber-700">
+                        Complete la información específica de la zona para este tipo de alarma
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Número de Zona *</Label>
+                          <Input
+                            value={numeroZona}
+                            onChange={(e) => setNumeroZona(e.target.value)}
+                            placeholder="Ej: Z001, Z002..."
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label>Nombre de Zona *</Label>
+                          <Input
+                            value={nombreZona}
+                            onChange={(e) => setNombreZona(e.target.value)}
+                            placeholder="Ej: Zona Principal, Bodega..."
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Tipo de Sensor *</Label>
+                        <Select value={tipoSensor} onValueChange={setTipoSensor}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona el tipo de sensor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="magnetico">🧲 Magnético</SelectItem>
+                            <SelectItem value="infrarrojo">📡 Infrarrojo</SelectItem>
+                            <SelectItem value="movimiento">🏃 Movimiento</SelectItem>
+                            <SelectItem value="humo">💨 Humo</SelectItem>
+                            <SelectItem value="temperatura">🌡️ Temperatura</SelectItem>
+                            <SelectItem value="gas">⛽ Gas</SelectItem>
+                            <SelectItem value="vibracion">📳 Vibración</SelectItem>
+                            <SelectItem value="panico">🚨 Pánico</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {selectedAlarmType && (
                   <Card className="bg-blue-50 border-blue-200">
