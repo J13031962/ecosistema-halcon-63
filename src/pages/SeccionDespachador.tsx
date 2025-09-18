@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Car, Clock, CheckCircle, MapPin, Users, AlertTriangle, Siren, Shield, Flame, Eye, UserCheck, Search, Filter, Download, Calendar } from "lucide-react";
-import { useAlarmas, Alarm } from "@/contexts/AlarmasContext";
 import { useSupabasePatrullas } from "@/hooks/useSupabasePatrullas";
-import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
+import { useSupabaseAlarmasEnhanced } from "@/hooks/useSupabaseAlarmasEnhanced";
 import { useSupabaseTurnos } from "@/hooks/useSupabaseTurnos";
 import { useSupabaseUsuarios } from "@/hooks/useSupabaseUsuarios";
+import { useAuthConsolidatedContext } from "@/contexts/AuthContextConsolidated";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AsignarPatrullaModal } from "@/components/modals/AsignarPatrullaModal";
 import { CalendarTurnosDespachador } from "@/components/turnos/CalendarTurnosDespachador";
@@ -20,15 +20,22 @@ import { format } from "date-fns";
 
 
 const SeccionDespachador = () => {
-  const { state, assignPatrolToAlarm, getTimerColor } = useAlarmas();
+  const { user } = useAuthConsolidatedContext();
   const { patrullas, loading: patrullasLoading } = useSupabasePatrullas();
-  const { alarmas } = useSupabaseAlarmas();
+  const { 
+    alarmas, 
+    loading: alarmasLoading, 
+    getAlarmasActivas,
+    getAlarmasEnProceso,
+    getAlarmasResueltas,
+    asignarPatrulla 
+  } = useSupabaseAlarmasEnhanced();
   const { turnosSupervisor, addTurnoSupervisor, loading: turnosLoading } = useSupabaseTurnos();
   const { users } = useSupabaseUsuarios();
   
-  const [timers, setTimers] = useState<{ [key: number]: string }>({});
+  const [timers, setTimers] = useState<{ [key: string]: string }>({});
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedAlarm, setSelectedAlarm] = useState<Alarm | null>(null);
+  const [selectedAlarm, setSelectedAlarm] = useState<any | null>(null);
   const [turnoModalOpen, setTurnoModalOpen] = useState(false);
   const [selectedSupervisor, setSelectedSupervisor] = useState("");
   const [selectedTurno, setSelectedTurno] = useState("");
@@ -39,6 +46,11 @@ const SeccionDespachador = () => {
     user.user_roles?.some(role => role.role === 'supervisor_motorizado')
   );
   
+  // Obtener alarmas activas de Supabase
+  const alarmasActivas = getAlarmasActivas();
+  const alarmasEnProceso = getAlarmasEnProceso();
+  const alarmasResueltas = getAlarmasResueltas();
+
   // Supervisores que están atendiendo alarmas
   const supervisoresConAlarmas = alarmas
     .filter(a => a.estado === 'asignada' && a.supervisor && a.patrulla_asignada)
@@ -52,11 +64,11 @@ const SeccionDespachador = () => {
   // Actualizar timers cada segundo para alarmas activas
   useEffect(() => {
     const interval = setInterval(() => {
-      const newTimers: { [key: number]: string } = {};
-      if (state.alarmasActivas) {
-        state.alarmasActivas.forEach(alarm => {
+      const newTimers: { [key: string]: string } = {};
+      if (alarmasActivas) {
+        alarmasActivas.forEach(alarm => {
           const now = new Date();
-          const elapsed = Math.floor((now.getTime() - alarm.startTime.getTime()) / 1000);
+          const elapsed = Math.floor((now.getTime() - new Date(alarm.created_at!).getTime()) / 1000);
           const minutes = Math.floor(elapsed / 60);
           const seconds = elapsed % 60;
           newTimers[alarm.id] = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
@@ -66,10 +78,10 @@ const SeccionDespachador = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [state.alarmasActivas]);
+  }, [alarmasActivas]);
 
 
-  const getAlarmTypeIcon = (type: Alarm['type']) => {
+  const getAlarmTypeIcon = (type: string) => {
     switch (type) {
       case "Fuego": return <Flame className="h-4 w-4" />;
       case "Alarma": return <AlertTriangle className="h-4 w-4" />;
@@ -80,7 +92,7 @@ const SeccionDespachador = () => {
     }
   };
 
-  const getAlarmTypeColor = (type: Alarm['type']) => {
+  const getAlarmTypeColor = (type: string) => {
     switch (type) {
       case "Fuego": return "border-red-500 bg-red-50";
       case "Alarma": return "border-orange-500 bg-orange-50";
@@ -89,6 +101,15 @@ const SeccionDespachador = () => {
       case "Acompañamiento": return "border-green-500 bg-green-50";
       default: return "border-orange-500 bg-orange-50";
     }
+  };
+
+  const getTimerColor = (createdAt: string) => {
+    const elapsed = Math.floor((new Date().getTime() - new Date(createdAt).getTime()) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    
+    if (minutes >= 10) return "text-red-600";
+    if (minutes >= 5) return "text-orange-500";
+    return "text-green-600";
   };
 
   const getAlarmStatusColor = (status: string) => {
@@ -108,13 +129,22 @@ const SeccionDespachador = () => {
     }
   };
 
-  const handleAttendAlarm = (alarm: Alarm) => {
+  const handleAttendAlarm = (alarm: any) => {
     setSelectedAlarm(alarm);
     setModalOpen(true);
   };
 
-  const handleAssignPatrol = (alarmId: number, supervisor: { name: string; patrullaUnit: string }) => {
-    assignPatrolToAlarm(alarmId, supervisor);
+  const handleAssignPatrol = async (alarmId: string, supervisor: { name: string; patrullaUnit: string }) => {
+    try {
+      await asignarPatrulla(alarmId, {
+        patrulla_asignada: supervisor.patrullaUnit,
+        supervisor: supervisor.name,
+        despachador_id: user?.id || '',
+        despachador_nombre: user?.full_name || 'Despachador'
+      });
+    } catch (error) {
+      console.error('Error al asignar patrulla:', error);
+    }
   };
 
   const handleAssignTurno = async () => {
@@ -196,19 +226,19 @@ const SeccionDespachador = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {state.alarmasActivas?.length || 0}
+              {alarmasActivas?.length || 0}
             </div>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Rutas Asignadas</CardTitle>
+            <CardTitle className="text-sm font-medium">En Proceso</CardTitle>
             <Car className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {state.rutasAsignadas?.length || 0}
+              {alarmasEnProceso?.length || 0}
             </div>
           </CardContent>
         </Card>
@@ -220,7 +250,7 @@ const SeccionDespachador = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {state.rutasAsignadas?.filter(r => r.status === 'En Proceso').length || 0}
+              {supervisoresConAlarmas?.length || 0}
             </div>
           </CardContent>
         </Card>
@@ -232,7 +262,10 @@ const SeccionDespachador = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-600">
-              {state.alarmasResueltas}
+              {alarmasResueltas?.filter(a => {
+                const today = new Date().toDateString();
+                return new Date(a.resolved_at!).toDateString() === today;
+              }).length || 0}
             </div>
           </CardContent>
         </Card>
@@ -246,38 +279,38 @@ const SeccionDespachador = () => {
         </CardHeader>
         <CardContent>
           <Accordion type="single" collapsible className="w-full">
-            {!state.alarmasActivas || state.alarmasActivas.length === 0 ? (
+            {!alarmasActivas || alarmasActivas.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Siren className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                 <p>No hay alarmas pendientes en este momento</p>
                 <p className="text-sm">Las nuevas alarmas aparecerán aquí automáticamente</p>
               </div>
             ) : (
-              state.alarmasActivas.map((alarm) => (
-                <AccordionItem key={alarm.id} value={`alarm-${alarm.id}`} className={`border-2 rounded-lg mb-4 ${getAlarmTypeColor(alarm.type)}`}>
+              alarmasActivas.map((alarm) => (
+                <AccordionItem key={alarm.id} value={`alarm-${alarm.id}`} className={`border-2 rounded-lg mb-4 ${getAlarmTypeColor(alarm.tipo)}`}>
                   <AccordionTrigger className="px-4 py-2 hover:no-underline">
                     <div className="flex items-center justify-between w-full mr-4">
                       <div className="flex items-center space-x-4">
-                        <div className={`p-2 rounded-full ${alarm.priority === 'Alta' ? 'bg-red-100' : 'bg-orange-100'}`}>
-                          {getAlarmTypeIcon(alarm.type)}
+                        <div className={`p-2 rounded-full ${alarm.prioridad === 'alta' ? 'bg-red-100' : 'bg-orange-100'}`}>
+                          {getAlarmTypeIcon(alarm.tipo)}
                         </div>
                         <div className="text-left">
-                          <h4 className="font-semibold">{alarm.client}</h4>
+                          <h4 className="font-semibold">{alarm.clientes?.nombre || 'Cliente no especificado'}</h4>
                           <div className="flex items-center space-x-2">
                             <Badge variant="outline" className="font-medium">
-                              {alarm.type}
+                              {alarm.tipo}
                             </Badge>
-                            <span className="text-sm text-muted-foreground">📍 {alarm.municipality}</span>
+                            <span className="text-sm text-muted-foreground">📍 {alarm.municipio}</span>
                           </div>
                         </div>
                       </div>
                       
                       <div className="flex items-center space-x-4">
-                        <Badge variant={getAlarmStatusColor(alarm.status)}>{alarm.status}</Badge>
-                        <Badge variant="outline" className={getPriorityColor(alarm.priority)}>
-                          {alarm.priority}
+                        <Badge variant={getAlarmStatusColor(alarm.estado)}>{alarm.estado}</Badge>
+                        <Badge variant="outline" className={getPriorityColor(alarm.prioridad)}>
+                          {alarm.prioridad}
                         </Badge>
-                        <span className={`font-mono text-lg font-bold ${getTimerColor(alarm.startTime)}`}>
+                        <span className={`font-mono text-lg font-bold ${getTimerColor(alarm.created_at!)}`}>
                           <Clock className="h-4 w-4 inline mr-1" />
                           {timers[alarm.id] || '00:00'}
                         </span>
@@ -289,47 +322,47 @@ const SeccionDespachador = () => {
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
-                          <p><strong>Dirección:</strong> {alarm.address}</p>
-                          <p><strong>Municipio:</strong> {alarm.municipality}</p>
-                          <p><strong>Hora de inicio:</strong> {alarm.startTime.toLocaleTimeString()}</p>
+                          <p><strong>Dirección:</strong> {alarm.direccion}</p>
+                          <p><strong>Municipio:</strong> {alarm.municipio}</p>
+                          <p><strong>Hora de inicio:</strong> {new Date(alarm.created_at!).toLocaleTimeString()}</p>
                         </div>
                         <div>
-                          <p><strong>Estado:</strong> {alarm.status}</p>
-                          <p><strong>Prioridad:</strong> {alarm.priority}</p>
-                          {alarm.operator && <p><strong>Operador:</strong> {alarm.operator}</p>}
+                          <p><strong>Estado:</strong> {alarm.estado}</p>
+                          <p><strong>Prioridad:</strong> {alarm.prioridad}</p>
+                          {alarm.operador_nombre && <p><strong>Operador:</strong> {alarm.operador_nombre}</p>}
                         </div>
                       </div>
                       
                       {/* Información de zona para Fuego y Alarma */}
-                      {(alarm.type === 'Fuego' || alarm.type === 'Alarma') && (alarm.numeroZona || alarm.nombreZona || alarm.tipoSensor) && (
+                      {(alarm.tipo === 'Fuego' || alarm.tipo === 'Alarma') && (alarm.numero_zona || alarm.nombre_zona || alarm.tipo_sensor) && (
                         <div className="pt-4 border-t">
                           <h5 className="font-semibold text-sm mb-2 flex items-center gap-2">
                             <Shield className="h-4 w-4" />
                             Información de Zona
                           </h5>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                            {alarm.numeroZona && (
+                            {alarm.numero_zona && (
                               <div className="flex items-center gap-2">
                                 <Badge variant="outline" className="text-xs">
-                                  📍 Zona: {alarm.numeroZona}
+                                  📍 Zona: {alarm.numero_zona}
                                 </Badge>
                               </div>
                             )}
-                            {alarm.nombreZona && (
+                            {alarm.nombre_zona && (
                               <div className="flex items-center gap-2">
                                 <Badge variant="secondary" className="text-xs">
-                                  🏷️ {alarm.nombreZona}
+                                  🏷️ {alarm.nombre_zona}
                                 </Badge>
                               </div>
                             )}
-                            {alarm.tipoSensor && (
+                            {alarm.tipo_sensor && (
                               <div className="flex items-center gap-2">
                                 <Badge variant="outline" className="text-xs">
-                                  {alarm.tipoSensor === 'humo' ? '🔥 Humo' :
-                                   alarm.tipoSensor === 'movimiento' ? '👁️ Movimiento' :
-                                   alarm.tipoSensor === 'magnetico' ? '🧲 Magnético' :
-                                   alarm.tipoSensor === 'termico' ? '🌡️ Térmico' :
-                                   `🔧 ${alarm.tipoSensor}`}
+                                  {alarm.tipo_sensor === 'humo' ? '🔥 Humo' :
+                                   alarm.tipo_sensor === 'movimiento' ? '👁️ Movimiento' :
+                                   alarm.tipo_sensor === 'magnetico' ? '🧲 Magnético' :
+                                   alarm.tipo_sensor === 'termico' ? '🌡️ Térmico' :
+                                   `🔧 ${alarm.tipo_sensor}`}
                                 </Badge>
                               </div>
                             )}

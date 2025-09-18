@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useUserSpecificData } from "@/hooks/useUserSpecificData";
 import { useAuthConsolidatedContext } from "@/contexts/AuthContextConsolidated";
+import { useSupabaseAlarmasEnhanced } from "@/hooks/useSupabaseAlarmasEnhanced";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { 
@@ -33,16 +34,12 @@ const MiPatrullaSupervisor = () => {
     ubicacion: ''
   });
 
-  // Obtener alarmas específicas del supervisor
-  const { 
-    data: misAlarmas, 
-    loading: alarmasLoading, 
-    error: alarmasError,
-    refetch: refetchAlarmas 
-  } = useUserSpecificData({
-    table: 'alarmas',
-    enabled: !!user?.id && user?.role === 'supervisor_motorizado'
-  });
+  // Obtener alarmas asignadas al supervisor desde Supabase
+  const { alarmas, loading: alarmasLoading } = useSupabaseAlarmasEnhanced();
+  const misAlarmas = alarmas.filter(alarma => 
+    alarma.supervisor_id === user?.id || 
+    alarma.supervisor === user?.full_name
+  );
 
   // Obtener actividades del supervisor
   const { 

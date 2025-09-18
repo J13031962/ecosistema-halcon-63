@@ -17,8 +17,8 @@ interface Supervisor {
 interface AsignarPatrullaModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  alarm: Alarm | null;
-  onAssign: (alarmId: number, supervisor: Supervisor) => void;
+  alarm: any | null;
+  onAssign: (alarmId: string, supervisor: Supervisor) => void;
 }
 
 const supervisores: Supervisor[] = [
@@ -78,14 +78,14 @@ export const AsignarPatrullaModal = ({ open, onOpenChange, alarm, onAssign }: As
               </h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p><strong>Cliente:</strong> {alarm.client}</p>
-                  <p><strong>Tipo:</strong> {alarm.type}</p>
-                  <p><strong>Prioridad:</strong> {alarm.priority}</p>
+                  <p><strong>Cliente:</strong> {alarm.clientes?.nombre || 'No especificado'}</p>
+                  <p><strong>Tipo:</strong> {alarm.tipo}</p>
+                  <p><strong>Prioridad:</strong> {alarm.prioridad}</p>
                 </div>
                 <div>
-                  <p><strong>Dirección:</strong> {alarm.address}</p>
-                  <p><strong>Municipio:</strong> {alarm.municipality}</p>
-                  <p><strong>Hora:</strong> {alarm.startTime.toLocaleTimeString()}</p>
+                  <p><strong>Dirección:</strong> {alarm.direccion}</p>
+                  <p><strong>Municipio:</strong> {alarm.municipio}</p>
+                  <p><strong>Hora:</strong> {new Date(alarm.created_at).toLocaleTimeString()}</p>
                 </div>
               </div>
             </div>
