@@ -181,22 +181,10 @@ export const exportQRToPDF = async (clientes: any[], qrsPerPage: number = 4) => 
       // Add QR code to PDF
       doc.addImage(qrDataURL, 'PNG', x, y, qrSize, qrSize);
 
-      // Add client info below QR
-      doc.setFontSize(8);
+      // Add only client ID below QR
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      const nameText = cliente.nombre.length > 25 ? 
-        cliente.nombre.substring(0, 25) + '...' : cliente.nombre;
-      doc.text(nameText, x + qrSize/2, y + qrSize + 8, { align: 'center' });
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
-      doc.text(`Cuenta: ${cliente.numero_cuenta || cliente.id}`, x + qrSize/2, y + qrSize + 14, { align: 'center' });
-      
-      const addressText = cliente.direccion && cliente.direccion.length > 30 ? 
-        cliente.direccion.substring(0, 30) + '...' : cliente.direccion || '';
-      if (addressText) {
-        doc.text(addressText, x + qrSize/2, y + qrSize + 20, { align: 'center' });
-      }
+      doc.text(cliente.numero_cuenta || cliente.id, x + qrSize/2, y + qrSize + 8, { align: 'center' });
 
     } catch (error) {
       console.error('Error generating QR for client:', cliente.nombre, error);
