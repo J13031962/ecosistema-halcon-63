@@ -53,6 +53,10 @@ export const useSupabaseUsuariosEnhanced = () => {
 
   const createUser = async (userData: CreateUserData) => {
     try {
+      // Guardar la sesión actual del administrador
+      const { data: currentSession } = await supabase.auth.getSession();
+      console.log('💾 Guardando sesión actual del administrador');
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
@@ -97,6 +101,15 @@ export const useSupabaseUsuariosEnhanced = () => {
         if (roleError) {
           console.error('Error assigning role:', roleError);
           throw roleError;
+        }
+
+        // Hacer logout del usuario recién creado y restaurar la sesión del administrador
+        console.log('🔄 Restaurando sesión del administrador');
+        await supabase.auth.signOut();
+        
+        if (currentSession?.session) {
+          await supabase.auth.setSession(currentSession.session);
+          console.log('✅ Sesión del administrador restaurada');
         }
 
         toast.success('Usuario creado exitosamente');

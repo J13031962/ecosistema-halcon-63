@@ -124,6 +124,10 @@ export const useSupabaseUsuarios = () => {
         fullName: userData.fullName
       });
 
+      // Guardar la sesión actual del administrador
+      const { data: currentSession } = await supabase.auth.getSession();
+      console.log('💾 Guardando sesión actual del administrador');
+
       // Sign up the user using admin API
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
@@ -209,6 +213,15 @@ export const useSupabaseUsuarios = () => {
           } else {
             console.log('✅ Datos adicionales del perfil actualizados');
           }
+        }
+
+        // Hacer logout del usuario recién creado y restaurar la sesión del administrador
+        console.log('🔄 Restaurando sesión del administrador');
+        await supabase.auth.signOut();
+        
+        if (currentSession?.session) {
+          await supabase.auth.setSession(currentSession.session);
+          console.log('✅ Sesión del administrador restaurada');
         }
 
         toast({
