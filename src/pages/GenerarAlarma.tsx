@@ -208,7 +208,7 @@ const GenerarAlarma = () => {
       };
       
       // Agregar información de zona para tipos específicos
-      if (selectedAlarmType.toLowerCase() === 'fuego' || selectedAlarmType.toLowerCase() === 'alarma') {
+      if (selectedAlarmType === 'Fuego' || selectedAlarmType === 'Alarma') {
         if (zoneInfo.numero_zona && zoneInfo.nombre_zona && zoneInfo.tipo_sensor) {
           alarmaData.numero_zona = zoneInfo.numero_zona;
           alarmaData.nombre_zona = zoneInfo.nombre_zona;
@@ -816,8 +816,9 @@ const GenerarAlarma = () => {
                 <Label htmlFor="alarm-type">Tipo de Alarma</Label>
                 <Select value={selectedAlarmType} onValueChange={(value) => {
                   setSelectedAlarmType(value);
+                  console.log('[GenerarAlarma] Tipo seleccionado:', value, 'Mostrar campos zona:', value === 'Fuego' || value === 'Alarma');
                   // Limpiar información de zona si no es necesaria
-                  if (value.toLowerCase() !== 'fuego' && value.toLowerCase() !== 'alarma') {
+                  if (value !== 'Fuego' && value !== 'Alarma') {
                     setZoneInfo({ numero_zona: '', nombre_zona: '', tipo_sensor: '' });
                   }
                 }}>
@@ -874,7 +875,7 @@ const GenerarAlarma = () => {
               )}
               
               {/* Campos de zona para Fuego y Alarma */}
-              {(selectedAlarmType.toLowerCase() === 'fuego' || selectedAlarmType.toLowerCase() === 'alarma') && (
+              {(selectedAlarmType === 'Fuego' || selectedAlarmType === 'Alarma') && (
                 <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
                   <h4 className="font-medium text-sm">Información de Zona Activada</h4>
                   
@@ -927,7 +928,7 @@ const GenerarAlarma = () => {
               <Button 
                 onClick={generateAlarm} 
                 disabled={
-                  ((selectedAlarmType.toLowerCase() === 'fuego' || selectedAlarmType.toLowerCase() === 'alarma') && 
+                  ((selectedAlarmType === 'Fuego' || selectedAlarmType === 'Alarma') && 
                    (!zoneInfo.numero_zona || !zoneInfo.nombre_zona || !zoneInfo.tipo_sensor))
                 }
                 className="flex-1"
