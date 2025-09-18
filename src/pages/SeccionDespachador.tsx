@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { OperationalCard as Card, OperationalCardContent as CardContent, OperationalCardDescription as CardDescription, OperationalCardHeader as CardHeader, OperationalCardTitle as CardTitle } from "@/components/ui/operational-card";
+import { OperationalThemeWrapper } from "@/components/layout/OperationalThemeWrapper";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { OperationalButton as Button } from "@/components/ui/operational-button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Car, Clock, CheckCircle, MapPin, Users, AlertTriangle, Siren, Shield, Flame, Eye, UserCheck, Search, Filter, Download, Calendar } from "lucide-react";
@@ -199,6 +200,7 @@ const SeccionDespachador = () => {
   };
 
   return (
+    <OperationalThemeWrapper>
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
@@ -679,6 +681,7 @@ const SeccionDespachador = () => {
       </TabsContent>
     </Tabs>
     </div>
+    </OperationalThemeWrapper>
   );
 };
 

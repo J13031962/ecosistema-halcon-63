@@ -64,6 +64,19 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				operational: {
+					bg: 'hsl(var(--operational-bg))',
+					card: 'hsl(var(--operational-card))',
+					border: 'hsl(var(--operational-border))',
+					primary: 'hsl(var(--operational-primary))',
+					'primary-foreground': 'hsl(var(--operational-primary-foreground))',
+					secondary: 'hsl(var(--operational-secondary))',
+					'secondary-foreground': 'hsl(var(--operational-secondary-foreground))',
+					danger: 'hsl(var(--operational-danger))',
+					'danger-foreground': 'hsl(var(--operational-danger-foreground))',
+					accent: 'hsl(var(--operational-accent))',
+					muted: 'hsl(var(--operational-muted))'
 				}
 			},
 			borderRadius: {

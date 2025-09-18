@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { OperationalCard as Card, OperationalCardContent as CardContent, OperationalCardHeader as CardHeader, OperationalCardTitle as CardTitle } from "@/components/ui/operational-card";
+import { OperationalThemeWrapper } from "@/components/layout/OperationalThemeWrapper";
+import { OperationalButton as Button } from "@/components/ui/operational-button";
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -243,6 +244,7 @@ const ReportesSupervisor = () => {
   }
 
   return (
+    <OperationalThemeWrapper>
     <div className="min-h-screen p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header con botones de acción */}
@@ -551,6 +553,7 @@ const ReportesSupervisor = () => {
         )}
       </div>
     </div>
+    </OperationalThemeWrapper>
   );
 };
 

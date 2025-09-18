@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { OperationalButton as Button } from "@/components/ui/operational-button";
+import { OperationalCard as Card, OperationalCardContent as CardContent, OperationalCardDescription as CardDescription, OperationalCardHeader as CardHeader, OperationalCardTitle as CardTitle } from "@/components/ui/operational-card";
+import { OperationalThemeWrapper } from "@/components/layout/OperationalThemeWrapper";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -103,6 +104,7 @@ const TurnosOperador = () => {
   }));
 
   return (
+    <OperationalThemeWrapper>
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
@@ -270,7 +272,8 @@ const TurnosOperador = () => {
           )}
         </TabsContent>
       </Tabs>
-    </div>
+     </div>
+    </OperationalThemeWrapper>
   );
 };
 

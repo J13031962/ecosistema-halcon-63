@@ -58,6 +58,19 @@ All colors MUST be HSL.
     --teleguardia-blue: 191 100% 42%; /* #00B4D8 */
     --teleguardia-green: 140 43% 52%; /* #3CB371 */
     --teleguardia-white: 0 0% 100%; /* #FFFFFF */
+    
+    /* Operational theme colors for operators, dispatchers, supervisors */
+    --operational-bg: 120 20% 97%; /* Very light green background */
+    --operational-card: 120 15% 99%; /* Ultra light green for cards */
+    --operational-border: 120 20% 88%; /* Light green borders */
+    --operational-primary: 120 40% 25%; /* Dark green for primary buttons */
+    --operational-primary-foreground: 0 0% 100%; /* White text */
+    --operational-secondary: 210 100% 40%; /* Blue for secondary buttons */
+    --operational-secondary-foreground: 0 0% 100%; /* White text */
+    --operational-danger: 0 84% 60%; /* Red for delete/cancel buttons */
+    --operational-danger-foreground: 0 0% 100%; /* White text */
+    --operational-accent: 120 30% 35%; /* Medium green for accents */
+    --operational-muted: 120 15% 94%; /* Very light green for muted elements */
   }
 
   .dark {
@@ -143,5 +156,26 @@ All colors MUST be HSL.
       3px 3px 8px rgba(0, 0, 0, 0.3);
     filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.4));
     paint-order: stroke fill;
+  }
+
+  /* Operational theme utility classes */
+  .operational-theme {
+    @apply bg-[hsl(var(--operational-bg))];
+  }
+  
+  .operational-card {
+    @apply bg-[hsl(var(--operational-card))] border-[hsl(var(--operational-border))];
+  }
+  
+  .operational-btn-primary {
+    @apply bg-[hsl(var(--operational-primary))] hover:bg-[hsl(var(--operational-primary))/90] text-[hsl(var(--operational-primary-foreground))];
+  }
+  
+  .operational-btn-secondary {
+    @apply bg-[hsl(var(--operational-secondary))] hover:bg-[hsl(var(--operational-secondary))/90] text-[hsl(var(--operational-secondary-foreground))];
+  }
+  
+  .operational-btn-danger {
+    @apply bg-[hsl(var(--operational-danger))] hover:bg-[hsl(var(--operational-danger))/90] text-[hsl(var(--operational-danger-foreground))];
   }
 }

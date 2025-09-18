@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { OperationalCard as Card, OperationalCardContent as CardContent, OperationalCardDescription as CardDescription, OperationalCardHeader as CardHeader, OperationalCardTitle as CardTitle } from "@/components/ui/operational-card";
+import { OperationalThemeWrapper } from "@/components/layout/OperationalThemeWrapper";
 import { useSidebar } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
+import { OperationalButton as Button } from "@/components/ui/operational-button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -740,7 +741,7 @@ useEffect(() => {
   const loadingAlarmasVista = loadingAll;
 
   return (
-    <div className="min-h-screen bg-background">
+    <OperationalThemeWrapper className="min-h-screen">{/* Removed bg-background since it's handled by theme */}
       {/* Barra rápida fija */}
       {showQuickBar && (
         <div 
@@ -1610,7 +1611,7 @@ useEffect(() => {
       </Dialog>
 
       </div>
-    </div>
+    </OperationalThemeWrapper>
   );
 };
 
