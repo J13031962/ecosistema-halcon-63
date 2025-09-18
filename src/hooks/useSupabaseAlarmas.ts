@@ -19,6 +19,9 @@ export interface Alarma {
   supervisor_id?: string;
   patrulla_asignada?: string;
   supervisor?: string;
+  numero_zona?: string;
+  nombre_zona?: string;
+  tipo_sensor?: string;
   tiempo_respuesta_segundos?: number;
   tiempo_toma_despachador?: string;
   tiempo_asignacion_supervisor?: string;
@@ -92,6 +95,9 @@ export const useSupabaseAlarmas = () => {
     descripcion?: string;
     direccion?: string;
     municipio?: string;
+    numero_zona?: string;
+    nombre_zona?: string;
+    tipo_sensor?: string;
   }) => {
     try {
       console.log('🔄 Iniciando inserción de alarma:', alarmaData);

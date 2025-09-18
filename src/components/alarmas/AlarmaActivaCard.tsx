@@ -12,6 +12,9 @@ interface AlarmaActivaCardProps {
     direccion?: string;
     municipio?: string;
     descripcion?: string;
+    numero_zona?: string;
+    nombre_zona?: string;
+    tipo_sensor?: string;
     created_at: string;
     tiempo_toma_despachador?: string;
     tiempo_asignacion_supervisor?: string;
@@ -185,6 +188,25 @@ export const AlarmaActivaCard = ({ alarma, onCancelar }: AlarmaActivaCardProps) 
             <p className="text-sm mt-2">
               <strong>Descripción:</strong> {alarma.descripcion}
             </p>
+          )}
+          
+          {/* Información de zona para Fuego y Alarma */}
+          {(alarma.tipo.toLowerCase() === 'fuego' || alarma.tipo.toLowerCase() === 'alarma') && 
+           (alarma.numero_zona || alarma.nombre_zona || alarma.tipo_sensor) && (
+            <div className="mt-3 p-3 bg-red-100 border border-red-200 rounded-lg">
+              <h5 className="font-semibold text-sm mb-2 text-red-800">🚨 Zona Activada</h5>
+              <div className="grid grid-cols-3 gap-2 text-sm">
+                {alarma.numero_zona && (
+                  <div><strong>Zona:</strong> {alarma.numero_zona}</div>
+                )}
+                {alarma.nombre_zona && (
+                  <div><strong>Ubicación:</strong> {alarma.nombre_zona}</div>
+                )}
+                {alarma.tipo_sensor && (
+                  <div className="col-span-3"><strong>Sensor:</strong> {alarma.tipo_sensor}</div>
+                )}
+              </div>
+            </div>
           )}
         </div>
         <div className="flex items-center gap-4 text-right">

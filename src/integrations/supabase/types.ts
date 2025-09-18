@@ -68,6 +68,8 @@ export type Database = {
           estado: string | null
           id: string
           municipio: string | null
+          nombre_zona: string | null
+          numero_zona: string | null
           observaciones_count: number | null
           operador_id: string | null
           operador_nombre: string | null
@@ -91,6 +93,7 @@ export type Database = {
           tiempo_segunda_lectura_qr: string | null
           tiempo_toma_despachador: string | null
           tipo: string
+          tipo_sensor: string | null
           ubicacion_primer_qr: string | null
           ubicacion_segundo_qr: string | null
         }
@@ -106,6 +109,8 @@ export type Database = {
           estado?: string | null
           id?: string
           municipio?: string | null
+          nombre_zona?: string | null
+          numero_zona?: string | null
           observaciones_count?: number | null
           operador_id?: string | null
           operador_nombre?: string | null
@@ -129,6 +134,7 @@ export type Database = {
           tiempo_segunda_lectura_qr?: string | null
           tiempo_toma_despachador?: string | null
           tipo: string
+          tipo_sensor?: string | null
           ubicacion_primer_qr?: string | null
           ubicacion_segundo_qr?: string | null
         }
@@ -144,6 +150,8 @@ export type Database = {
           estado?: string | null
           id?: string
           municipio?: string | null
+          nombre_zona?: string | null
+          numero_zona?: string | null
           observaciones_count?: number | null
           operador_id?: string | null
           operador_nombre?: string | null
@@ -167,6 +175,7 @@ export type Database = {
           tiempo_segunda_lectura_qr?: string | null
           tiempo_toma_despachador?: string | null
           tipo?: string
+          tipo_sensor?: string | null
           ubicacion_primer_qr?: string | null
           ubicacion_segundo_qr?: string | null
         }

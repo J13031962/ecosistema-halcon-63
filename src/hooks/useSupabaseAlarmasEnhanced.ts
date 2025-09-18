@@ -18,6 +18,9 @@ interface AlarmaEnhanced {
   estado: string;
   patrulla_asignada: string | null;
   supervisor: string | null;
+  numero_zona: string | null;
+  nombre_zona: string | null;
+  tipo_sensor: string | null;
   tiempo_atencion: string | null;
   tiempo_asignacion: string | null;
   tiempo_toma_despachador: string | null;
@@ -48,6 +51,9 @@ interface CreateAlarmaData {
   direccion?: string;
   municipio?: string;
   prioridad?: string;
+  numero_zona?: string;
+  nombre_zona?: string;
+  tipo_sensor?: string;
 }
 
 interface AsignacionPatrullaData {

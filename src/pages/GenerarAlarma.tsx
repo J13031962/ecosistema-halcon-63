@@ -43,6 +43,13 @@ const GenerarAlarma = () => {
   const [selectedAlarmType, setSelectedAlarmType] = useState<string>("");
   const [showClienteForm, setShowClienteForm] = useState(false);
   
+  // Estados para información de zona
+  const [zoneInfo, setZoneInfo] = useState({
+    numero_zona: '',
+    nombre_zona: '',
+    tipo_sensor: ''
+  });
+  
   // Estados para el formulario de llamadas
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [selectedClienteForCall, setSelectedClienteForCall] = useState<any>(null);
@@ -191,14 +198,25 @@ const GenerarAlarma = () => {
     });
 
     try {
-      const nuevaAlarma = await addAlarma({
+      const alarmaData: any = {
         cliente_id: selectedClienteForAlarm.id,
         tipo: selectedAlarmType,
         prioridad: 'alta',
         direccion: selectedClienteForAlarm.direccion,
         municipio: selectedClienteForAlarm.municipio,
         descripcion: `Alarma generada para ${selectedClienteForAlarm.nombre}`
-      });
+      };
+      
+      // Agregar información de zona para tipos específicos
+      if (selectedAlarmType.toLowerCase() === 'fuego' || selectedAlarmType.toLowerCase() === 'alarma') {
+        if (zoneInfo.numero_zona && zoneInfo.nombre_zona && zoneInfo.tipo_sensor) {
+          alarmaData.numero_zona = zoneInfo.numero_zona;
+          alarmaData.nombre_zona = zoneInfo.nombre_zona;
+          alarmaData.tipo_sensor = zoneInfo.tipo_sensor;
+        }
+      }
+      
+      const nuevaAlarma = await addAlarma(alarmaData);
       
       console.log('Alarma creada exitosamente:', nuevaAlarma);
       
@@ -231,6 +249,7 @@ const GenerarAlarma = () => {
       setIsAlarmModalOpen(false);
       setSelectedClienteForAlarm(null);
       setSelectedAlarmType("");
+      setZoneInfo({ numero_zona: '', nombre_zona: '', tipo_sensor: '' });
       // Limpiar búsqueda
       setClienteId("");
       setClienteEncontrado(null);
@@ -795,7 +814,13 @@ const GenerarAlarma = () => {
 
               <div className="grid grid-cols-1 gap-3">
                 <Label htmlFor="alarm-type">Tipo de Alarma</Label>
-                <Select value={selectedAlarmType} onValueChange={setSelectedAlarmType}>
+                <Select value={selectedAlarmType} onValueChange={(value) => {
+                  setSelectedAlarmType(value);
+                  // Limpiar información de zona si no es necesaria
+                  if (value.toLowerCase() !== 'fuego' && value.toLowerCase() !== 'alarma') {
+                    setZoneInfo({ numero_zona: '', nombre_zona: '', tipo_sensor: '' });
+                  }
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un tipo de alarma" />
                   </SelectTrigger>
@@ -847,6 +872,53 @@ const GenerarAlarma = () => {
                   </p>
                 </div>
               )}
+              
+              {/* Campos de zona para Fuego y Alarma */}
+              {(selectedAlarmType.toLowerCase() === 'fuego' || selectedAlarmType.toLowerCase() === 'alarma') && (
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                  <h4 className="font-medium text-sm">Información de Zona Activada</h4>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="numero_zona">Número de Zona *</Label>
+                      <Input
+                        id="numero_zona"
+                        placeholder="Ej: A1, B-2, Zona 15"
+                        value={zoneInfo.numero_zona}
+                        onChange={(e) => setZoneInfo(prev => ({ ...prev, numero_zona: e.target.value }))}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="nombre_zona">Nombre de Zona *</Label>
+                      <Input
+                        id="nombre_zona"
+                        placeholder="Ej: Sala Principal, Bodega Norte"
+                        value={zoneInfo.nombre_zona}
+                        onChange={(e) => setZoneInfo(prev => ({ ...prev, nombre_zona: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="tipo_sensor">Tipo de Sensor *</Label>
+                    <Select value={zoneInfo.tipo_sensor} onValueChange={(value) => setZoneInfo(prev => ({ ...prev, tipo_sensor: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccione tipo de sensor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Sensor de Humo">🔥 Sensor de Humo</SelectItem>
+                        <SelectItem value="Detector de Incendios">🚨 Detector de Incendios</SelectItem>
+                        <SelectItem value="Sensor de Movimiento (PIR)">👁️ Sensor de Movimiento (PIR)</SelectItem>
+                        <SelectItem value="Sensor Magnético (Puerta/Ventana)">🧲 Sensor Magnético (Puerta/Ventana)</SelectItem>
+                        <SelectItem value="Sensor de Vibración">📳 Sensor de Vibración</SelectItem>
+                        <SelectItem value="Sensor Infrarrojo">🔴 Sensor Infrarrojo</SelectItem>
+                        <SelectItem value="Otros">⚙️ Otros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -854,6 +926,10 @@ const GenerarAlarma = () => {
             {selectedClienteForAlarm && selectedAlarmType ? (
               <Button 
                 onClick={generateAlarm} 
+                disabled={
+                  ((selectedAlarmType.toLowerCase() === 'fuego' || selectedAlarmType.toLowerCase() === 'alarma') && 
+                   (!zoneInfo.numero_zona || !zoneInfo.nombre_zona || !zoneInfo.tipo_sensor))
+                }
                 className="flex-1"
               >
                 Generar Alarma
@@ -865,6 +941,7 @@ const GenerarAlarma = () => {
                 setIsAlarmModalOpen(false);
                 setSelectedClienteForAlarm(null);
                 setSelectedAlarmType("");
+                setZoneInfo({ numero_zona: '', nombre_zona: '', tipo_sensor: '' });
               }}
             >
               Cancelar
