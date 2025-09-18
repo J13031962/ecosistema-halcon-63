@@ -86,7 +86,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
             { title: "Estado General", url: "/estado-general", icon: Shield },
             { title: "Patrullas Contratadas", url: "/patrullas-contratadas", icon: Shield },
             { title: "Gestión Personal Operadores", url: "/personal", icon: Users },
-            { title: "Clientes", url: "/clientes-dir-central", icon: Building },
+            
           ]
         },
         { 
@@ -134,7 +134,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
         { 
           category: "💼 Ventas", 
           items: [
-            { title: "Ingresar Clientes", url: "/ingresar-clientes", icon: UserPlus },
             { title: "Generar Cotizaciones", url: "/generar-cotizaciones", icon: FileSignature },
             { title: "Elementos Cotizables", url: "/elementos-cotizables", icon: DollarSign },
           ]
