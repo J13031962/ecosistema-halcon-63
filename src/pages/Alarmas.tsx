@@ -493,7 +493,7 @@ const Alarmas = () => {
                               <div>
                                 <p className="text-sm text-muted-foreground flex items-center justify-end gap-1">
                                   <MapPin className="h-3 w-3 text-blue-500" />
-                                  Hasta Llegada
+                                  Tiempo de arribo
                                 </p>
                                 <p className="text-xl font-bold text-blue-600">
                                   {formatTiempo(alarma.tiempo_primera_lectura_qr
