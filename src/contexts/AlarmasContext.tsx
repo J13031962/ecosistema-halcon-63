@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 export interface Alarm {
   id: number;
   client: string;
-  type: 'Fuego' | 'Pánico' | 'Revisión' | 'Acompañamiento';
+  type: 'Fuego' | 'Pánico' | 'Revisión' | 'Acompañamiento' | 'Alarma';
   status: 'Activa' | 'En Proceso' | 'Despachada' | 'Resuelta';
   priority: 'Alta' | 'Media' | 'Baja';
   startTime: Date;
@@ -13,6 +13,10 @@ export interface Alarm {
   patrullaAsignada?: string;
   supervisor?: string;
   tiempoRespuesta?: string;
+  // Campos de zona para tipos Fuego y Alarma
+  numeroZona?: string;
+  nombreZona?: string;
+  tipoSensor?: string;
 }
 
 export interface AlarmasState {

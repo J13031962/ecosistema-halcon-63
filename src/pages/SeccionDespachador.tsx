@@ -72,6 +72,7 @@ const SeccionDespachador = () => {
   const getAlarmTypeIcon = (type: Alarm['type']) => {
     switch (type) {
       case "Fuego": return <Flame className="h-4 w-4" />;
+      case "Alarma": return <AlertTriangle className="h-4 w-4" />;
       case "Pánico": return <Shield className="h-4 w-4" />;
       case "Revisión": return <Eye className="h-4 w-4" />;
       case "Acompañamiento": return <UserCheck className="h-4 w-4" />;
@@ -82,6 +83,7 @@ const SeccionDespachador = () => {
   const getAlarmTypeColor = (type: Alarm['type']) => {
     switch (type) {
       case "Fuego": return "border-red-500 bg-red-50";
+      case "Alarma": return "border-orange-500 bg-orange-50";
       case "Pánico": return "border-purple-500 bg-purple-50";
       case "Revisión": return "border-blue-500 bg-blue-50";
       case "Acompañamiento": return "border-green-500 bg-green-50";
@@ -297,6 +299,43 @@ const SeccionDespachador = () => {
                           {alarm.operator && <p><strong>Operador:</strong> {alarm.operator}</p>}
                         </div>
                       </div>
+                      
+                      {/* Información de zona para Fuego y Alarma */}
+                      {(alarm.type === 'Fuego' || alarm.type === 'Alarma') && (alarm.numeroZona || alarm.nombreZona || alarm.tipoSensor) && (
+                        <div className="pt-4 border-t">
+                          <h5 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                            <Shield className="h-4 w-4" />
+                            Información de Zona
+                          </h5>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                            {alarm.numeroZona && (
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  📍 Zona: {alarm.numeroZona}
+                                </Badge>
+                              </div>
+                            )}
+                            {alarm.nombreZona && (
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-xs">
+                                  🏷️ {alarm.nombreZona}
+                                </Badge>
+                              </div>
+                            )}
+                            {alarm.tipoSensor && (
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {alarm.tipoSensor === 'humo' ? '🔥 Humo' :
+                                   alarm.tipoSensor === 'movimiento' ? '👁️ Movimiento' :
+                                   alarm.tipoSensor === 'magnetico' ? '🧲 Magnético' :
+                                   alarm.tipoSensor === 'termico' ? '🌡️ Térmico' :
+                                   `🔧 ${alarm.tipoSensor}`}
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       <div className="flex flex-wrap gap-2 pt-4 border-t">
                         <Button 

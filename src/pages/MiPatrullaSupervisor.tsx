@@ -295,7 +295,7 @@ const MiPatrullaSupervisor = () => {
               {alarmasActivas.map((alarma) => (
                 <div key={alarma.id} className="p-4 border rounded-lg bg-orange-50 border-orange-200">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <h4 className="font-semibold">{alarma.tipo}</h4>
                       <p className="text-sm text-muted-foreground">
                         📍 {alarma.direccion}, {alarma.municipio}
@@ -303,6 +303,34 @@ const MiPatrullaSupervisor = () => {
                       <p className="text-sm">
                         Cliente: {alarma.clientes?.nombre || 'No especificado'}
                       </p>
+                      
+                      {/* Información de zona para Fuego y Alarma */}
+                      {(alarma.tipo === 'Fuego' || alarma.tipo === 'Alarma') && (alarma.numero_zona || alarma.nombre_zona || alarma.tipo_sensor) && (
+                        <div className="mt-3 pt-2 border-t border-orange-300">
+                          <p className="text-xs font-medium text-orange-700 mb-1">Información de Zona:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {alarma.numero_zona && (
+                              <Badge variant="outline" className="text-xs bg-white border-orange-400">
+                                📍 Zona: {alarma.numero_zona}
+                              </Badge>
+                            )}
+                            {alarma.nombre_zona && (
+                              <Badge variant="secondary" className="text-xs">
+                                🏷️ {alarma.nombre_zona}
+                              </Badge>
+                            )}
+                            {alarma.tipo_sensor && (
+                              <Badge variant="outline" className="text-xs bg-white border-orange-400">
+                                {alarma.tipo_sensor === 'humo' ? '🔥 Humo' :
+                                 alarma.tipo_sensor === 'movimiento' ? '👁️ Movimiento' :
+                                 alarma.tipo_sensor === 'magnetico' ? '🧲 Magnético' :
+                                 alarma.tipo_sensor === 'termico' ? '🌡️ Térmico' :
+                                 `🔧 ${alarma.tipo_sensor}`}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="text-right">
                       <Badge variant="outline" className="mb-2">
