@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { OperationalCard as Card, OperationalCardContent as CardContent, OperationalCardDescription as CardDescription, OperationalCardHeader as CardHeader, OperationalCardTitle as CardTitle } from "@/components/ui/operational-card";
+import { OperationalThemeWrapper } from "@/components/layout/OperationalThemeWrapper";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { OperationalButton as Button } from "@/components/ui/operational-button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
@@ -205,6 +206,7 @@ const Alarmas = () => {
   }
 
   return (
+    <OperationalThemeWrapper>
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
@@ -585,6 +587,7 @@ const Alarmas = () => {
         </CardContent>
       </Card>
     </div>
+    </OperationalThemeWrapper>
   );
 };
 

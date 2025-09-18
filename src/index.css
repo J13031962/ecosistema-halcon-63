@@ -60,17 +60,17 @@ All colors MUST be HSL.
     --teleguardia-white: 0 0% 100%; /* #FFFFFF */
     
     /* Operational theme colors for operators, dispatchers, supervisors */
-    --operational-bg: 120 20% 97%; /* Very light green background */
-    --operational-card: 120 15% 99%; /* Ultra light green for cards */
-    --operational-border: 120 20% 88%; /* Light green borders */
-    --operational-primary: 120 40% 25%; /* Dark green for primary buttons */
+    --operational-bg: 134 55% 95%; /* Even more visible light green background */
+    --operational-card: 134 45% 97%; /* Light green for cards with better contrast */
+    --operational-border: 134 35% 80%; /* Green borders more defined */
+    --operational-primary: 134 70% 35%; /* Vibrant dark green for primary buttons */
     --operational-primary-foreground: 0 0% 100%; /* White text */
-    --operational-secondary: 210 100% 40%; /* Blue for secondary buttons */
+    --operational-secondary: 210 100% 50%; /* Bright blue for secondary buttons */
     --operational-secondary-foreground: 0 0% 100%; /* White text */
     --operational-danger: 0 84% 60%; /* Red for delete/cancel buttons */
     --operational-danger-foreground: 0 0% 100%; /* White text */
-    --operational-accent: 120 30% 35%; /* Medium green for accents */
-    --operational-muted: 120 15% 94%; /* Very light green for muted elements */
+    --operational-accent: 134 60% 45%; /* Medium green for accents */
+    --operational-muted: 134 30% 88%; /* Light green for muted elements */
   }
 
   .dark {
@@ -160,22 +160,38 @@ All colors MUST be HSL.
 
   /* Operational theme utility classes */
   .operational-theme {
-    @apply bg-[hsl(var(--operational-bg))];
+    @apply bg-[hsl(var(--operational-bg))] min-h-screen;
+    background: linear-gradient(135deg, hsl(var(--operational-bg)), hsl(134 45% 97%));
   }
   
   .operational-card {
-    @apply bg-[hsl(var(--operational-card))] border-[hsl(var(--operational-border))];
+    @apply bg-[hsl(var(--operational-card))] border-[hsl(var(--operational-border))] shadow-lg;
+    backdrop-filter: blur(10px);
+    border: 1px solid hsl(var(--operational-border));
   }
   
   .operational-btn-primary {
-    @apply bg-[hsl(var(--operational-primary))] hover:bg-[hsl(var(--operational-primary))/90] text-[hsl(var(--operational-primary-foreground))];
+    @apply bg-[hsl(var(--operational-primary))] hover:bg-[hsl(134_70%_30%)] text-[hsl(var(--operational-primary-foreground))] shadow-md hover:shadow-lg transition-all duration-200 font-medium border-0;
+    background: linear-gradient(135deg, hsl(var(--operational-primary)), hsl(134 70% 30%));
   }
   
   .operational-btn-secondary {
-    @apply bg-[hsl(var(--operational-secondary))] hover:bg-[hsl(var(--operational-secondary))/90] text-[hsl(var(--operational-secondary-foreground))];
+    @apply bg-[hsl(var(--operational-secondary))] hover:bg-[hsl(210_100%_45%)] text-[hsl(var(--operational-secondary-foreground))] shadow-md hover:shadow-lg transition-all duration-200 font-medium border-0;
+    background: linear-gradient(135deg, hsl(var(--operational-secondary)), hsl(210 100% 45%));
   }
   
   .operational-btn-danger {
-    @apply bg-[hsl(var(--operational-danger))] hover:bg-[hsl(var(--operational-danger))/90] text-[hsl(var(--operational-danger-foreground))];
+    @apply bg-[hsl(var(--operational-danger))] hover:bg-[hsl(0_84%_55%)] text-[hsl(var(--operational-danger-foreground))] shadow-md hover:shadow-lg transition-all duration-200 font-medium border-0;
+    background: linear-gradient(135deg, hsl(var(--operational-danger)), hsl(0 84% 55%));
+  }
+  
+  /* Enhanced operational styles */
+  .operational-header {
+    @apply bg-[hsl(var(--operational-card))] border-b border-[hsl(var(--operational-border))] shadow-sm;
+    backdrop-filter: blur(10px);
+  }
+  
+  .operational-accent-text {
+    @apply text-[hsl(var(--operational-accent))] font-semibold;
   }
 }
