@@ -153,13 +153,13 @@ const MiPatrullaSupervisor = () => {
     alarmasAsignadas: alarmasAsignadas,
     alarmasActivas: alarmasActivas,
     loading: { alarmasLoading, actividadesLoading, incidentesLoading },
-    errors: { alarmasError, actividadesError, incidentesError },
+    errors: { actividadesError, incidentesError },
     hookEnabled: !!user?.id && user?.role === 'supervisor_motorizado'
   });
   
   // Estado general de carga
   const isLoading = alarmasLoading || actividadesLoading || incidentesLoading;
-  const hasErrors = alarmasError || actividadesError || incidentesError;
+  const hasErrors = actividadesError || incidentesError;
 
   return (
       <div className="space-y-6">
@@ -274,11 +274,11 @@ const MiPatrullaSupervisor = () => {
                 <div key={i} className="h-16 bg-muted rounded"></div>
               ))}
             </div>
-          ) : alarmasError ? (
+          ) : hasErrors ? (
             <div className="text-center py-8 text-muted-foreground">
               <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive" />
               <p>Error al cargar las alarmas</p>
-              <Button variant="outline" size="sm" onClick={refetchAlarmas} className="mt-2">
+              <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="mt-2">
                 Reintentar
               </Button>
             </div>
