@@ -137,10 +137,14 @@ const TurnosOperador = () => {
       )}
 
       <Tabs defaultValue="calendar" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="calendar" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Calendario de Turnos
+          </TabsTrigger>
+          <TabsTrigger value="detailed" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Vista Detallada
           </TabsTrigger>
           <TabsTrigger value="summary" className="flex items-center gap-2">
             <Eye className="h-4 w-4" />
@@ -161,6 +165,23 @@ const TurnosOperador = () => {
             </CardHeader>
             <CardContent>
               <CalendarioTurnosGenerados />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="detailed" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Vista Detallada de Mis Turnos
+              </CardTitle>
+              <CardDescription>
+                Visualización detallada de tus turnos asignados con cálculo de horas trabajadas
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <VisualizadorTurnosOperador />
             </CardContent>
           </Card>
         </TabsContent>

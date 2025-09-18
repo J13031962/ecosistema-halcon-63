@@ -60,6 +60,13 @@ export const useAuthConsolidated = (): AuthContextConsolidated => {
           };
           
           console.log('✅ Found Supabase user with profile and role:', userData);
+          
+          // VALIDAR QUE EL USUARIO ESTÉ ACTIVO
+          if (!userData.active) {
+            console.log('❌ User is inactive, blocking authentication');
+            return null;
+          }
+          
           return userData;
         }
       }
@@ -123,6 +130,16 @@ export const useAuthConsolidated = (): AuthContextConsolidated => {
 
       if (!authError && authData.session) {
         console.log('✅ Login exitoso con Supabase Auth');
+        
+        // Verificar que el usuario esté activo antes de permitir el login
+        const consolidatedUser = await fetchConsolidatedUserData(email);
+        if (!consolidatedUser || !consolidatedUser.active) {
+          console.log('❌ User is inactive, signing out');
+          await supabase.auth.signOut();
+          setLoading(false);
+          return false;
+        }
+        
         await setupSession(authData.session);
         return true;
       }
