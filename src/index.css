@@ -194,4 +194,51 @@ All colors MUST be HSL.
   .operational-accent-text {
     @apply text-[hsl(var(--operational-accent))] font-semibold;
   }
+  
+  /* Scroll optimization and performance improvements */
+  .scroll-optimized {
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+    transform: translateZ(0); /* GPU acceleration */
+    will-change: scroll-position;
+  }
+  
+  .scroll-optimized::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scroll-optimized::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scroll-optimized::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 3px;
+  }
+  
+  .scroll-optimized::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground));
+  }
+  
+  /* Smooth transitions for UI elements */
+  .transition-optimized {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, opacity;
+  }
+  
+  /* Performance improvements for sticky elements */
+  .sticky-optimized {
+    position: -webkit-sticky;
+    position: sticky;
+    contain: layout style paint;
+    transform: translateZ(0);
+  }
+  
+  /* Debounced animations */
+  .animation-optimized {
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    animation-fill-mode: both;
+  }
 }

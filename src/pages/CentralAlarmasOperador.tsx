@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { OperationalCard as Card, OperationalCardContent as CardContent, OperationalCardDescription as CardDescription, OperationalCardHeader as CardHeader, OperationalCardTitle as CardTitle } from "@/components/ui/operational-card";
 import { OperationalThemeWrapper } from "@/components/layout/OperationalThemeWrapper";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -13,6 +13,8 @@ import { useUserSpecificData } from "@/hooks/useUserSpecificData";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { useOptimizedActions } from "@/hooks/useOptimizedActions";
 import { useGlobalTimer } from "@/hooks/useGlobalTimer";
+import { useOptimizedScrolling } from "@/hooks/useOptimizedScrolling";
+import { useThrottledRealtime } from "@/hooks/useThrottledRealtime";
 import { CalendarioTurnosGenerados } from '@/components/personal/CalendarioTurnosGenerados';
 import { useSupabaseTurnos } from '@/hooks/useSupabaseTurnos';
 import { useSupabaseClientes } from "@/hooks/useSupabaseClientes";
@@ -52,6 +54,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSupabaseMinutaOperaciones } from "@/hooks/useSupabaseMinutaOperaciones";
 import { ClienteServiciosDisplay } from "@/components/alarmas/ClienteServiciosDisplay";
+import OptimizedQuickBar from "@/components/layout/OptimizedQuickBar";
 
 interface ClienteFormData {
   id_numerico: string;
@@ -70,11 +73,9 @@ const CentralAlarmasOperador = () => {
   const { toast } = useToast();
   const { state: sidebarState } = useSidebar();
   const [mostrarCalendarioTurnos, setMostrarCalendarioTurnos] = useState(false);
-  const [realtimeAlarmas, setRealtimeAlarmas] = useState([]);
   
-  // Estado para la barra rápida
-  const [showQuickBar, setShowQuickBar] = useState(false);
-  const mainSectionRef = useRef<HTMLDivElement>(null);
+  // Optimized scrolling and realtime hooks
+  const { showQuickBar, mainSectionRef } = useOptimizedScrolling();
   
   // Estados para generación de alarmas
   const [searchTerm, setSearchTerm] = useState("");
@@ -170,70 +171,8 @@ useEffect(() => {
   // Hook para patrullas
   const { patrullas, loading: loadingPatrullas } = useSupabasePatrullas();
 
-  // Intersection Observer para la barra rápida
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setShowQuickBar(!entry.isIntersecting);
-      },
-      {
-        threshold: 0.1,
-        rootMargin: '-100px 0px 0px 0px'
-      }
-    );
-
-    if (mainSectionRef.current) {
-      observer.observe(mainSectionRef.current);
-    }
-
-    return () => {
-      if (mainSectionRef.current) {
-        observer.unobserve(mainSectionRef.current);
-      }
-    };
-  }, []);
-
-  // Configurar actualizaciones en tiempo real
-  useEffect(() => {
-    setRealtimeAlarmas(alarmasEnhanced);
-  }, [alarmasEnhanced]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel('alarmas_operador_realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'alarmas'
-        },
-        (payload) => {
-          console.log('🔄 Actualización en tiempo real de alarmas (operador):', payload);
-          
-          if (payload.eventType === 'UPDATE') {
-            setRealtimeAlarmas(prev => 
-              prev.map(alarma => 
-                alarma.id === payload.new.id 
-                  ? { ...alarma, ...payload.new }
-                  : alarma
-              )
-            );
-          } else if (payload.eventType === 'INSERT') {
-            setRealtimeAlarmas(prev => [payload.new as any, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setRealtimeAlarmas(prev => 
-              prev.filter(alarma => alarma.id !== payload.old.id)
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  // Optimized realtime updates with throttling
+  const realtimeAlarmas = useThrottledRealtime(alarmasEnhanced);
 
   // Todos los usuarios (incluyendo operadores) ahora ven todas las alarmas
   const fuenteAlarmas = todasAlarmas || [];
@@ -242,15 +181,20 @@ useEffect(() => {
   const alarmasActivas = fuenteAlarmas.filter(a => a.estado === 'activa');
   const alarmasResueltas = fuenteAlarmas.filter(a => a.estado === 'resuelta');
   
-  // Servicios en proceso (alarmas en proceso o asignadas) - usando realtimeAlarmas
-  const alarmasEnProceso = realtimeAlarmas.filter(a => 
-    a.estado === 'en_proceso' || a.estado === 'asignada'
+  // Memoized filtered arrays to prevent unnecessary re-renders
+  const alarmasEnProceso = useMemo(() => 
+    realtimeAlarmas.filter(a => a.estado === 'en_proceso' || a.estado === 'asignada'),
+    [realtimeAlarmas]
   );
-  const alarmasPendientes = realtimeAlarmas.filter(a => 
-    a.estado === 'activa' && !a.supervisor_id
+  
+  const alarmasPendientes = useMemo(() => 
+    realtimeAlarmas.filter(a => a.estado === 'activa' && !a.supervisor_id),
+    [realtimeAlarmas]
   );
-  const historialAsignaciones = realtimeAlarmas.filter(a => 
-    a.estado === 'resuelta' && a.tiempo_salida_sitio
+  
+  const historialAsignaciones = useMemo(() => 
+    realtimeAlarmas.filter(a => a.estado === 'resuelta' && a.tiempo_salida_sitio),
+    [realtimeAlarmas]
   );
 
   // Obtener turnos del operador
@@ -308,11 +252,7 @@ useEffect(() => {
 
       if (error) throw error;
 
-      // Optimized state update
-      setRealtimeAlarmas(prev => prev.map(a => a.id === alarmaId 
-        ? { ...a, tiempo_aceptacion_supervisor: now, estado: 'en_proceso' } 
-        : a
-      ));
+      // Note: State will be updated via realtime subscription
 
       toast({
         title: "Servicio atendido",
@@ -347,11 +287,7 @@ useEffect(() => {
 
       if (error) throw error;
 
-      // Optimized state update
-      setRealtimeAlarmas(prev => prev.map(a => a.id === alarmaId 
-        ? { ...a, ...updatePayload } 
-        : a
-      ));
+      // Note: State will be updated via realtime subscription
 
       toast({
         title: "Llegada marcada",
@@ -390,11 +326,7 @@ useEffect(() => {
 
       if (error) throw error;
 
-      // Optimized state update
-      setRealtimeAlarmas(prev => prev.map(a => a.id === alarmaId 
-        ? { ...a, ...updatePayload } 
-        : a
-      ));
+      // Note: State will be updated via realtime subscription
 
       toast({
         title: "Servicio completado",
@@ -746,7 +678,7 @@ useEffect(() => {
   const loadingAlarmasVista = loadingAll;
 
   return (
-    <OperationalThemeWrapper className="min-h-screen">{/* Removed bg-background since it's handled by theme */}
+    <OperationalThemeWrapper className="min-h-screen scroll-optimized">{/* Removed bg-background since it's handled by theme */}
       {/* Barra rápida fija */}
       {showQuickBar && (
         <div 
@@ -798,7 +730,7 @@ useEffect(() => {
         </div>
       )}
       
-      <div className="space-y-6 p-4" style={{ paddingTop: showQuickBar ? '70px' : '0' }}>
+      <div className="space-y-6 p-4 transition-optimized" style={{ paddingTop: showQuickBar ? '70px' : '0' }}>
       <div>
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <Phone className="h-8 w-8 text-primary" />
@@ -856,8 +788,14 @@ useEffect(() => {
         </Card>
       )}
 
-      {/* Sección Generar Nueva Alarma - Flotante */}
-      <div className="sticky top-4 z-50" ref={mainSectionRef}>
+      {/* Quick Bar Optimizada */}
+      <OptimizedQuickBar 
+        showQuickBar={showQuickBar}
+        onGenerateAlarm={() => setMostrarGenerarAlarma(true)}
+      />
+
+      {/* Sección Generar Nueva Alarma - Static version */}
+      <div ref={mainSectionRef}>
         <Card className="shadow-lg border-2">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
