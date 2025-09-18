@@ -16,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useSupabaseClientes } from "@/hooks/useSupabaseClientes";
+import { capitalizeText, capitalizeWords } from "@/lib/utils";
 import QRCode from "qrcode";
 
 const clienteSchema = z.object({
@@ -223,7 +224,11 @@ const GestionClientes = () => {
                     <FormItem>
                       <FormLabel>Nombre o Razón Social *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nombre del cliente" {...field} />
+                        <Input 
+                          placeholder="Nombre del cliente" 
+                          {...field}
+                          onChange={(e) => field.onChange(capitalizeWords(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -237,7 +242,11 @@ const GestionClientes = () => {
                     <FormItem>
                       <FormLabel>Número de Cuenta</FormLabel>
                       <FormControl>
-                        <Input placeholder="Número de cuenta del cliente" {...field} />
+                        <Input 
+                          placeholder="Número de cuenta del cliente" 
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -281,7 +290,11 @@ const GestionClientes = () => {
                     <FormItem>
                       <FormLabel>Dirección *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Dirección completa" {...field} />
+                        <Input 
+                          placeholder="Dirección completa" 
+                          {...field}
+                          onChange={(e) => field.onChange(capitalizeWords(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -296,7 +309,11 @@ const GestionClientes = () => {
                       <FormItem>
                         <FormLabel>Municipio *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Municipio" {...field} />
+                          <Input 
+                            placeholder="Municipio" 
+                            {...field}
+                            onChange={(e) => field.onChange(capitalizeText(e.target.value))}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -381,7 +398,8 @@ const GestionClientes = () => {
                         <Textarea 
                           placeholder="Observaciones adicionales sobre el cliente..."
                           className="min-h-[80px]"
-                          {...field} 
+                          {...field}
+                          onChange={(e) => field.onChange(capitalizeText(e.target.value))}
                         />
                       </FormControl>
                       <FormMessage />

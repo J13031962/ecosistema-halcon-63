@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { UserPlus, Building2, Phone, Mail, MapPin, QrCode, Download } from 'lucide-react';
 import { useSupabaseClientes } from '@/hooks/useSupabaseClientes';
+import { capitalizeText, capitalizeWords } from '@/lib/utils';
 import QRCode from 'qrcode';
 
 const clienteSchema = z.object({
@@ -144,7 +145,11 @@ const IngresarClientes = () => {
                     <FormItem>
                       <FormLabel>Nombre del Cliente</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nombre completo" {...field} />
+                        <Input 
+                          placeholder="Nombre completo" 
+                          {...field}
+                          onChange={(e) => field.onChange(capitalizeWords(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -158,7 +163,11 @@ const IngresarClientes = () => {
                     <FormItem>
                       <FormLabel>Número de Cuenta (Opcional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="CTE-000001" {...field} />
+                        <Input 
+                          placeholder="CTE-000001" 
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -176,7 +185,11 @@ const IngresarClientes = () => {
                       Dirección
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="Dirección completa del cliente" {...field} />
+                      <Input 
+                        placeholder="Dirección completa del cliente" 
+                        {...field}
+                        onChange={(e) => field.onChange(capitalizeWords(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -227,7 +240,11 @@ const IngresarClientes = () => {
                     <FormItem>
                       <FormLabel>Municipio</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nombre del municipio" {...field} />
+                        <Input 
+                          placeholder="Nombre del municipio" 
+                          {...field}
+                          onChange={(e) => field.onChange(capitalizeText(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -307,6 +324,7 @@ const IngresarClientes = () => {
                         placeholder="Información adicional sobre el cliente..."
                         className="min-h-[100px]"
                         {...field}
+                        onChange={(e) => field.onChange(capitalizeText(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />
