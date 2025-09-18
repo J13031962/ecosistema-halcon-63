@@ -35,10 +35,11 @@ export const useSupabaseUsuarios = () => {
       
       console.log('🔄 Obteniendo usuarios y sus roles...');
       
-      // First get profiles
+      // First get profiles (only active users)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email, full_name, numero_documento, foto_url, active, last_login, created_at')
+        .eq('active', true)
         .order('created_at', { ascending: false });
 
       if (profilesError) {
