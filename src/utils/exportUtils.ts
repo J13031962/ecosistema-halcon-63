@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
+import QRCode from 'qrcode';
 
 export const exportToPDF = (data: any[], title: string, columns: string[]) => {
   const doc = new jsPDF();
@@ -97,4 +98,127 @@ export const exportDashboardToPDF = (stats: any, title: string = 'Dashboard Repo
   }
   
   doc.save('dashboard_report.pdf');
+};
+
+export const exportQRToPDF = async (clientes: any[], qrsPerPage: number = 4) => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 20;
+  const availableWidth = pageWidth - (margin * 2);
+  const availableHeight = pageHeight - (margin * 2);
+
+  // Calculate QR layout based on qrsPerPage
+  let cols, rows, qrSize, spacing;
+  
+  switch(qrsPerPage) {
+    case 1:
+      cols = 1; rows = 1; qrSize = 120; spacing = 20;
+      break;
+    case 2:
+      cols = 1; rows = 2; qrSize = 80; spacing = 15;
+      break;
+    case 4:
+      cols = 2; rows = 2; qrSize = 60; spacing = 15;
+      break;
+    case 6:
+      cols = 2; rows = 3; qrSize = 50; spacing = 12;
+      break;
+    case 9:
+      cols = 3; rows = 3; qrSize = 40; spacing = 10;
+      break;
+    case 12:
+      cols = 3; rows = 4; qrSize = 35; spacing = 8;
+      break;
+    default:
+      cols = 2; rows = 2; qrSize = 60; spacing = 15;
+  }
+
+  const cellWidth = availableWidth / cols;
+  const cellHeight = availableHeight / rows;
+
+  let currentPage = 0;
+  let currentQR = 0;
+
+  for (let i = 0; i < clientes.length; i++) {
+    const cliente = clientes[i];
+    const positionInPage = currentQR % qrsPerPage;
+    
+    // Add new page if needed
+    if (positionInPage === 0 && i > 0) {
+      doc.addPage();
+      currentPage++;
+    }
+
+    const row = Math.floor(positionInPage / cols);
+    const col = positionInPage % cols;
+    
+    const x = margin + (col * cellWidth) + (cellWidth - qrSize) / 2;
+    const y = margin + (row * cellHeight) + (cellHeight - qrSize - 30) / 2;
+
+    try {
+      // Create QR data using numero_cuenta as primary ID
+      const qrData = JSON.stringify({
+        id: cliente.numero_cuenta || cliente.id,
+        cliente: cliente.nombre,
+        direccion: cliente.direccion,
+        coordenadas: {
+          lat: cliente.latitud || 0,
+          lng: cliente.longitud || 0
+        }
+      });
+
+      // Generate QR code as data URL
+      const qrDataURL = await QRCode.toDataURL(qrData, {
+        width: qrSize * 4, // Higher resolution for better print quality
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+
+      // Add QR code to PDF
+      doc.addImage(qrDataURL, 'PNG', x, y, qrSize, qrSize);
+
+      // Add client info below QR
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      const nameText = cliente.nombre.length > 25 ? 
+        cliente.nombre.substring(0, 25) + '...' : cliente.nombre;
+      doc.text(nameText, x + qrSize/2, y + qrSize + 8, { align: 'center' });
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.text(`Cuenta: ${cliente.numero_cuenta || cliente.id}`, x + qrSize/2, y + qrSize + 14, { align: 'center' });
+      
+      const addressText = cliente.direccion && cliente.direccion.length > 30 ? 
+        cliente.direccion.substring(0, 30) + '...' : cliente.direccion || '';
+      if (addressText) {
+        doc.text(addressText, x + qrSize/2, y + qrSize + 20, { align: 'center' });
+      }
+
+    } catch (error) {
+      console.error('Error generating QR for client:', cliente.nombre, error);
+      // Add placeholder text if QR generation fails
+      doc.setFontSize(10);
+      doc.text('Error QR', x + qrSize/2, y + qrSize/2, { align: 'center' });
+    }
+
+    currentQR++;
+  }
+
+  // Add header to first page
+  doc.setPage(1);
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Códigos QR de Clientes', pageWidth/2, 15, { align: 'center' });
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Generado: ${new Date().toLocaleDateString()} - Total: ${clientes.length} clientes`, pageWidth/2, 25, { align: 'center' });
+
+  // Save the PDF
+  const fileName = `codigos_qr_clientes_${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(fileName);
 };

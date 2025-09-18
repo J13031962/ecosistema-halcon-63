@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { UserPlus, Building2, Phone, Mail, MapPin, QrCode, Download } from 'lucide-react';
 import { useSupabaseClientes } from '@/hooks/useSupabaseClientes';
 import { capitalizeText, capitalizeWords } from '@/lib/utils';
+import { QRReportGenerator } from '@/components/QRReportGenerator';
 import QRCode from 'qrcode';
 
 const clienteSchema = z.object({
@@ -35,7 +36,8 @@ const IngresarClientes = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [ultimoCliente, setUltimoCliente] = useState<any>(null);
-  const { addCliente } = useSupabaseClientes();
+  const [showQRReport, setShowQRReport] = useState(false);
+  const { addCliente, clientes } = useSupabaseClientes();
 
   const form = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
@@ -119,9 +121,20 @@ const IngresarClientes = () => {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="flex items-center gap-2 mb-6">
-        <UserPlus className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">Ingresar Clientes</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <UserPlus className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Ingresar Clientes</h1>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={() => setShowQRReport(true)}
+          disabled={clientes.length === 0}
+          className="flex items-center gap-2"
+        >
+          <QrCode className="h-4 w-4" />
+          Generar Reportes QR
+        </Button>
       </div>
 
       <Card className="max-w-2xl mx-auto">
@@ -385,6 +398,13 @@ const IngresarClientes = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* QR Report Generator */}
+      <QRReportGenerator
+        isOpen={showQRReport}
+        onClose={() => setShowQRReport(false)}
+        clientes={clientes}
+      />
     </div>
   );
 };

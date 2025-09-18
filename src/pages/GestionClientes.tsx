@@ -17,6 +17,7 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useSupabaseClientes } from "@/hooks/useSupabaseClientes";
 import { capitalizeText, capitalizeWords } from "@/lib/utils";
+import { QRReportGenerator } from "@/components/QRReportGenerator";
 import QRCode from "qrcode";
 
 const clienteSchema = z.object({
@@ -53,6 +54,7 @@ const GestionClientes = () => {
   const [editingCliente, setEditingCliente] = useState<any>(null);
   const [showQR, setShowQR] = useState<any>(null);
   const [qrDataURL, setQrDataURL] = useState<string>("");
+  const [showQRReport, setShowQRReport] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<ClienteFormData>({
@@ -200,6 +202,15 @@ const GestionClientes = () => {
             <Button onClick={openNewClientModal} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Registrar Nuevo Cliente
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowQRReport(true)}
+              disabled={filteredClientes.length === 0}
+              className="flex items-center gap-2"
+            >
+              <QrCode className="h-4 w-4" />
+              Generar QRs
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
@@ -611,12 +622,19 @@ const GestionClientes = () => {
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+         </DialogContent>
+       </Dialog>
 
-    </div>
-    </OperationalThemeWrapper>
-  );
-};
+       {/* QR Report Generator */}
+       <QRReportGenerator
+         isOpen={showQRReport}
+         onClose={() => setShowQRReport(false)}
+         clientes={clientes}
+       />
+
+     </div>
+     </OperationalThemeWrapper>
+   );
+ };
 
 export default GestionClientes;
