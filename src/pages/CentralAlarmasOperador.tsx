@@ -548,6 +548,11 @@ useEffect(() => {
         alarmaData.numero_zona = numeroZona;
         alarmaData.nombre_zona = nombreZona;
         alarmaData.tipo_sensor = tipoSensor;
+        
+        // Enriquecer la descripción con información de zona
+        if (numeroZona && nombreZona && tipoSensor) {
+          alarmaData.descripcion = `Alarma generada para ${selectedClienteForAlarm.nombre} - Zona: ${numeroZona} (${nombreZona}) - Sensor: ${tipoSensor}`;
+        }
       }
 
       const nuevaAlarma = await addAlarma(alarmaData);

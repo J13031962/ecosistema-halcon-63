@@ -213,6 +213,9 @@ const GenerarAlarma = () => {
           alarmaData.numero_zona = zoneInfo.numero_zona;
           alarmaData.nombre_zona = zoneInfo.nombre_zona;
           alarmaData.tipo_sensor = zoneInfo.tipo_sensor;
+          
+          // Enriquecer la descripción con información de zona
+          alarmaData.descripcion = `Alarma generada para ${selectedClienteForAlarm.nombre} - Zona: ${zoneInfo.numero_zona} (${zoneInfo.nombre_zona}) - Sensor: ${zoneInfo.tipo_sensor}`;
         }
       }
       
