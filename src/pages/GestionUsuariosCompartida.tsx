@@ -44,6 +44,7 @@ const GestionUsuariosCompartida: React.FC<GestionUsuariosCompartidaProps> = ({ i
   } = useSupabaseUsuarios();
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -175,10 +176,16 @@ const GestionUsuariosCompartida: React.FC<GestionUsuariosCompartidaProps> = ({ i
     await deleteUser(user.id, user.email);
   };
 
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.full_name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'active' && user.active) ||
+      (statusFilter === 'inactive' && !user.active);
+    
+    return matchesSearch && matchesStatus;
+  });
 
   const pageTitle = isDirectorCentral ? 'GESTIÓN DE USUARIOS - DIRECTOR CENTRAL' : 'GESTIÓN DE USUARIOS - ADMINISTRADOR';
   const pageDescription = isDirectorCentral 
@@ -238,14 +245,26 @@ const GestionUsuariosCompartida: React.FC<GestionUsuariosCompartidaProps> = ({ i
               {filteredUsers.length} usuario{filteredUsers.length !== 1 ? 's' : ''}
             </Badge>
           </CardTitle>
-          <div className="flex items-center space-x-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar usuarios..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar usuarios..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={(value: 'all' | 'active' | 'inactive') => setStatusFilter(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los usuarios</SelectItem>
+                <SelectItem value="active">Solo activos</SelectItem>
+                <SelectItem value="inactive">Solo inactivos</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent>

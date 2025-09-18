@@ -15,6 +15,11 @@ interface CreateUserRequest {
   fotoUrl?: string;
 }
 
+interface DeleteUserRequest {
+  userId: string;
+  email: string;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -22,8 +27,75 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, password, fullName, role, numeroDocumento, fotoUrl }: CreateUserRequest = await req.json();
+    const body = await req.json();
 
+    // Check if this is a delete request
+    if (body.action === 'delete') {
+      const { userId, email }: DeleteUserRequest = body;
+      console.log('🗑️ Eliminando usuario con Admin API:', { userId, email });
+      
+      // Create Supabase Admin client
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        }
+      );
+
+      // Delete user from auth.users
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      
+      if (deleteError) {
+        console.error('❌ Error deleting user from auth:', deleteError);
+        throw deleteError;
+      }
+
+      console.log('✅ Usuario eliminado completamente del sistema auth');
+
+      // Also delete from profiles table
+      const { error: profileDeleteError } = await supabaseAdmin
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (profileDeleteError) {
+        console.error('❌ Error deleting profile:', profileDeleteError);
+        // Don't throw here, auth deletion is more important
+      } else {
+        console.log('✅ Perfil eliminado de la base de datos');
+      }
+
+      // Delete user roles
+      const { error: rolesDeleteError } = await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (rolesDeleteError) {
+        console.error('❌ Error deleting user roles:', rolesDeleteError);
+        // Don't throw here
+      } else {
+        console.log('✅ Roles eliminados de la base de datos');
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: 'Usuario eliminado completamente del sistema'
+      }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders,
+        },
+      });
+    }
+
+    // Otherwise, proceed with user creation
+    const { email, password, fullName, role, numeroDocumento, fotoUrl }: CreateUserRequest = body;
     console.log('🚀 Creando usuario con Admin API:', { email, role });
 
     // Create Supabase Admin client

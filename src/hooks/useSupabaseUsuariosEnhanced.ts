@@ -144,18 +144,35 @@ export const useSupabaseUsuariosEnhanced = () => {
 
   const deleteUser = async (userId: string, email: string) => {
     try {
-      // En lugar de eliminar completamente, desactivamos el usuario
-      const result = await updateUserActive(userId, false);
+      console.log('🗑️ Eliminando usuario completamente:', { userId, email });
       
-      if (result.success) {
-        toast.success('Usuario desactivado exitosamente');
-        return { success: true };
+      // Use Edge Function to completely delete the user
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          action: 'delete',
+          userId,
+          email
+        }
+      });
+
+      if (error) {
+        console.error('❌ Error en Edge Function:', error);
+        throw error;
       }
-      
-      return result;
-    } catch (error) {
-      console.error('Error deactivating user:', error);
-      toast.error('Error al desactivar usuario');
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Error desconocido al eliminar usuario');
+      }
+
+      console.log('✅ Usuario eliminado completamente del sistema');
+
+      toast.success('Usuario eliminado permanentemente del sistema');
+      await fetchUsers();
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      const errorMessage = error.message || 'Error al eliminar usuario';
+      toast.error(errorMessage);
       return { success: false, error };
     }
   };

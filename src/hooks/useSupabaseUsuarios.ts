@@ -35,11 +35,10 @@ export const useSupabaseUsuarios = () => {
       
       console.log('🔄 Obteniendo usuarios y sus roles...');
       
-      // First get profiles (only active users)
+      // Get all profiles (both active and inactive)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email, full_name, numero_documento, foto_url, active, last_login, created_at')
-        .eq('active', true)
         .order('created_at', { ascending: false });
 
       if (profilesError) {
@@ -190,17 +189,31 @@ export const useSupabaseUsuarios = () => {
 
   const deleteUser = async (userId: string, email: string) => {
     try {
-      // First deactivate the user
-      await supabase
-        .from('profiles')
-        .update({ active: false })
-        .eq('id', userId);
+      console.log('🗑️ Eliminando usuario completamente:', { userId, email });
+      
+      // Use Edge Function to completely delete the user
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          action: 'delete',
+          userId,
+          email
+        }
+      });
 
-      // Note: Actually deleting from auth.users requires admin API
-      // For now, we'll just deactivate the profile
+      if (error) {
+        console.error('❌ Error en Edge Function:', error);
+        throw error;
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Error desconocido al eliminar usuario');
+      }
+
+      console.log('✅ Usuario eliminado completamente del sistema');
+
       toast({
         title: "Usuario eliminado",
-        description: `${email} ha sido eliminado del sistema`,
+        description: `${email} ha sido eliminado permanentemente del sistema`,
       });
 
       await fetchUsers();

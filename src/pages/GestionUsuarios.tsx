@@ -39,6 +39,7 @@ const GestionUsuarios = () => {
   } = useSupabaseUsuarios();
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -336,10 +337,16 @@ const GestionUsuarios = () => {
     setSelectedUser(null);
   };
 
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.full_name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'active' && user.active) ||
+      (statusFilter === 'inactive' && !user.active);
+    
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -396,14 +403,26 @@ const GestionUsuarios = () => {
               {filteredUsers.length} usuario{filteredUsers.length !== 1 ? 's' : ''}
             </Badge>
           </CardTitle>
-          <div className="flex items-center space-x-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar usuarios..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar usuarios..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={(value: 'all' | 'active' | 'inactive') => setStatusFilter(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los usuarios</SelectItem>
+                <SelectItem value="active">Solo activos</SelectItem>
+                <SelectItem value="inactive">Solo inactivos</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent>
@@ -493,24 +512,37 @@ const GestionUsuarios = () => {
                         
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <Trash2 className="h-4 w-4 text-red-600" />
+                            <Button variant="destructive" size="sm">
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>¿Eliminar Usuario?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta acción eliminará permanentemente a {user.email} del sistema.
+                              <AlertDialogTitle>⚠️ Eliminar usuario permanentemente</AlertDialogTitle>
+                              <AlertDialogDescription className="space-y-2">
+                                <p className="font-semibold text-destructive">
+                                  Esta acción NO se puede deshacer.
+                                </p>
+                                <p>
+                                  El usuario <strong>{user.email}</strong> será eliminado completamente del sistema, 
+                                  incluyendo su cuenta de autenticación.
+                                </p>
+                                <p>
+                                  Su dirección de correo quedará disponible para crear un nuevo usuario.
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  Si solo deseas que el usuario no pueda acceder temporalmente, 
+                                  usa la opción "Desactivar" en su lugar.
+                                </p>
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
+                              <AlertDialogAction 
                                 onClick={() => handleDeleteUser(user)}
-                                className="bg-red-600 hover:bg-red-700"
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
-                                Eliminar
+                                Eliminar Permanentemente
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
