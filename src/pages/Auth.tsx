@@ -150,7 +150,7 @@ const Auth = () => {
               <img 
                 src="/ojos-2025.png" 
                 alt="Halcon Logo" 
-                className="w-28 h-16 object-contain"
+                className="w-36 h-20 object-contain"
               />
             </div>
             <h1 className="text-2xl font-bold mb-2" style={{ color: 'rgb(0, 255, 200)' }}>
