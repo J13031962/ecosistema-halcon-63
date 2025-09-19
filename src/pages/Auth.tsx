@@ -53,33 +53,8 @@ const Auth = () => {
       setBackgroundImage(savedBackground);
     }
 
-    // Process hawk logo to remove background
-    const processLogo = async () => {
-      try {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = async () => {
-          try {
-            const processedBlob = await removeBackground(img);
-            const processedUrl = URL.createObjectURL(processedBlob);
-            setLogoWithoutBg(processedUrl);
-          } catch (error) {
-            console.error('Error processing logo:', error);
-            // Fallback to original image
-            setLogoWithoutBg('/hawk-original.png');
-          }
-        };
-        img.onerror = () => {
-          setLogoWithoutBg('/hawk-original.png');
-        };
-        img.src = '/hawk-original.png';
-      } catch (error) {
-        console.error('Error loading logo:', error);
-        setLogoWithoutBg('/hawk-original.png');
-      }
-    };
-
-    processLogo();
+    // Use original hawk logo without background removal
+    setLogoWithoutBg('/hawk-original.png');
 
     // Cleanup function to revoke blob URL
     return () => {
