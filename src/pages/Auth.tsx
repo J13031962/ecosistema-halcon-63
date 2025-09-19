@@ -29,6 +29,7 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [backgroundImage, setBackgroundImage] = useState('/lovable-uploads/b189fbe2-9643-4103-bb16-bf1857b39c78.png');
+  const [logoWithoutBg, setLogoWithoutBg] = useState<string | null>(null);
   const { login, isAuthenticated } = useAuthConsolidatedContext();
   const navigate = useNavigate();
 
@@ -51,7 +52,42 @@ const Auth = () => {
     if (savedBackground) {
       setBackgroundImage(savedBackground);
     }
-  }, [isAuthenticated, navigate]);
+
+    // Process hawk logo to remove background
+    const processLogo = async () => {
+      try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = async () => {
+          try {
+            const processedBlob = await removeBackground(img);
+            const processedUrl = URL.createObjectURL(processedBlob);
+            setLogoWithoutBg(processedUrl);
+          } catch (error) {
+            console.error('Error processing logo:', error);
+            // Fallback to original image
+            setLogoWithoutBg('/hawk-original.png');
+          }
+        };
+        img.onerror = () => {
+          setLogoWithoutBg('/hawk-original.png');
+        };
+        img.src = '/hawk-original.png';
+      } catch (error) {
+        console.error('Error loading logo:', error);
+        setLogoWithoutBg('/hawk-original.png');
+      }
+    };
+
+    processLogo();
+
+    // Cleanup function to revoke blob URL
+    return () => {
+      if (logoWithoutBg && logoWithoutBg.startsWith('blob:')) {
+        URL.revokeObjectURL(logoWithoutBg);
+      }
+    };
+  }, [isAuthenticated, navigate, logoWithoutBg]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,7 +184,7 @@ const Auth = () => {
           <div className="text-center mb-6">
             <div className="flex justify-center mb-4">
               <img 
-                src="/ojos-2025.png" 
+                src={logoWithoutBg || '/hawk-original.png'} 
                 alt="Halcon Logo" 
                 className="w-48 h-28 object-contain"
               />
