@@ -144,7 +144,7 @@ const Auth = () => {
         </Button>
 
         <div className="auth-form">
-          <div className="text-center mb-4">
+          <div className="text-center mb-6">
             <h1 className="text-2xl font-bold mb-2" style={{ color: 'rgb(0, 255, 200)' }}>
               Ecosistema HALCON
             </h1>
@@ -152,9 +152,6 @@ const Auth = () => {
               Ingresa tus credenciales para acceder al sistema
             </p>
           </div>
-          <h1 className="auth-heading">
-            {isSignUp ? 'Registro' : 'Acceso'}
-          </h1>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
