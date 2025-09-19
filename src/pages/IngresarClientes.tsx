@@ -17,14 +17,14 @@ import { QRReportGenerator } from '@/components/QRReportGenerator';
 import QRCode from 'qrcode';
 
 const clienteSchema = z.object({
-  nombre: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
-  direccion: z.string().min(5, 'Ingrese una dirección válida'),
-  telefono: z.string().optional(),
-  email: z.string().email('Ingrese un email válido').optional(),
-  municipio: z.string().min(2, 'Ingrese el municipio'),
-  tipo_servicio: z.string().optional(),
-  numero_cuenta: z.string().optional(),
-  observaciones: z.string().optional(),
+  nombre: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').transform(val => val.toLowerCase()),
+  direccion: z.string().min(5, 'Ingrese una dirección válida').transform(val => val.toLowerCase()),
+  telefono: z.string().optional().transform(val => val?.toLowerCase() || ''),
+  email: z.string().email('Ingrese un email válido').optional().transform(val => val?.toLowerCase() || ''),
+  municipio: z.string().min(2, 'Ingrese el municipio').transform(val => val.toLowerCase()),
+  tipo_servicio: z.string().optional().transform(val => val?.toLowerCase() || ''),
+  numero_cuenta: z.string().optional().transform(val => val?.toLowerCase() || ''),
+  observaciones: z.string().optional().transform(val => val?.toLowerCase() || ''),
   latitud: z.string().min(1, 'Ingrese la latitud'),
   longitud: z.string().min(1, 'Ingrese la longitud'),
 });
@@ -161,7 +161,6 @@ const IngresarClientes = () => {
                         <Input 
                           placeholder="Nombre completo" 
                           {...field}
-                          onChange={(e) => field.onChange(capitalizeWords(e.target.value))}
                         />
                       </FormControl>
                       <FormMessage />
@@ -179,7 +178,6 @@ const IngresarClientes = () => {
                         <Input 
                           placeholder="CTE-000001" 
                           {...field}
-                          onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                         />
                       </FormControl>
                       <FormMessage />
@@ -201,7 +199,6 @@ const IngresarClientes = () => {
                       <Input 
                         placeholder="Dirección completa del cliente" 
                         {...field}
-                        onChange={(e) => field.onChange(capitalizeWords(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />
@@ -256,7 +253,6 @@ const IngresarClientes = () => {
                         <Input 
                           placeholder="Nombre del municipio" 
                           {...field}
-                          onChange={(e) => field.onChange(capitalizeText(e.target.value))}
                         />
                       </FormControl>
                       <FormMessage />
@@ -337,7 +333,6 @@ const IngresarClientes = () => {
                         placeholder="Información adicional sobre el cliente..."
                         className="min-h-[100px]"
                         {...field}
-                        onChange={(e) => field.onChange(capitalizeText(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />
