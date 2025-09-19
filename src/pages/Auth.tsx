@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Shield, UserPlus, LogIn, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Shield, UserPlus, LogIn, ArrowLeft, Mail, Lock, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { createTestUsers } from '@/utils/createTestUsers';
 
@@ -143,172 +143,157 @@ const Auth = () => {
           Volver al Inicio
         </Button>
 
-        <Card className="backdrop-blur-sm bg-card/95 shadow-xl">
-          <CardHeader className="space-y-1">
-            <div className="flex items-center justify-center mb-4">
-              <Shield className="h-12 w-12 text-primary" />
-            </div>
-            <CardTitle className="text-2xl text-center">Sistema HALCON</CardTitle>
-            <CardDescription className="text-center">
-              {isSignUp ? 'Crear nueva cuenta de usuario' : 'Ingresa tus credenciales para acceder al sistema'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {isSignUp && (
-                <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-sm font-medium">
-                    Nombre Completo
-                  </Label>
-                  <Input
-                    id="fullName"
-                    name="fullName"
-                    type="text"
-                    placeholder="Juan Pérez"
-                    value={formData.fullName || ''}
-                    onChange={handleChange}
-                    required={isSignUp}
-                  />
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="tu@email.com"
-                  value={formData.email}
+        <div className="auth-form">
+          <h1 className="auth-heading">
+            {isSignUp ? 'Registro' : 'Acceso'}
+          </h1>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && (
+              <div className="auth-field">
+                <User className="auth-icon" />
+                <input
+                  className="auth-input"
+                  name="fullName"
+                  type="text"
+                  placeholder="Nombre completo"
+                  value={formData.fullName || ''}
                   onChange={handleChange}
-                  required
+                  required={isSignUp}
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">
-                  Contraseña
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    minLength={6}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                {isSignUp && (
-                  <p className="text-xs text-muted-foreground">
-                    Mínimo 6 caracteres
-                  </p>
-                )}
-              </div>
-
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              {successMessage && (
-                <Alert className="border-green-200 bg-green-50 text-green-800">
-                  <AlertDescription>{successMessage}</AlertDescription>
-                </Alert>
-              )}
-
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isLoading}
-              >
-                {isLoading ? 'Cargando...' : (
-                  <>
-                    {isSignUp ? (
-                      <>
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Crear Cuenta
-                      </>
-                    ) : (
-                      <>
-                        <LogIn className="h-4 w-4 mr-2" />
-                        Iniciar Sesión
-                      </>
-                    )}
-                  </>
-                )}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <Button
-                variant="ghost"
-                onClick={toggleMode}
-                className="text-sm text-muted-foreground hover:text-primary"
-              >
-                {isSignUp 
-                  ? '¿Ya tienes cuenta? Inicia sesión' 
-                  : '¿No tienes cuenta? Regístrate'
-                }
-              </Button>
+            )}
+            
+            <div className="auth-field">
+              <Mail className="auth-icon" />
+              <input
+                className="auth-input"
+                name="email"
+                type="email"
+                placeholder="Nombre de usuario"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
             </div>
 
-            {!isSignUp && (
-              <div className="mt-6 p-4 border rounded-lg bg-muted/50 space-y-3">
-                <p className="text-sm font-medium mb-2">Credenciales de prueba disponibles:</p>
-                
-                 <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground">
-                    <div>
-                      <strong>Administrador:</strong><br />
-                      admin@teleguardia.com / Tele2025*
-                    </div>
-                   <div>
-                     <strong>Director Técnico:</strong><br />
-                     directortec@teleguardia.com / Dirtecnico2025*
-                   </div>
-                   <div>
-                     <strong>Director Central:</strong><br />
-                     directorcentral@teleguardia.com / Dircentral2025*
-                   </div>
-                   <div>
-                     <strong>Operador:</strong><br />
-                     operador@teleguardia.com / Operador2025*
-                   </div>
-                   <div>
-                     <strong>Despachador:</strong><br />
-                     despachador@teleguardia.com / Despachador2025*
-                   </div>
-                   <div>
-                     <strong>Supervisor:</strong><br />
-                     supervisor@teleguardia.com / Supervisor2025*
-                   </div>
-                   <div>
-                     <strong>Técnico:</strong><br />
-                     tecnico@teleguardia.com / Tecnico2025*
-                   </div>
-                 </div>
-              </div>
+            <div className="auth-field">
+              <Lock className="auth-icon" />
+              <input
+                className="auth-input"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Contraseña"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="auth-icon opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
+                style={{ background: 'none', border: 'none', padding: 0 }}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+
+            {error && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
-          </CardContent>
-        </Card>
+
+            {successMessage && (
+              <Alert className="border-green-200 bg-green-50 text-green-800 mt-4">
+                <AlertDescription>{successMessage}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex flex-col gap-3 mt-6">
+              <button 
+                type="submit" 
+                className="auth-button"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Cargando...' : (isSignUp ? 'Inscribirse' : 'Acceso')}
+              </button>
+              
+              {!isSignUp && (
+                <button 
+                  type="button"
+                  className="auth-toggle-button"
+                  style={{
+                    backgroundImage: 'linear-gradient(163deg, hsl(160 100% 25%) 0%, hsl(340 100% 32%) 100%)'
+                  }}
+                  onClick={() => alert('Función no disponible')}
+                >
+                  Has olvidado tu contraseña
+                </button>
+              )}
+            </div>
+          </form>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="auth-toggle-button text-sm"
+            >
+              {isSignUp 
+                ? '¿Ya tienes cuenta? Inicia sesión' 
+                : '¿No tienes cuenta? Regístrate'
+              }
+            </button>
+          </div>
+
+          {!isSignUp && (
+            <div className="mt-6 p-4 rounded-lg space-y-3" style={{
+              backgroundColor: 'hsl(var(--auth-bg) / 0.7)',
+              border: '1px solid hsl(var(--auth-accent) / 0.2)'
+            }}>
+              <p className="text-sm font-medium mb-2" style={{ color: 'hsl(var(--auth-accent))' }}>
+                Credenciales de prueba disponibles:
+              </p>
+              
+              <div className="grid grid-cols-1 gap-2 text-xs" style={{ color: 'hsl(var(--auth-accent) / 0.8)' }}>
+                <div>
+                  <strong>Administrador:</strong><br />
+                  admin@teleguardia.com / Tele2025*
+                </div>
+                <div>
+                  <strong>Director Técnico:</strong><br />
+                  directortec@teleguardia.com / Dirtecnico2025*
+                </div>
+                <div>
+                  <strong>Director Central:</strong><br />
+                  directorcentral@teleguardia.com / Dircentral2025*
+                </div>
+                <div>
+                  <strong>Operador:</strong><br />
+                  operador@teleguardia.com / Operador2025*
+                </div>
+                <div>
+                  <strong>Despachador:</strong><br />
+                  despachador@teleguardia.com / Despachador2025*
+                </div>
+                <div>
+                  <strong>Supervisor:</strong><br />
+                  supervisor@teleguardia.com / Supervisor2025*
+                </div>
+                <div>
+                  <strong>Técnico:</strong><br />
+                  tecnico@teleguardia.com / Tecnico2025*
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="text-center text-sm text-white/70">
           <p>© 2024 HALCON - Sistema de Gestión Integral</p>
