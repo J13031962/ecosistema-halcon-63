@@ -84,8 +84,10 @@ export default function MinutaOperador() {
   
   // Función para verificar si una entrada fue creada por director central
   const isDirectorEntry = (entrada: any) => {
+    // Verificar por email específico del director central o si es administrador
     return entrada.usuario_nombre === 'admin@teleguardia.com' || 
-           entrada.usuario_id === user?.id && isDirectorCentral;
+           entrada.usuario_nombre?.includes('admin@teleguardia.com') ||
+           (entrada.usuario_id === user?.id && (user?.role === 'administrador' || user?.role === 'director'));
   };
 
   const getPrioridadColor = (prioridad: string) => {
