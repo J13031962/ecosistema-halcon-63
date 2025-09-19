@@ -271,39 +271,61 @@ export default function MinutaOperador() {
                       : ''
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge className={getTipoColor(entrada.tipo_entrada)}>
-                          {getTipoLabel(entrada.tipo_entrada)}
-                        </Badge>
-                        {entrada.prioridad !== 'normal' && (
+                  {/* Header con información del operador y fecha */}
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">
+                          {entrada.usuario_nombre}
+                          {isDirectorEntry(entrada) && (
+                            <span className="ml-1 text-xs bg-green-100 text-green-700 px-1 rounded dark:bg-green-900 dark:text-green-300">
+                              Director Central
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span>
+                        {format(new Date(entrada.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Contenido principal */}
+                  <div className="space-y-3">
+                    {/* Tipo de observación y prioridad */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-muted-foreground">Tipo:</span>
+                      <Badge className={getTipoColor(entrada.tipo_entrada)}>
+                        {getTipoLabel(entrada.tipo_entrada)}
+                      </Badge>
+                      {entrada.prioridad !== 'normal' && (
+                        <>
+                          <span className="text-sm font-medium text-muted-foreground">Prioridad:</span>
                           <Badge className={getPrioridadColor(entrada.prioridad)}>
                             {entrada.prioridad.charAt(0).toUpperCase() + entrada.prioridad.slice(1)}
                           </Badge>
-                        )}
-                        {entrada.turno && (
+                        </>
+                      )}
+                      {entrada.turno && (
+                        <>
+                          <span className="text-sm font-medium text-muted-foreground">Turno:</span>
                           <Badge variant="outline">
-                            Turno: {entrada.turno}
+                            {entrada.turno}
                           </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* Observación */}
+                    <div className="space-y-1">
+                      <span className="text-sm font-medium text-muted-foreground">Observación:</span>
+                      <p className="text-sm leading-relaxed bg-muted/30 p-3 rounded border-l-4 border-primary/20">
                         {entrada.contenido}
                       </p>
-                    </div>
-                    <div className="text-right text-sm text-muted-foreground min-w-fit">
-                      <div className="flex items-center gap-1 mb-1">
-                        <Clock className="h-3 w-3" />
-                        {format(new Date(entrada.created_at), 'HH:mm', { locale: es })}
-                      </div>
-                      <div>
-                        {format(new Date(entrada.created_at), 'dd/MM/yyyy', { locale: es })}
-                      </div>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Users className="h-3 w-3" />
-                        <span className="text-xs">{entrada.usuario_nombre}</span>
-                      </div>
                     </div>
                   </div>
                 </div>
