@@ -149,7 +149,7 @@ const Auth = () => {
             <div className="flex justify-center mb-4">
               <div className="rounded-lg p-3" style={{ backgroundColor: '#171717', border: '1px solid rgb(0, 255, 200, 0.2)' }}>
                 <img 
-                  src="/src/assets/halcon-eyes-logo.png" 
+                  src="/halcon-eyes-logo.png" 
                   alt="Halcon Logo" 
                   className="w-20 h-12 object-contain"
                 />
