@@ -29,7 +29,6 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [backgroundImage, setBackgroundImage] = useState('/lovable-uploads/b189fbe2-9643-4103-bb16-bf1857b39c78.png');
-  const [logoUrl, setLogoUrl] = useState('/src/assets/halcon-logo.png');
   const { login, isAuthenticated } = useAuthConsolidatedContext();
   const navigate = useNavigate();
 
@@ -52,24 +51,6 @@ const Auth = () => {
     if (savedBackground) {
       setBackgroundImage(savedBackground);
     }
-
-    // Process logo to remove background
-    const processLogo = async () => {
-      try {
-        const response = await fetch('/src/assets/halcon-logo.png');
-        const blob = await response.blob();
-        const imageElement = await loadImage(blob);
-        const processedBlob = await removeBackground(imageElement);
-        const processedUrl = URL.createObjectURL(processedBlob);
-        setLogoUrl(processedUrl);
-        console.log('Logo background removed successfully');
-      } catch (error) {
-        console.error('Error processing logo:', error);
-        // Keep original logo if processing fails
-      }
-    };
-
-    processLogo();
   }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -167,9 +148,9 @@ const Auth = () => {
           <div className="text-center mb-6">
             <div className="flex justify-center mb-4">
               <img 
-                src={logoUrl} 
+                src="/src/assets/halcon-logo-new.png" 
                 alt="Halcon Logo" 
-                className="w-20 h-20 object-contain"
+                className="w-24 h-24 object-contain"
               />
             </div>
             <h1 className="text-2xl font-bold mb-2" style={{ color: 'rgb(0, 255, 200)' }}>
