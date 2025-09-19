@@ -18,9 +18,9 @@ export default function MinutaOperador() {
   const { toast } = useToast();
   
   const [nuevaEntrada, setNuevaEntrada] = useState({
-    tipo_entrada: 'general' as 'general' | 'cambio_turno' | 'consigna' | 'incidente' | 'mantenimiento',
+    tipo_entrada: 'recibo_turno' as 'recibo_turno' | 'entrega_turno' | 'consigna' | 'otro',
     contenido: '',
-    turno: 'none',
+    asunto_personalizado: '',
     prioridad: 'normal' as 'normal' | 'alta' | 'critica'
   });
 
@@ -37,11 +37,29 @@ export default function MinutaOperador() {
     }
 
     try {
-      await addEntrada(nuevaEntrada);
+      const mapTipoEntrada = (tipo: string) => {
+        switch (tipo) {
+          case 'recibo_turno': return 'cambio_turno';
+          case 'entrega_turno': return 'cambio_turno';
+          case 'consigna': return 'consigna';
+          case 'otro': return 'general';
+          default: return 'general';
+        }
+      };
+
+      const entradaData = {
+        tipo_entrada: mapTipoEntrada(nuevaEntrada.tipo_entrada) as 'general' | 'cambio_turno' | 'consigna' | 'incidente' | 'mantenimiento',
+        contenido: nuevaEntrada.tipo_entrada === 'otro' 
+          ? `${nuevaEntrada.asunto_personalizado}: ${nuevaEntrada.contenido}`
+          : nuevaEntrada.contenido,
+        prioridad: nuevaEntrada.prioridad
+      };
+      
+      await addEntrada(entradaData);
       setNuevaEntrada({
-        tipo_entrada: 'general',
+        tipo_entrada: 'recibo_turno',
         contenido: '',
-        turno: 'none',
+        asunto_personalizado: '',
         prioridad: 'normal'
       });
     } catch (error) {
@@ -51,8 +69,10 @@ export default function MinutaOperador() {
 
   const getTipoColor = (tipo: string) => {
     switch (tipo) {
-      case 'cambio_turno': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+      case 'recibo_turno': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      case 'entrega_turno': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
       case 'consigna': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+      case 'cambio_turno': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
       case 'incidente': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
       case 'mantenimiento': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
@@ -69,8 +89,10 @@ export default function MinutaOperador() {
 
   const getTipoLabel = (tipo: string) => {
     switch (tipo) {
-      case 'cambio_turno': return 'Cambio de Turno';
+      case 'recibo_turno': return 'Recibo de Turno';
+      case 'entrega_turno': return 'Entrega de Turno';
       case 'consigna': return 'Consigna';
+      case 'cambio_turno': return 'Cambio de Turno';
       case 'incidente': return 'Incidente';
       case 'mantenimiento': return 'Mantenimiento';
       default: return 'General';
@@ -122,40 +144,35 @@ export default function MinutaOperador() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Información automática */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+              <div className="space-y-1">
+                <Label className="text-sm font-medium text-muted-foreground">Fecha y Hora</Label>
+                <p className="text-sm font-medium">
+                  {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: es })}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm font-medium text-muted-foreground">Operador/Despachador</Label>
+                <p className="text-sm font-medium">{user?.email || 'Usuario'}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="tipo_entrada">Tipo de Entrada</Label>
+                <Label htmlFor="tipo_entrada">Asunto</Label>
                 <Select 
                   value={nuevaEntrada.tipo_entrada} 
                   onValueChange={(value: any) => setNuevaEntrada(prev => ({ ...prev, tipo_entrada: value }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar tipo" />
+                    <SelectValue placeholder="Seleccionar asunto" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="general">General</SelectItem>
-                    <SelectItem value="cambio_turno">Cambio de Turno</SelectItem>
+                    <SelectItem value="recibo_turno">Recibo de Turno</SelectItem>
+                    <SelectItem value="entrega_turno">Entrega de Turno</SelectItem>
                     <SelectItem value="consigna">Consigna</SelectItem>
-                    <SelectItem value="incidente">Incidente</SelectItem>
-                    <SelectItem value="mantenimiento">Mantenimiento</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="turno">Turno (opcional)</Label>
-                <Select 
-                  value={nuevaEntrada.turno} 
-                  onValueChange={(value) => setNuevaEntrada(prev => ({ ...prev, turno: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar turno" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sin especificar</SelectItem>
-                    <SelectItem value="mañana">Mañana (06:00 - 14:00)</SelectItem>
-                    <SelectItem value="tarde">Tarde (14:00 - 22:00)</SelectItem>
-                    <SelectItem value="noche">Noche (22:00 - 06:00)</SelectItem>
+                    <SelectItem value="otro">Otro</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -178,11 +195,27 @@ export default function MinutaOperador() {
               </div>
             </div>
 
+            {/* Campo para asunto personalizado */}
+            {nuevaEntrada.tipo_entrada === 'otro' && (
+              <div className="space-y-2">
+                <Label htmlFor="asunto_personalizado">Especificar Asunto</Label>
+                <input
+                  id="asunto_personalizado"
+                  type="text"
+                  placeholder="Ingrese el asunto personalizado..."
+                  value={nuevaEntrada.asunto_personalizado}
+                  onChange={(e) => setNuevaEntrada(prev => ({ ...prev, asunto_personalizado: e.target.value }))}
+                  className="w-full p-2 border border-input rounded-md bg-background"
+                  required
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
-              <Label htmlFor="contenido">Descripción del Evento</Label>
+              <Label htmlFor="contenido">Observaciones</Label>
               <Textarea
                 id="contenido"
-                placeholder="Describe el evento, observación o cambio de turno..."
+                placeholder="Escriba las observaciones detalladas..."
                 value={nuevaEntrada.contenido}
                 onChange={(e) => setNuevaEntrada(prev => ({ ...prev, contenido: e.target.value }))}
                 className="min-h-[100px]"
