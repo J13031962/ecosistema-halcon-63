@@ -145,6 +145,15 @@ const Auth = () => {
 
         <div className="auth-form">
           <div className="text-center mb-6">
+            <div className="flex justify-center mb-4">
+              <div className="bg-gray-900/80 rounded-full p-4 border border-gray-700/50">
+                <img 
+                  src="/src/assets/halcon-logo.png" 
+                  alt="Halcon Logo" 
+                  className="w-16 h-16 object-contain"
+                />
+              </div>
+            </div>
             <h1 className="text-2xl font-bold mb-2" style={{ color: 'rgb(0, 255, 200)' }}>
               Ecosistema HALCON
             </h1>
