@@ -249,13 +249,14 @@ All colors MUST be HSL.
 
   /* Modern Auth Form Styles */
   .auth-form {
-    background-color: hsl(var(--auth-bg));
+    background-color: hsl(var(--auth-bg) / 0.8);
     border-radius: 20px;
     padding: 2rem;
     border: 1px solid hsl(var(--auth-accent) / 0.3);
-    background-image: linear-gradient(163deg, hsl(var(--auth-accent) / 0.1) 0%, hsl(var(--auth-secondary) / 0.1) 100%);
+    background-image: linear-gradient(163deg, hsl(var(--auth-accent) / 0.05) 0%, hsl(var(--auth-secondary) / 0.05) 100%);
     box-shadow: 0px 0px 30px 1px hsl(var(--auth-accent) / 0.2);
     transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
   }
 
   .auth-form:hover {
