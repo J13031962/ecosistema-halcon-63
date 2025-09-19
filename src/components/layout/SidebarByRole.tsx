@@ -86,7 +86,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
             { title: "Estado General", url: "/estado-general", icon: Shield },
             { title: "Patrullas Contratadas", url: "/patrullas-contratadas", icon: Shield },
             { title: "Gestión Personal Operadores", url: "/personal", icon: Users },
-            
+            { title: "Minuta de Operador", url: "/minuta-operador", icon: FileText },
           ]
         },
         { 

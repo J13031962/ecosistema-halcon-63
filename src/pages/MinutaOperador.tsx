@@ -79,6 +79,15 @@ export default function MinutaOperador() {
     }
   };
 
+  // Verificar si el usuario actual es director central
+  const isDirectorCentral = user?.email === 'admin@teleguardia.com' || user?.role === 'director' || user?.role === 'administrador';
+  
+  // Función para verificar si una entrada fue creada por director central
+  const isDirectorEntry = (entrada: any) => {
+    return entrada.usuario_nombre === 'admin@teleguardia.com' || 
+           entrada.usuario_id === user?.id && isDirectorCentral;
+  };
+
   const getPrioridadColor = (prioridad: string) => {
     switch (prioridad) {
       case 'critica': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
@@ -254,7 +263,11 @@ export default function MinutaOperador() {
               {entradas.map((entrada) => (
                 <div 
                   key={entrada.id} 
-                  className="border rounded-lg p-4 space-y-3 hover:bg-muted/50 transition-colors"
+                  className={`border rounded-lg p-4 space-y-3 hover:bg-muted/50 transition-colors ${
+                    isDirectorEntry(entrada) 
+                      ? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800' 
+                      : ''
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 space-y-2">
