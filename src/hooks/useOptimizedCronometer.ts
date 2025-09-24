@@ -4,8 +4,8 @@ import { useGlobalTimer } from './useGlobalTimer';
 
 interface TiempoEstado {
   segundos: number;
-  color: 'green' | 'yellow' | 'orange' | 'red' | 'red-blink';
-  fase: 'espera_despachador' | 'desplazamiento' | 'en_sitio' | 'finalizada';
+  color: 'green' | 'yellow' | 'orange' | 'red' | 'red-blink' | 'text-red-500';
+  fase: 'espera_despachador' | 'desplazamiento' | 'en_sitio' | 'finalizada' | 'cancelada';
 }
 
 interface CronometroPorFases {
@@ -18,12 +18,13 @@ interface CronometroPorFases {
 
 interface UseOptimizedCronometerProps {
   created_at: string;
-  estado: 'activa' | 'asignada' | 'en_proceso' | 'resuelta';
+  estado: 'activa' | 'asignada' | 'en_proceso' | 'resuelta' | 'cancelada';
   tiempo_toma_despachador?: string;
   tiempo_asignacion_supervisor?: string;
   tiempo_aceptacion_supervisor?: string;
   tiempo_primera_lectura_qr?: string;
   tiempo_segunda_lectura_qr?: string;
+  resolved_at?: string;
 }
 
 export const useOptimizedCronometer = ({
@@ -33,7 +34,8 @@ export const useOptimizedCronometer = ({
   tiempo_asignacion_supervisor,
   tiempo_aceptacion_supervisor,
   tiempo_primera_lectura_qr,
-  tiempo_segunda_lectura_qr
+  tiempo_segunda_lectura_qr,
+  resolved_at
 }: UseOptimizedCronometerProps) => {
   const { currentTime } = useGlobalTimer();
 
@@ -82,7 +84,17 @@ export const useOptimizedCronometer = ({
       return {
         segundos: fechaSegundaLectura ? differenceInSeconds(fechaSegundaLectura, fechaCreacion) : 0,
         color: 'green',
-        fase: 'finalizada'
+        fase: 'finalizada' as const
+      };
+    }
+
+    if (estado === 'cancelada') {
+      // Para alarmas canceladas, calcular tiempo hasta la cancelación
+      const fechaCancelacion = resolved_at ? new Date(resolved_at) : ahora;
+      return {
+        segundos: differenceInSeconds(fechaCancelacion, fechaCreacion),
+        color: 'text-red-500',
+        fase: 'cancelada' as const
       };
     }
 
@@ -254,6 +266,8 @@ export const useOptimizedCronometer = ({
         return 'En sitio';
       case 'finalizada':
         return 'Finalizada';
+      case 'cancelada':
+        return 'Asignación cancelada';
       default:
         return 'Pendiente';
     }

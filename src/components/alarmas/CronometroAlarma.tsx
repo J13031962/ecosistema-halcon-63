@@ -23,6 +23,7 @@ interface CronometroAlarmaProps {
   tiempo_aceptacion_supervisor?: string;
   tiempo_primera_lectura_qr?: string;
   tiempo_segunda_lectura_qr?: string;
+  resolved_at?: string;
   supervisor?: string;
   supervisor_id?: string;
   patrulla_asignada?: string;
@@ -57,6 +58,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
   tiempo_aceptacion_supervisor,
   tiempo_primera_lectura_qr,
   tiempo_segunda_lectura_qr,
+  resolved_at,
   supervisor,
   supervisor_id,
   patrulla_asignada,
@@ -89,7 +91,8 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
     tiempo_asignacion_supervisor,
     tiempo_aceptacion_supervisor,
     tiempo_primera_lectura_qr,
-    tiempo_segunda_lectura_qr
+    tiempo_segunda_lectura_qr,
+    resolved_at
   });
 
   // Global timer for blinking effect

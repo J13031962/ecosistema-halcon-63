@@ -431,6 +431,67 @@ export const useSupabaseAlarmasEnhanced = () => {
     }
   };
 
+  const cancelarAsignacion = async (alarmaId: string, motivo?: string) => {
+    try {
+      const now = new Date().toISOString();
+      
+      const { data, error } = await supabase
+        .from('alarmas')
+        .update({
+          estado: 'cancelada',
+          resolved_at: now,
+          supervisor: null,
+          supervisor_id: null,
+          patrulla_asignada: null,
+          tiempo_asignacion_supervisor: null,
+          tiempo_aceptacion_supervisor: null,
+          ...(motivo && { descripcion: motivo })
+        })
+        .eq('id', alarmaId)
+        .select(`
+          *,
+          clientes (
+            nombre,
+            telefono
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+
+      // Cancelar estado de patrulla
+      await supabase
+        .from('estados_patrulla')
+        .update({
+          estado: 'cancelada',
+          tiempo_fin: now
+        })
+        .eq('alarma_id', alarmaId);
+
+      // Actualizar estado local
+      setAlarmas(prev => 
+        prev.map(alarma => 
+          alarma.id === alarmaId ? data : alarma
+        )
+      );
+
+      toast({
+        title: "Asignación cancelada",
+        description: "La asignación de patrulla ha sido cancelada",
+      });
+
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('Error canceling assignment:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cancelar la asignación",
+        variant: "destructive",
+      });
+      return { success: false, error: error.message };
+    }
+  };
+
   return {
     alarmas,
     loading,
@@ -439,7 +500,8 @@ export const useSupabaseAlarmasEnhanced = () => {
     atenderAlarma,
     asignarPatrulla,
     resolverAlarma,
-    aceptarServicio, // Nueva función
+    cancelarAsignacion, // Nueva función
+    aceptarServicio,
     getAlarmasActivas,
     getAlarmasEnProceso,
     getAlarmasAsignadas,

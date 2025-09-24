@@ -7,7 +7,7 @@ interface EstadoPatrulla {
   alarma_id: string;
   supervisor_id: string | null;
   supervisor_nombre: string | null;
-  estado: 'pendiente' | 'iniciada' | 'finalizada';
+  estado: 'pendiente' | 'iniciada' | 'finalizada' | 'cancelada';
   tiempo_inicio: string | null;
   tiempo_fin: string | null;
   duracion_segundos: number | null;
@@ -19,13 +19,13 @@ interface CreateEstadoPatrullaData {
   alarma_id: string;
   supervisor_id?: string;
   supervisor_nombre?: string;
-  estado?: 'pendiente' | 'iniciada' | 'finalizada';
+  estado?: 'pendiente' | 'iniciada' | 'finalizada' | 'cancelada';
 }
 
 interface UpdateEstadoPatrullaData {
   supervisor_id?: string;
   supervisor_nombre?: string;
-  estado?: 'pendiente' | 'iniciada' | 'finalizada';
+  estado?: 'pendiente' | 'iniciada' | 'finalizada' | 'cancelada';
   tiempo_inicio?: string;
   tiempo_fin?: string;
 }
@@ -136,6 +136,14 @@ export const useSupabaseEstadosPatrulla = () => {
     });
   };
 
+  const cancelarPatrulla = async (alarmaId: string) => {
+    const now = new Date().toISOString();
+    return updateEstado(alarmaId, {
+      estado: 'cancelada',
+      tiempo_fin: now
+    });
+  };
+
   // Real-time subscription
   useEffect(() => {
     const subscription = supabase
@@ -189,6 +197,7 @@ export const useSupabaseEstadosPatrulla = () => {
     updateEstado,
     iniciarPatrulla,
     finalizarPatrulla,
+    cancelarPatrulla,
     refetch: fetchEstados,
   };
 };

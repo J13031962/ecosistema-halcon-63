@@ -27,9 +27,11 @@ const SeccionDespachador = () => {
     alarmas, 
     loading: alarmasLoading, 
     getAlarmasActivas,
+    getAlarmasAsignadas,
     getAlarmasEnProceso,
     getAlarmasResueltas,
-    asignarPatrulla 
+    asignarPatrulla,
+    cancelarAsignacion
   } = useSupabaseAlarmasEnhanced();
   const { turnosSupervisor, addTurnoSupervisor, loading: turnosLoading } = useSupabaseTurnos();
   const { users } = useSupabaseUsuarios();
@@ -47,10 +49,14 @@ const SeccionDespachador = () => {
     user.user_roles?.some(role => role.role === 'supervisor_motorizado')
   );
   
-  // Obtener alarmas activas de Supabase
+  // Obtener alarmas activas y asignadas de Supabase
   const alarmasActivas = getAlarmasActivas();
+  const alarmasAsignadas = getAlarmasAsignadas();
   const alarmasEnProceso = getAlarmasEnProceso();
   const alarmasResueltas = getAlarmasResueltas();
+  
+  // Combinar alarmas activas y asignadas para mostrar en el despachador
+  const alarmasParaDespacho = [...(alarmasActivas || []), ...(alarmasAsignadas || [])];
 
   // Supervisores que están atendiendo alarmas
   const supervisoresConAlarmas = alarmas
@@ -66,8 +72,8 @@ const SeccionDespachador = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       const newTimers: { [key: string]: string } = {};
-      if (alarmasActivas) {
-        alarmasActivas.forEach(alarm => {
+      if (alarmasParaDespacho) {
+        alarmasParaDespacho.forEach(alarm => {
           const now = new Date();
           const elapsed = Math.floor((now.getTime() - new Date(alarm.created_at!).getTime()) / 1000);
           const minutes = Math.floor(elapsed / 60);
@@ -145,6 +151,14 @@ const SeccionDespachador = () => {
       });
     } catch (error) {
       console.error('Error al asignar patrulla:', error);
+    }
+  };
+
+  const handleCancelAssignment = async (alarmId: string) => {
+    try {
+      await cancelarAsignacion(alarmId, 'Asignación cancelada por despachador');
+    } catch (error) {
+      console.error('Error cancelando asignación:', error);
     }
   };
 
@@ -281,14 +295,14 @@ const SeccionDespachador = () => {
         </CardHeader>
         <CardContent>
           <Accordion type="single" collapsible className="w-full">
-            {!alarmasActivas || alarmasActivas.length === 0 ? (
+            {!alarmasParaDespacho || alarmasParaDespacho.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Siren className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                 <p>No hay alarmas pendientes en este momento</p>
                 <p className="text-sm">Las nuevas alarmas aparecerán aquí automáticamente</p>
               </div>
             ) : (
-              alarmasActivas.map((alarm) => (
+              alarmasParaDespacho.map((alarm) => (
                 <AccordionItem key={alarm.id} value={`alarm-${alarm.id}`} className={`border-2 rounded-lg mb-4 ${getAlarmTypeColor(alarm.tipo)}`}>
                   <AccordionTrigger className="px-4 py-2 hover:no-underline">
                     <div className="flex items-center justify-between w-full mr-4">
@@ -373,14 +387,31 @@ const SeccionDespachador = () => {
                       )}
 
                       <div className="flex flex-wrap gap-2 pt-4 border-t">
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleAttendAlarm(alarm)}
-                          className="flex items-center gap-1 bg-green-600 hover:bg-green-700"
-                        >
-                          <Car className="h-4 w-4" />
-                          Atender - Asignar Patrulla
-                        </Button>
+                        {alarm.estado === 'activa' || alarm.estado === 'en_proceso' ? (
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleAttendAlarm(alarm)}
+                            className="flex items-center gap-1 bg-green-600 hover:bg-green-700"
+                          >
+                            <Car className="h-4 w-4" />
+                            Atender - Asignar Patrulla
+                          </Button>
+                        ) : alarm.estado === 'asignada' ? (
+                          <>
+                            <div className="text-sm text-muted-foreground mb-2">
+                              <strong>Asignada a:</strong> {alarm.supervisor} - {alarm.patrulla_asignada}
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => handleCancelAssignment(alarm.id)}
+                              className="flex items-center gap-1"
+                            >
+                              <AlertTriangle className="h-4 w-4" />
+                              Cancelar Asignación
+                            </Button>
+                          </>
+                        ) : null}
                       </div>
                     </div>
                   </AccordionContent>
