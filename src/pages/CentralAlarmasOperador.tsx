@@ -72,7 +72,16 @@ interface ClienteFormData {
 const CentralAlarmasOperador = () => {
   const { user } = useAuthConsolidated();
   const { toast } = useToast();
-  const { state: sidebarState } = useSidebar();
+  
+  // Safe sidebar state access with fallback
+  let sidebarState = 'expanded';
+  try {
+    const { state } = useSidebar();
+    sidebarState = state;
+  } catch (error) {
+    console.warn('useSidebar hook called outside SidebarProvider, using fallback');
+  }
+  
   const [mostrarCalendarioTurnos, setMostrarCalendarioTurnos] = useState(false);
   
   // Optimized scrolling and realtime hooks
