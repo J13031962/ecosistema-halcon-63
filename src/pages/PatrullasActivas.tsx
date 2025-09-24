@@ -615,6 +615,7 @@ const PatrullasActivas = () => {
                     tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
                     supervisor={alarma.supervisor || undefined}
                     patrulla_asignada={alarma.patrulla_asignada || undefined}
+                    resolved_at={alarma.resolved_at || undefined}
                     showCancelButton={false}
                     showAssignButton={true}
                     onSelect={() => handleOpenAssignModal({
@@ -649,6 +650,7 @@ const PatrullasActivas = () => {
                     tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
                     supervisor={alarma.supervisor || undefined}
                     patrulla_asignada={alarma.patrulla_asignada || undefined}
+                    resolved_at={alarma.resolved_at || undefined}
                     showCancelButton={false}
                     showAssignButton={true}
                     onSelect={() => handleOpenAssignModal({
@@ -740,6 +742,7 @@ const PatrullasActivas = () => {
                      supervisor={alarma.supervisor || undefined}
                      supervisor_id={alarma.supervisor_id || undefined}
                      patrulla_asignada={alarma.patrulla_asignada || undefined}
+                     resolved_at={alarma.resolved_at || undefined}
                      showCancelButton={true}
                      onCancel={() => handleCancelAlarma(alarma.id)}
                      onSupervisorAccept={handleSupervisorAccept}
@@ -816,6 +819,7 @@ const PatrullasActivas = () => {
                   tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
                   supervisor={alarma.supervisor || undefined}
                   patrulla_asignada={alarma.patrulla_asignada || undefined}
+                  resolved_at={alarma.resolved_at || undefined}
                   showCancelButton={false}
                 />
               ))}

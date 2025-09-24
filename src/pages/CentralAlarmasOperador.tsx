@@ -1241,6 +1241,7 @@ useEffect(() => {
                   supervisor={alarma.supervisor || undefined}
                   supervisor_id={alarma.supervisor_id || undefined}
                   patrulla_asignada={alarma.patrulla_asignada || undefined}
+                  resolved_at={alarma.resolved_at || undefined}
                   showCancelButton={false}
                   onSupervisorAccept={handleSupervisorAccept}
                   onSupervisorArrive={handleSupervisorArrive}
