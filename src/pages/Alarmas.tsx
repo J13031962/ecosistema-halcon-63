@@ -21,6 +21,7 @@ const Alarmas = () => {
   const [supervisorFilter, setSupervisorFilter] = useState("todos");
   const [prioridadFilter, setPrioridadFilter] = useState("todas");
   const [filtroEstado, setFiltroEstado] = useState("todas");
+  const [tipoOrdenamiento, setTipoOrdenamiento] = useState("modificacion");
   const [fechaInicio, setFechaInicio] = useState<Date | undefined>();
   const [fechaFin, setFechaFin] = useState<Date | undefined>();
 
@@ -126,10 +127,18 @@ const Alarmas = () => {
 
   // Ordenar por fecha más reciente
   const alarmasOrdenadas = useMemo(() => {
-    return [...alarmasFiltradas].sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-  }, [alarmasFiltradas]);
+    return [...alarmasFiltradas].sort((a, b) => {
+      if (tipoOrdenamiento === "modificacion") {
+        // Usar resolved_at si existe, sino created_at
+        const fechaA = a.resolved_at ? new Date(a.resolved_at) : new Date(a.created_at);
+        const fechaB = b.resolved_at ? new Date(b.resolved_at) : new Date(b.created_at);
+        return fechaB.getTime() - fechaA.getTime();
+      } else {
+        // Ordenar por fecha de creación
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+  }, [alarmasFiltradas, tipoOrdenamiento]);
 
   const totalAlarmas = alarmasFiltradas.length;
   const alarmasActivas = alarmasFiltradas.filter(a => a.estado === "activa").length;
@@ -300,6 +309,19 @@ const Alarmas = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Ordenar por</label>
+              <Select value={tipoOrdenamiento} onValueChange={setTipoOrdenamiento}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="modificacion">Última modificación</SelectItem>
+                  <SelectItem value="creacion">Fecha de creación</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-4 items-end">
@@ -365,6 +387,7 @@ const Alarmas = () => {
                 setSupervisorFilter("todos");
                 setPrioridadFilter("todas");
                 setFiltroEstado("todas");
+                setTipoOrdenamiento("modificacion");
               }}
               variant="outline"
               className="h-10"

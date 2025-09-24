@@ -17,6 +17,7 @@ const HistorialServicios = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [supervisorFilter, setSupervisorFilter] = useState("todos");
   const [prioridadFilter, setPrioridadFilter] = useState("todas");
+  const [tipoOrdenamiento, setTipoOrdenamiento] = useState("modificacion");
   const [fechaInicio, setFechaInicio] = useState<Date | undefined>();
   const [fechaFin, setFechaFin] = useState<Date | undefined>();
 
@@ -65,10 +66,18 @@ const HistorialServicios = () => {
 
   // Ordenar por fecha más reciente
   const serviciosOrdenados = useMemo(() => {
-    return [...serviciosFiltrados].sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-  }, [serviciosFiltrados]);
+    return [...serviciosFiltrados].sort((a, b) => {
+      if (tipoOrdenamiento === "modificacion") {
+        // Usar resolved_at si existe, sino created_at
+        const fechaA = a.resolved_at ? new Date(a.resolved_at) : new Date(a.created_at);
+        const fechaB = b.resolved_at ? new Date(b.resolved_at) : new Date(b.created_at);
+        return fechaB.getTime() - fechaA.getTime();
+      } else {
+        // Ordenar por fecha de creación
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+  }, [serviciosFiltrados, tipoOrdenamiento]);
 
   const formatTiempo = (segundos: number) => {
     const horas = Math.floor(segundos / 3600);
@@ -284,12 +293,93 @@ const HistorialServicios = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Acciones</label>
-              <Button onClick={exportarCSV} className="w-full">
-                <Download className="w-4 h-4 mr-2" />
-                Exportar CSV
-              </Button>
+              <label className="text-sm font-medium">Ordenar por</label>
+              <Select value={tipoOrdenamiento} onValueChange={setTipoOrdenamiento}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="modificacion">Última modificación</SelectItem>
+                  <SelectItem value="creacion">Fecha de creación</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+          </div>
+
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Fecha Inicio</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[180px] justify-start text-left font-normal",
+                      !fechaInicio && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {fechaInicio ? format(fechaInicio, "dd/MM/yyyy") : "Seleccionar"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={fechaInicio}
+                    onSelect={setFechaInicio}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Fecha Fin</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[180px] justify-start text-left font-normal",
+                      !fechaFin && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {fechaFin ? format(fechaFin, "dd/MM/yyyy") : "Seleccionar"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={fechaFin}
+                    onSelect={setFechaFin}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <Button 
+              onClick={() => {
+                setFechaInicio(undefined);
+                setFechaFin(undefined);
+                setSearchTerm("");
+                setSupervisorFilter("todos");
+                setPrioridadFilter("todas");
+                setTipoOrdenamiento("modificacion");
+              }}
+              variant="outline"
+              className="h-10"
+            >
+              Limpiar Filtros
+            </Button>
+
+            <Button onClick={exportarCSV} variant="default" className="h-10">
+              <Download className="w-4 h-4 mr-2" />
+              Exportar CSV
+            </Button>
           </div>
 
           <div className="flex flex-wrap gap-4 items-end">
