@@ -723,9 +723,9 @@ useEffect(() => {
                   <Button 
                     onClick={() => openAlarmModal(clienteEncontrado)}
                     size="sm"
-                    className="bg-red-600 hover:bg-red-700 text-white"
+                    className="flex items-center gap-1"
                   >
-                    <Siren className="h-4 w-4 mr-1" />
+                    <Siren className="h-4 w-4" />
                     Generar Alarma
                   </Button>
                 </div>
