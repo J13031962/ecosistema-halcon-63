@@ -39,6 +39,14 @@ export const useOptimizedCronometer = ({
 }: UseOptimizedCronometerProps) => {
   const { currentTime } = useGlobalTimer();
 
+  // Calculate freeze time for cancelled/resolved alarms
+  const freezeTime = useMemo(() => {
+    if ((estado === 'cancelada' || estado === 'resuelta') && resolved_at) {
+      return new Date(resolved_at);
+    }
+    return new Date(currentTime);
+  }, [estado, resolved_at, currentTime]);
+
   // Memoize date objects to avoid recreation on every render
   const dateObjects = useMemo(() => ({
     fechaCreacion: new Date(created_at),
@@ -173,26 +181,23 @@ export const useOptimizedCronometer = ({
   // Calculate total time
   const tiempoTotal = useMemo(() => {
     const { fechaCreacion, fechaSegundaLectura } = dateObjects;
-    const ahora = new Date(currentTime);
     
     return fechaSegundaLectura
       ? differenceInSeconds(fechaSegundaLectura, fechaCreacion)
-      : differenceInSeconds(ahora, fechaCreacion);
-  }, [currentTime, dateObjects]);
+      : differenceInSeconds(freezeTime, fechaCreacion);
+  }, [freezeTime, dateObjects]);
 
   // Calculate time until supervisor arrival (freezes when supervisor arrives)
   const tiempoHastaLlegada = useMemo(() => {
     const { fechaCreacion, fechaPrimeraLectura } = dateObjects;
-    const ahora = new Date(currentTime);
     
     return fechaPrimeraLectura
       ? differenceInSeconds(fechaPrimeraLectura, fechaCreacion)
-      : differenceInSeconds(ahora, fechaCreacion);
-  }, [currentTime, dateObjects]);
+      : differenceInSeconds(freezeTime, fechaCreacion);
+  }, [freezeTime, dateObjects]);
 
   // Calculate specific phase timers
   const cronometrosEspecificos = useMemo((): CronometroPorFases => {
-    const ahora = new Date(currentTime);
     const {
       fechaCreacion,
       fechaTomaDespachador,
@@ -206,43 +211,43 @@ export const useOptimizedCronometer = ({
       aceptacion_despachador: {
         tiempo: fechaTomaDespachador 
           ? differenceInSeconds(fechaTomaDespachador, fechaCreacion)
-          : differenceInSeconds(ahora, fechaCreacion),
-        color: (!fechaTomaDespachador && differenceInSeconds(ahora, fechaCreacion) > 240) ? 'red' : 'green'
+          : differenceInSeconds(freezeTime, fechaCreacion),
+        color: (!fechaTomaDespachador && differenceInSeconds(freezeTime, fechaCreacion) > 240) ? 'red' : 'green'
       },
       
       despachador_envio: {
         tiempo: fechaTomaDespachador && fechaAsignacion 
           ? differenceInSeconds(fechaAsignacion, fechaTomaDespachador)
           : fechaTomaDespachador 
-            ? differenceInSeconds(ahora, fechaTomaDespachador) 
+            ? differenceInSeconds(freezeTime, fechaTomaDespachador) 
             : 0,
-        color: (fechaTomaDespachador && !fechaAsignacion && differenceInSeconds(ahora, fechaTomaDespachador) > 360) ? 'red' : 'green'
+        color: (fechaTomaDespachador && !fechaAsignacion && differenceInSeconds(freezeTime, fechaTomaDespachador) > 360) ? 'red' : 'green'
       },
       
       supervisor_aceptacion: {
         tiempo: fechaAsignacion && fechaAceptacion
           ? differenceInSeconds(fechaAceptacion, fechaAsignacion)
           : fechaAsignacion 
-            ? differenceInSeconds(ahora, fechaAsignacion) 
+            ? differenceInSeconds(freezeTime, fechaAsignacion) 
             : 0,
-        color: (fechaAsignacion && !fechaAceptacion && differenceInSeconds(ahora, fechaAsignacion) > 300) ? 'red' : 'green'
+        color: (fechaAsignacion && !fechaAceptacion && differenceInSeconds(freezeTime, fechaAsignacion) > 300) ? 'red' : 'green'
       },
       
       supervisor_llegada: {
         tiempo: fechaAceptacion && fechaPrimeraLectura 
           ? differenceInSeconds(fechaPrimeraLectura, fechaAceptacion)
-          : fechaAceptacion ? differenceInSeconds(ahora, fechaAceptacion) : 0,
-        color: (fechaAceptacion && !fechaPrimeraLectura && differenceInSeconds(ahora, fechaAceptacion) > 1200) ? 'red' : 'green'
+          : fechaAceptacion ? differenceInSeconds(freezeTime, fechaAceptacion) : 0,
+        color: (fechaAceptacion && !fechaPrimeraLectura && differenceInSeconds(freezeTime, fechaAceptacion) > 1200) ? 'red' : 'green'
       },
       
       supervisor_salida: {
         tiempo: fechaPrimeraLectura && fechaSegundaLectura 
           ? differenceInSeconds(fechaSegundaLectura, fechaPrimeraLectura)
-          : fechaPrimeraLectura ? differenceInSeconds(ahora, fechaPrimeraLectura) : 0,
-        color: (fechaPrimeraLectura && !fechaSegundaLectura && differenceInSeconds(ahora, fechaPrimeraLectura) > 3600) ? 'red' : 'green'
+          : fechaPrimeraLectura ? differenceInSeconds(freezeTime, fechaPrimeraLectura) : 0,
+        color: (fechaPrimeraLectura && !fechaSegundaLectura && differenceInSeconds(freezeTime, fechaPrimeraLectura) > 3600) ? 'red' : 'green'
       }
     };
-  }, [currentTime, dateObjects]);
+  }, [freezeTime, dateObjects]);
 
   // Utility functions
   const formatTiempo = useCallback((segundos: number) => {

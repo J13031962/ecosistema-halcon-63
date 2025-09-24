@@ -504,6 +504,13 @@ const MisAsignaciones = () => {
                         <span className="text-sm font-medium">Servicio completado</span>
                       </div>
                     )}
+                    
+                    {alarma.estado === 'cancelada' && (
+                      <div className="flex items-center gap-2 text-red-600">
+                        <AlertTriangle className="h-4 w-4" />
+                        <span className="text-sm font-medium">Servicio cancelado</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

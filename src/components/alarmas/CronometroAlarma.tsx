@@ -15,7 +15,7 @@ interface CronometroAlarmaProps {
   municipio?: string;
   telefono?: string;
   prioridad: string;
-  estado: 'activa' | 'asignada' | 'en_proceso' | 'resuelta';
+  estado: 'activa' | 'asignada' | 'en_proceso' | 'resuelta' | 'cancelada';
   created_at: string;
   attended_at?: string;
   tiempo_toma_despachador?: string;
@@ -346,7 +346,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
         )}
 
         {/* Botón de cancelar si está disponible */}
-        {showCancelButton && estado !== 'resuelta' && onCancel && (
+        {showCancelButton && estado !== 'resuelta' && estado !== 'cancelada' && onCancel && (
           <div className="flex justify-end">
             <Button
               variant="outline"
@@ -368,6 +368,14 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
           <div className="flex items-center justify-center space-x-1 text-green-600">
             <CheckCircle className="h-3 w-3" />
             <span className="text-xs font-medium">Servicio completado</span>
+          </div>
+        )}
+
+        {/* Estado cancelada */}
+        {estado === 'cancelada' && (
+          <div className="flex items-center justify-center space-x-1 text-red-600">
+            <X className="h-3 w-3" />
+            <span className="text-xs font-medium">Servicio cancelado</span>
           </div>
         )}
 

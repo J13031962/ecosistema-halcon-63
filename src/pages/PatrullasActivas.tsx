@@ -18,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const PatrullasActivas = () => {
   const { patrullas, loading: patrullasLoading, updatePatrulla } = useSupabasePatrullas();
-  const { alarmas, resolverAlarma, asignarPatrulla, refetch: refetchAlarmas } = useSupabaseAlarmasEnhanced();
+  const { alarmas, resolverAlarma, asignarPatrulla, cancelarAsignacion, refetch: refetchAlarmas } = useSupabaseAlarmasEnhanced();
   const { servicios, loading: serviciosLoading, fetchServicios } = useServiciosTecnicos();
   const { supervisores: supervisoresFromHook } = useSupabaseSupervisores();
   const { user: consolidatedUser, userRole } = useAuthConsolidated();
@@ -75,9 +75,9 @@ const PatrullasActivas = () => {
     return minutosTranscurridos >= 6;
   });
 
-  // Historial de asignaciones completadas
+  // Historial de asignaciones completadas y canceladas
   const historialAsignaciones = alarmasOrdenadas.filter(a => 
-    a.estado === 'resuelta' && a.supervisor && a.patrulla_asignada
+    (a.estado === 'resuelta' || a.estado === 'cancelada') && a.supervisor && a.patrulla_asignada
   );
 
   // Supervisores que están atendiendo alarmas
@@ -174,7 +174,24 @@ const PatrullasActivas = () => {
         }
       }
       
-      await resolverAlarma(alarmaId);
+      // Use cancelarAsignacion instead of resolverAlarma to properly mark as cancelled
+      await cancelarAsignacion(alarmaId);
+      
+      // Update local state optimistically
+      const now = new Date().toISOString();
+      setRealtimeAlarmas(prev => prev.map(a => a.id === alarmaId 
+        ? { 
+            ...a, 
+            estado: 'cancelada',
+            resolved_at: now,
+            supervisor: null,
+            supervisor_id: null,
+            patrulla_asignada: null,
+            tiempo_aceptacion_supervisor: null
+            // Keep tiempo_toma_despachador and tiempo_asignacion_supervisor for history
+          }
+        : a
+      ));
       
       toast({
         title: "Alarma cancelada",
@@ -774,7 +791,7 @@ const PatrullasActivas = () => {
               Historial de Asignaciones
             </CardTitle>
             <CardDescription>
-              Servicios completados con información detallada de tiempos y supervisor
+              Servicios completados y cancelados con información detallada de tiempos y supervisor
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -789,7 +806,7 @@ const PatrullasActivas = () => {
                   municipio={alarma.municipio}
                   telefono={alarma.clientes?.telefono}
                   prioridad={alarma.prioridad}
-                  estado="resuelta"
+                  estado={alarma.estado as any}
                   created_at={alarma.created_at}
                   attended_at={alarma.attended_at || undefined}
                   tiempo_toma_despachador={alarma.tiempo_toma_despachador || undefined}
