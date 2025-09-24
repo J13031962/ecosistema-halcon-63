@@ -82,8 +82,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           category: "🎯 Sección Dir Central", 
           items: [
             { title: "Reportes Ejecutivos", url: "/reportes-ejecutivos", icon: BarChart3 },
-            { title: "Análisis Avanzado", url: "/analisis", icon: FileText },
-            { title: "Estado General", url: "/estado-general", icon: Shield },
             { title: "Patrullas Contratadas", url: "/patrullas-contratadas", icon: Shield },
             { title: "Gestión Personal Operadores", url: "/personal", icon: Users },
             { title: "Minuta de Operador", url: "/minuta-operador", icon: FileText },
@@ -103,7 +101,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
         { 
           category: "🚗 Despachador Patrullas", 
           items: [
-            { title: "Dashboard Despachador", url: "/seccion-despachador", icon: BarChart3 },
             { title: "Alarmas Activas", url: "/patrullas-activas", icon: Car },
             { title: "Reporte de Ubicación", url: "/reporte-ubicacion", icon: MapPin },
             { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
@@ -175,8 +172,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           items: [
             { title: "Dashboard Ejecutivo", url: "/dashboard", icon: Home },
             { title: "Reportes Ejecutivos", url: "/reportes-ejecutivos", icon: BarChart3 },
-            { title: "Análisis Avanzado", url: "/analisis", icon: FileText },
-            { title: "Estado General", url: "/estado-general", icon: Shield },
           ]
         },
         { 
@@ -280,7 +275,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
         { 
           category: "🚗 Despachador Patrullas", 
           items: [
-            { title: "Dashboard Despachador", url: "/seccion-despachador", icon: BarChart3 },
+            
             { title: "Minuta de Operador", url: "/minuta-operador", icon: FileText },
             { title: "Alarmas Activas", url: "/patrullas-activas", icon: Car },
             { title: "Reporte de Ubicación", url: "/reporte-ubicacion", icon: MapPin },
