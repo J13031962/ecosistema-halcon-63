@@ -445,6 +445,7 @@ export const useSupabaseAlarmasEnhanced = () => {
           patrulla_asignada: null,
           tiempo_asignacion_supervisor: null,
           tiempo_aceptacion_supervisor: null,
+          tiempo_toma_despachador: null, // Clear dispatcher time to stop cronometer
           ...(motivo && { descripcion: motivo })
         })
         .eq('id', alarmaId)

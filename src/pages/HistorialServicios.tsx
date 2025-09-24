@@ -20,9 +20,9 @@ const HistorialServicios = () => {
   const [fechaInicio, setFechaInicio] = useState<Date | undefined>();
   const [fechaFin, setFechaFin] = useState<Date | undefined>();
 
-  // Filtrar solo servicios completados
+  // Filtrar servicios completados y cancelados
   const serviciosCompletados = alarmas.filter(a => 
-    a.estado === 'resuelta' && a.supervisor && a.patrulla_asignada
+    (a.estado === 'resuelta' || a.estado === 'cancelada') && a.supervisor && a.patrulla_asignada
   );
 
   // Obtener lista única de supervisores
@@ -378,7 +378,7 @@ const HistorialServicios = () => {
       {/* Lista de Servicios */}
       <Card>
         <CardHeader>
-          <CardTitle>Servicios Completados</CardTitle>
+          <CardTitle>Servicios Completados y Cancelados</CardTitle>
           <CardDescription>
             {serviciosOrdenados.length} servicios encontrados
           </CardDescription>
@@ -395,7 +395,7 @@ const HistorialServicios = () => {
               serviciosOrdenados.map((servicio) => {
                 const tiempos = calcularTiempos(servicio);
                 return (
-                  <Card key={servicio.id} className="border-l-4 border-l-green-500">
+                  <Card key={servicio.id} className={`border-l-4 ${servicio.estado === 'cancelada' ? 'border-l-red-500' : 'border-l-green-500'}`}>
                     <CardContent className="p-4">
                       <div className="space-y-4">
                         {/* Header */}
@@ -406,8 +406,14 @@ const HistorialServicios = () => {
                               <Badge variant={getPriorityColor(servicio.prioridad)}>
                                 {servicio.prioridad}
                               </Badge>
-                              <Badge variant="outline" className="text-green-600 border-green-200">
-                                Completado
+                              <Badge 
+                                variant="outline" 
+                                className={servicio.estado === 'cancelada' 
+                                  ? "text-red-600 border-red-200" 
+                                  : "text-green-600 border-green-200"
+                                }
+                              >
+                                {servicio.estado === 'cancelada' ? 'Cancelado' : 'Completado'}
                               </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground">
