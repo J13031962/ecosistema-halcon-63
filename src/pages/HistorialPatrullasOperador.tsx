@@ -4,12 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSupabaseHistorialPatrullas } from "@/hooks/useSupabaseHistorialPatrullas";
-import { Clock, MapPin, Search, Filter, Download, Eye } from "lucide-react";
+import { useSupabaseAlarmasEnhanced } from "@/hooks/useSupabaseAlarmasEnhanced";
+import { Clock, MapPin, Search, Filter, Download, Eye, CheckCircle2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import LocationDisplay from "@/components/ui/location-display";
 
 const HistorialPatrullasOperador = () => {
   const { historial, loading } = useSupabaseHistorialPatrullas('operador');
+  const { alarmas } = useSupabaseAlarmasEnhanced();
   const navigate = useNavigate();
 
   const formatDuration = (minutes: number) => {
@@ -170,9 +173,36 @@ const HistorialPatrullasOperador = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className="flex-1">
-                        <p className="font-medium">
-                          Reporte No {index + 1} supervisor {registro.supervisor_nombre || 'Sin asignar'} Fecha {format(new Date(registro.created_at), 'dd MMMM yyyy')}
-                        </p>
+                        <div>
+                          <p className="font-medium">
+                            Reporte No {index + 1} supervisor {registro.supervisor_nombre || 'Sin asignar'} Fecha {format(new Date(registro.created_at), 'dd MMMM yyyy')}
+                          </p>
+                          {(() => {
+                            const alarmaRelacionada = alarmas.find(a => 
+                              a.supervisor_nombre === registro.supervisor_nombre &&
+                              Math.abs(new Date(a.created_at).getTime() - new Date(registro.created_at).getTime()) < 86400000 // 24 horas
+                            );
+                            const tieneGPS = alarmaRelacionada?.ubicacion_supervisor_llegada || alarmaRelacionada?.ubicacion_supervisor_salida;
+                            return (
+                              <div className="flex items-center gap-2 mt-1">
+                                {tieneGPS ? (
+                                  <Badge variant="outline" className="text-green-600 border-green-200">
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    GPS Verificado
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-gray-500 border-gray-200">
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                    Sin GPS
+                                  </Badge>
+                                )}
+                                <Badge variant="secondary" className="text-xs">
+                                  {registro.actividad}
+                                </Badge>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </div>
                     </div>
                     <Button

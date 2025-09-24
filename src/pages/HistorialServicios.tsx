@@ -12,6 +12,7 @@ import { format, differenceInSeconds, isWithinInterval, startOfDay, endOfDay } f
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { calcularTiemposServicio, formatearTiempoAlarma } from "@/utils/tiemposAlarmas";
+import LocationDisplay from "@/components/ui/location-display";
 
 const HistorialServicios = () => {
   const { alarmas } = useSupabaseAlarmasEnhanced();
@@ -470,14 +471,24 @@ const HistorialServicios = () => {
                                <p className="text-xs text-muted-foreground mb-1">Supervisor Llegada</p>
                                <p className="font-mono font-bold text-sm">{mostrarTiempo(tiempos.supervisorLlegada)}</p>
                              </div>
-                             <div>
-                               <p className="text-xs text-muted-foreground mb-1">Supervisor Salida</p>
-                               <p className="font-mono font-bold text-sm">{mostrarTiempo(tiempos.supervisorSalida)}</p>
-                             </div>
-                           </div>
-                         </div>
-                      </div>
-                    </CardContent>
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Supervisor Salida</p>
+                                <p className="font-mono font-bold text-sm">{mostrarTiempo(tiempos.supervisorSalida)}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Sección de Verificación GPS */}
+                          <div className="border-t pt-4">
+                            <LocationDisplay
+                              ubicacionLlegada={servicio.ubicacion_supervisor_llegada}
+                              ubicacionSalida={servicio.ubicacion_supervisor_salida}
+                              tiempoLlegada={servicio.tiempo_llegada_sitio}
+                              tiempoSalida={servicio.tiempo_salida_sitio}
+                            />
+                          </div>
+                       </div>
+                     </CardContent>
                   </Card>
                 );
               })

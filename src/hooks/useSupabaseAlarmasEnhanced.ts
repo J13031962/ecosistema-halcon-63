@@ -10,6 +10,7 @@ interface AlarmaEnhanced {
   despachador_id: string | null;
   despachador_nombre: string | null;
   supervisor_id: string | null;
+  supervisor_nombre?: string | null;
   tipo: string;
   descripcion: string | null;
   direccion: string | null;
@@ -30,6 +31,8 @@ interface AlarmaEnhanced {
   tiempo_segunda_lectura_qr: string | null;
   tiempo_llegada_sitio: string | null;
   tiempo_salida_sitio: string | null;
+  ubicacion_supervisor_llegada: any | null;
+  ubicacion_supervisor_salida: any | null;
   attended_at: string | null;
   resolved_at: string | null;
   tiempo_respuesta_segundos: number | null;

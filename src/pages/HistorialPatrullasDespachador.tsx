@@ -1,16 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSupabaseHistorialPatrullas } from "@/hooks/useSupabaseHistorialPatrullas";
-import { Clock, MapPin, Search, Filter, Download, Truck, Eye } from "lucide-react";
+import { useSupabaseAlarmasEnhanced } from "@/hooks/useSupabaseAlarmasEnhanced";
+import { Clock, MapPin, Search, Filter, Download, Truck, Eye, CheckCircle2, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import LocationDisplay from "@/components/ui/location-display";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const HistorialPatrullasDespachador = () => {
   const { historial, loading } = useSupabaseHistorialPatrullas('despachador');
+  const { alarmas } = useSupabaseAlarmasEnhanced();
   const navigate = useNavigate();
+  const [expandedReports, setExpandedReports] = useState<Set<string>>(new Set());
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -26,6 +31,29 @@ const HistorialPatrullasDespachador = () => {
       case 'disponible': return 'outline';
       default: return 'default';
     }
+  };
+
+  const toggleReportExpansion = (reportId: string) => {
+    setExpandedReports(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(reportId)) {
+        newSet.delete(reportId);
+      } else {
+        newSet.add(reportId);
+      }
+      return newSet;
+    });
+  };
+
+  const getGPSCount = () => {
+    const reportesConGPS = historial.filter(registro => {
+      const alarmaRelacionada = alarmas.find(a => 
+        a.supervisor_nombre === registro.supervisor_nombre &&
+        Math.abs(new Date(a.created_at).getTime() - new Date(registro.created_at).getTime()) < 86400000
+      );
+      return alarmaRelacionada?.ubicacion_supervisor_llegada || alarmaRelacionada?.ubicacion_supervisor_salida;
+    });
+    return reportesConGPS.length;
   };
 
   if (loading) {
@@ -136,13 +164,16 @@ const HistorialPatrullasDespachador = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Coordinaciones</CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">GPS Verificados</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {historial.filter(h => h.actividad.toLowerCase().includes('coordinacion')).length}
+            <div className="text-2xl font-bold text-green-600">
+              {getGPSCount()}
             </div>
+            <p className="text-xs text-muted-foreground">
+              de {historial.length} reportes
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -163,30 +194,82 @@ const HistorialPatrullasDespachador = () => {
           </Card>
         ) : (
           <div className="space-y-3">
-            {historial.map((registro, index) => (
-              <Card key={registro.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-1">
-                        <p className="font-medium">
-                          Reporte No {index + 1} supervisor {registro.supervisor_nombre || 'Sin asignar'} Fecha {format(new Date(registro.created_at), 'dd MMMM yyyy')}
-                        </p>
+            {historial.map((registro, index) => {
+              const alarmaRelacionada = alarmas.find(a => 
+                a.supervisor_nombre === registro.supervisor_nombre &&
+                Math.abs(new Date(a.created_at).getTime() - new Date(registro.created_at).getTime()) < 86400000
+              );
+              const tieneGPS = alarmaRelacionada?.ubicacion_supervisor_llegada || alarmaRelacionada?.ubicacion_supervisor_salida;
+              const isExpanded = expandedReports.has(registro.id);
+
+              return (
+                <Card key={registro.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="py-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4 flex-1">
+                          <div className="flex-1">
+                            <p className="font-medium">
+                              Reporte No {index + 1} supervisor {registro.supervisor_nombre || 'Sin asignar'} Fecha {format(new Date(registro.created_at), 'dd MMMM yyyy')}
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              {tieneGPS ? (
+                                <Badge variant="outline" className="text-green-600 border-green-200">
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  GPS Verificado
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-gray-500 border-gray-200">
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  Sin GPS
+                                </Badge>
+                              )}
+                              <Badge variant="secondary" className="text-xs">
+                                {registro.actividad}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {tieneGPS && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => toggleReportExpansion(registro.id)}
+                              className="flex items-center gap-1"
+                            >
+                              {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                              GPS
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/reporte-detallado/${registro.id}`)}
+                            className="flex items-center gap-1"
+                          >
+                            <Eye className="h-3 w-3" />
+                            Ver
+                          </Button>
+                        </div>
                       </div>
+
+                      {/* Información GPS expandible */}
+                      {tieneGPS && isExpanded && (
+                        <div className="border-t pt-3 mt-3">
+                          <LocationDisplay
+                            ubicacionLlegada={alarmaRelacionada?.ubicacion_supervisor_llegada}
+                            ubicacionSalida={alarmaRelacionada?.ubicacion_supervisor_salida}
+                            tiempoLlegada={alarmaRelacionada?.tiempo_llegada_sitio}
+                            tiempoSalida={alarmaRelacionada?.tiempo_salida_sitio}
+                          />
+                        </div>
+                      )}
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate(`/reporte-detallado/${registro.id}`)}
-                      className="flex items-center gap-1"
-                    >
-                      <Eye className="h-3 w-3" />
-                      Ver
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
