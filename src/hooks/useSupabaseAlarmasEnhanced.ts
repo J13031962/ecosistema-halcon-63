@@ -440,9 +440,8 @@ export const useSupabaseAlarmasEnhanced = () => {
         .update({
           estado: 'cancelada',
           resolved_at: now,
-          supervisor: null,
-          supervisor_id: null,
-          patrulla_asignada: null,
+          // Preserve supervisor and patrulla_asignada for historical purposes
+          // Don't set supervisor: null, supervisor_id: null, patrulla_asignada: null
           tiempo_aceptacion_supervisor: null,
           // Preserve initial timestamps: tiempo_toma_despachador, tiempo_asignacion_supervisor
           ...(motivo && { descripcion: motivo })
