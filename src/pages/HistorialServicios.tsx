@@ -118,7 +118,7 @@ const HistorialServicios = () => {
     // 1. Aceptación Despachador - solo si existe tiempo_toma_despachador
     if (fechaTomaDespachador) {
       const diff = differenceInSeconds(fechaTomaDespachador, fechaCreacion);
-      aceptacionDespachador = Math.max(diff, 60); // Mínimo 1 minuto
+      aceptacionDespachador = Math.max(diff, 0); // Solo evitar negativos
     } else if (fechaAsignacion || fechaAceptacion) {
       // Si hay avance posterior pero no hay toma_despachador, asumir mínimo
       aceptacionDespachador = 60;
@@ -127,7 +127,7 @@ const HistorialServicios = () => {
     // 2. Despachador Envío - solo si existe asignación
     if (fechaAsignacion && fechaTomaDespachador) {
       const diff = differenceInSeconds(fechaAsignacion, fechaTomaDespachador);
-      despachadorEnvio = Math.max(diff, 60); // Mínimo 1 minuto
+      despachadorEnvio = Math.max(diff, 0); // Solo evitar negativos
     } else if (fechaAsignacion && !fechaTomaDespachador) {
       // Hay asignación pero no toma_despachador (datos inconsistentes, pero etapa ocurrió)
       despachadorEnvio = 60;
@@ -137,7 +137,7 @@ const HistorialServicios = () => {
     // 3. Supervisor Aceptación - solo si existe aceptación
     if (fechaAceptacion && fechaAsignacion) {
       const diff = differenceInSeconds(fechaAceptacion, fechaAsignacion);
-      supervisorAceptacion = Math.max(diff, 60); // Mínimo 1 minuto
+      supervisorAceptacion = Math.max(diff, 0); // Solo evitar negativos
     }
     // Si no hay aceptación, supervisorAceptacion queda en 0
 
