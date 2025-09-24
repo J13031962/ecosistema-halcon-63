@@ -11,6 +11,7 @@ import { History, Search, Filter, Download, CalendarIcon, Clock, User, MapPin, P
 import { format, differenceInSeconds, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { calcularTiemposServicio, formatearTiempoAlarma } from "@/utils/tiemposAlarmas";
 
 const HistorialServicios = () => {
   const { alarmas } = useSupabaseAlarmasEnhanced();
@@ -79,95 +80,9 @@ const HistorialServicios = () => {
     });
   }, [serviciosFiltrados, tipoOrdenamiento]);
 
-  const formatTiempo = (segundos: number) => {
-    const horas = Math.floor(segundos / 3600);
-    const minutos = Math.floor((segundos % 3600) / 60);
-    
-    if (horas > 0) {
-      return `${horas}:${minutos.toString().padStart(2, '0')}`;
-    }
-    return `${minutos}:00`;
-  };
-
-  const calcularTiempos = (servicio: any) => {
-    const fechaCreacion = new Date(servicio.created_at);
-    const fechaTomaDespachador = servicio.tiempo_toma_despachador ? new Date(servicio.tiempo_toma_despachador) : null;
-    const fechaAsignacion = servicio.tiempo_asignacion_supervisor ? new Date(servicio.tiempo_asignacion_supervisor) : null;
-    const fechaAceptacion = servicio.tiempo_aceptacion_supervisor ? new Date(servicio.tiempo_aceptacion_supervisor) : null;
-    const fechaLlegada = servicio.tiempo_primera_lectura_qr ? new Date(servicio.tiempo_primera_lectura_qr) : null;
-    const fechaSalida = servicio.tiempo_segunda_lectura_qr ? new Date(servicio.tiempo_segunda_lectura_qr) : null;
-    const fechaFinalizacion = servicio.resolved_at ? new Date(servicio.resolved_at) : null;
-
-    // Para servicios cancelados sin resolved_at, usar el último timestamp disponible
-    let fechaReferencia = fechaFinalizacion;
-    if (!fechaReferencia && (servicio.estado === 'cancelada' || servicio.estado === 'cancelado')) {
-      fechaReferencia = fechaSalida || fechaLlegada || fechaAceptacion || fechaAsignacion || fechaTomaDespachador || fechaCreacion;
-    }
-    const freezeTime = fechaReferencia || fechaCreacion;
-    
-    // Calcular tiempo total real
-    const tiempoTotalReal = differenceInSeconds(freezeTime, fechaCreacion);
-    
-    // Calcular tiempos solo para etapas que realmente ocurrieron
-    let aceptacionDespachador = 0;
-    let despachadorEnvio = 0;
-    let supervisorAceptacion = 0;
-    let supervisorLlegada = 0;
-    let supervisorSalida = 0;
-
-    // 1. Aceptación Despachador - solo si existe tiempo_toma_despachador
-    if (fechaTomaDespachador) {
-      const diff = differenceInSeconds(fechaTomaDespachador, fechaCreacion);
-      aceptacionDespachador = Math.max(diff, 0); // Solo evitar negativos
-    } else if (fechaAsignacion || fechaAceptacion) {
-      // Si hay avance posterior pero no hay toma_despachador, asumir mínimo
-      aceptacionDespachador = 60;
-    }
-
-    // 2. Despachador Envío - solo si existe asignación
-    if (fechaAsignacion && fechaTomaDespachador) {
-      const diff = differenceInSeconds(fechaAsignacion, fechaTomaDespachador);
-      despachadorEnvio = Math.max(diff, 0); // Solo evitar negativos
-    } else if (fechaAsignacion && !fechaTomaDespachador) {
-      // Hay asignación pero no toma_despachador (datos inconsistentes, pero etapa ocurrió)
-      despachadorEnvio = 60;
-    }
-    // Si no hay asignación, despachadorEnvio queda en 0
-
-    // 3. Supervisor Aceptación - solo si existe aceptación
-    if (fechaAceptacion && fechaAsignacion) {
-      const diff = differenceInSeconds(fechaAceptacion, fechaAsignacion);
-      supervisorAceptacion = Math.max(diff, 0); // Solo evitar negativos
-    }
-    // Si no hay aceptación, supervisorAceptacion queda en 0
-
-    // 4. Supervisor Llegada - solo si existen ambos timestamps
-    if (fechaLlegada && fechaAceptacion) {
-      supervisorLlegada = Math.max(differenceInSeconds(fechaLlegada, fechaAceptacion), 0);
-    }
-    // Si no hay llegada real, supervisorLlegada queda en 0
-
-    // 5. Supervisor Salida - solo si existen ambos timestamps
-    if (fechaSalida && fechaLlegada) {
-      supervisorSalida = Math.max(differenceInSeconds(fechaSalida, fechaLlegada), 0);
-    }
-    // Si no hay salida real, supervisorSalida queda en 0
-
-    // Validar que ningún tiempo sea negativo
-    aceptacionDespachador = Math.max(0, aceptacionDespachador);
-    despachadorEnvio = Math.max(0, despachadorEnvio);
-    supervisorAceptacion = Math.max(0, supervisorAceptacion);
-    supervisorLlegada = Math.max(0, supervisorLlegada);
-    supervisorSalida = Math.max(0, supervisorSalida);
-
-    return {
-      aceptacionDespachador,
-      despachadorEnvio,
-      supervisorAceptacion,
-      supervisorLlegada,
-      supervisorSalida,
-      tiempoTotal: tiempoTotalReal
-    };
+  // Función para mostrar tiempo o dash si no existe
+  const mostrarTiempo = (tiempo: number | null): string => {
+    return tiempo !== null ? formatearTiempoAlarma(tiempo) : '—';
   };
 
   const getPriorityColor = (prioridad: string) => {
@@ -197,7 +112,7 @@ const HistorialServicios = () => {
     ];
 
     const rows = serviciosOrdenados.map(servicio => {
-      const tiempos = calcularTiempos(servicio);
+      const tiempos = calcularTiemposServicio(servicio);
       return [
         format(new Date(servicio.created_at), 'dd/MM/yyyy HH:mm:ss'),
         servicio.tipo,
@@ -206,12 +121,12 @@ const HistorialServicios = () => {
         servicio.prioridad,
         servicio.supervisor || 'N/A',
         servicio.patrulla_asignada || 'N/A',
-        Math.round(tiempos.aceptacionDespachador / 60),
-        Math.round(tiempos.despachadorEnvio / 60),
-        Math.round(tiempos.supervisorAceptacion / 60),
-        Math.round(tiempos.supervisorLlegada / 60),
-        Math.round(tiempos.supervisorSalida / 60),
-        Math.round(tiempos.tiempoTotal / 60)
+        tiempos.aceptacionDespachador !== null ? Math.round(tiempos.aceptacionDespachador / 60) : 0,
+        tiempos.despachadorEnvio !== null ? Math.round(tiempos.despachadorEnvio / 60) : 0,
+        tiempos.supervisorAceptacion !== null ? Math.round(tiempos.supervisorAceptacion / 60) : 0,
+        tiempos.supervisorLlegada !== null ? Math.round(tiempos.supervisorLlegada / 60) : 0,
+        tiempos.supervisorSalida !== null ? Math.round(tiempos.supervisorSalida / 60) : 0,
+        tiempos.tiempoTotal > 0 ? Math.round(tiempos.tiempoTotal / 60) : 0
       ];
     });
 
@@ -382,75 +297,6 @@ const HistorialServicios = () => {
             </Button>
           </div>
 
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Fecha Inicio</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[180px] justify-start text-left font-normal",
-                      !fechaInicio && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {fechaInicio ? format(fechaInicio, "dd/MM/yyyy") : "Seleccionar"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={fechaInicio}
-                    onSelect={setFechaInicio}
-                    initialFocus
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Fecha Fin</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[180px] justify-start text-left font-normal",
-                      !fechaFin && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {fechaFin ? format(fechaFin, "dd/MM/yyyy") : "Seleccionar"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={fechaFin}
-                    onSelect={setFechaFin}
-                    initialFocus
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <Button 
-              onClick={() => {
-                setFechaInicio(undefined);
-                setFechaFin(undefined);
-                setSearchTerm("");
-                setSupervisorFilter("todos");
-                setPrioridadFilter("todas");
-              }}
-              variant="outline"
-              className="h-10"
-            >
-              Limpiar Filtros
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
@@ -476,9 +322,9 @@ const HistorialServicios = () => {
                 <p className="text-sm text-muted-foreground">Tiempo Promedio</p>
                 <p className="text-2xl font-bold">
                   {serviciosFiltrados.length > 0 ? 
-                    formatTiempo(
-                      serviciosFiltrados.reduce((acc, s) => acc + calcularTiempos(s).tiempoTotal, 0) / serviciosFiltrados.length
-                    ) : '0:00'
+                    formatearTiempoAlarma(
+                      Math.round(serviciosFiltrados.reduce((acc, s) => acc + calcularTiemposServicio(s).tiempoTotal, 0) / serviciosFiltrados.length)
+                    ) : '—'
                   }
                 </p>
               </div>
@@ -506,9 +352,12 @@ const HistorialServicios = () => {
                 <p className="text-sm text-muted-foreground">Tiempo Salida Promedio</p>
                  <p className="text-2xl font-bold">
                    {serviciosFiltrados.length > 0 ? 
-                     formatTiempo(
-                       serviciosFiltrados.reduce((acc, s) => acc + calcularTiempos(s).supervisorSalida, 0) / serviciosFiltrados.length
-                     ) : '0:00'
+                     formatearTiempoAlarma(
+                       Math.round(serviciosFiltrados.reduce((acc, s) => {
+                         const tiempos = calcularTiemposServicio(s);
+                         return acc + (tiempos.supervisorSalida || 0);
+                       }, 0) / serviciosFiltrados.length)
+                     ) : '—'
                    }
                  </p>
               </div>
@@ -535,7 +384,7 @@ const HistorialServicios = () => {
               </div>
             ) : (
               serviciosOrdenados.map((servicio) => {
-                const tiempos = calcularTiempos(servicio);
+                const tiempos = calcularTiemposServicio(servicio);
                 return (
                   <Card key={servicio.id} className={`border-l-4 ${servicio.estado === 'cancelada' ? 'border-l-red-500' : 'border-l-green-500'}`}>
                     <CardContent className="p-4">
@@ -560,6 +409,12 @@ const HistorialServicios = () => {
                             </div>
                             <p className="text-sm text-muted-foreground">
                               {format(new Date(servicio.created_at), 'dd/MM/yyyy HH:mm:ss')}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground mb-1">Tiempo Total</p>
+                            <p className="font-mono font-bold text-lg text-primary">
+                              {tiempos.tiempoTotal > 0 ? formatearTiempoAlarma(tiempos.tiempoTotal) : '—'}
                             </p>
                           </div>
                         </div>
@@ -601,28 +456,24 @@ const HistorialServicios = () => {
                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
                              <div>
                                <p className="text-xs text-muted-foreground mb-1">Aceptación Despachador</p>
-                               <p className="font-mono font-bold text-sm">{formatTiempo(tiempos.aceptacionDespachador)}</p>
+                               <p className="font-mono font-bold text-sm">{mostrarTiempo(tiempos.aceptacionDespachador)}</p>
                              </div>
                              <div>
                                <p className="text-xs text-muted-foreground mb-1">Despachador Envío</p>
-                               <p className="font-mono font-bold text-sm">{formatTiempo(tiempos.despachadorEnvio)}</p>
+                               <p className="font-mono font-bold text-sm">{mostrarTiempo(tiempos.despachadorEnvio)}</p>
                              </div>
                              <div>
                                <p className="text-xs text-muted-foreground mb-1">Supervisor Aceptación</p>
-                               <p className="font-mono font-bold text-sm">{formatTiempo(tiempos.supervisorAceptacion)}</p>
+                               <p className="font-mono font-bold text-sm">{mostrarTiempo(tiempos.supervisorAceptacion)}</p>
                              </div>
                              <div>
                                <p className="text-xs text-muted-foreground mb-1">Supervisor Llegada</p>
-                               <p className="font-mono font-bold text-sm">{formatTiempo(tiempos.supervisorLlegada)}</p>
+                               <p className="font-mono font-bold text-sm">{mostrarTiempo(tiempos.supervisorLlegada)}</p>
                              </div>
                              <div>
                                <p className="text-xs text-muted-foreground mb-1">Supervisor Salida</p>
-                               <p className="font-mono font-bold text-sm">{formatTiempo(tiempos.supervisorSalida)}</p>
+                               <p className="font-mono font-bold text-sm">{mostrarTiempo(tiempos.supervisorSalida)}</p>
                              </div>
-                           </div>
-                           <div className="mt-3 pt-3 border-t text-center">
-                             <p className="text-xs text-muted-foreground mb-1">Tiempo Total</p>
-                             <p className="font-mono font-bold text-lg text-primary">{formatTiempo(tiempos.tiempoTotal)}</p>
                            </div>
                          </div>
                       </div>
