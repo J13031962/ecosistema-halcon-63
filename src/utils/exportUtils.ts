@@ -157,14 +157,27 @@ export const exportQRToPDF = async (clientes: any[], qrsPerPage: number = 4) => 
     const y = margin + (row * cellHeight) + (cellHeight - qrSize - 30) / 2;
 
     try {
-      // Create QR data using numero_cuenta as primary ID
+      // Create QR data with backward compatibility
       const qrData = JSON.stringify({
+        // New format (preferred)
         id: cliente.numero_cuenta || cliente.id,
-        cliente: cliente.nombre,
+        numero_cuenta: cliente.numero_cuenta,
+        
+        // Old format (backward compatibility)
+        id_cliente: cliente.id,
+        
+        // Client info
+        nombre: cliente.nombre,
         direccion: cliente.direccion,
+        
+        // New coordinate format (preferred)
+        lat: cliente.latitud?.toString() || '0',
+        lng: cliente.longitud?.toString() || '0',
+        
+        // Old coordinate format (backward compatibility)
         coordenadas: {
-          lat: cliente.latitud || 0,
-          lng: cliente.longitud || 0
+          latitud: cliente.latitud?.toString() || '0',
+          longitud: cliente.longitud?.toString() || '0'
         }
       });
 

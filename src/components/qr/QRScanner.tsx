@@ -8,11 +8,19 @@ import { toast } from "@/hooks/use-toast";
 import QrScanner from 'qr-scanner';
 
 interface QRData {
-  id_cliente: string;
-  coordenadas: {
+  // Backward compatibility - support all ID formats
+  id_cliente?: string;
+  numero_cuenta?: string;
+  id?: string;
+  
+  // Backward compatibility - support both coordinate formats
+  coordenadas?: {
     latitud: string;
     longitud: string;
   };
+  lat?: string;
+  lng?: string;
+  
   nombre: string;
   direccion: string;
 }
@@ -89,9 +97,26 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
           try {
             const data = JSON.parse(result.data) as QRData;
             
-            if (data.id_cliente && data.coordenadas && data.nombre) {
-              console.log('✅ QR válido:', data);
-              setScannedData(data);
+            // Normalize QR data for backward compatibility
+            const normalizedData: QRData = {
+              ...data,
+              // Use any available ID format
+              id_cliente: data.id_cliente || data.numero_cuenta || data.id || '',
+              numero_cuenta: data.numero_cuenta || data.id,
+              // Use any available coordinate format
+              coordenadas: data.coordenadas || {
+                latitud: data.lat || '0',
+                longitud: data.lng || '0'
+              }
+            };
+            
+            // Validate required fields (more flexible)
+            const hasId = normalizedData.id_cliente || normalizedData.numero_cuenta || normalizedData.id;
+            const hasCoords = normalizedData.coordenadas || (data.lat && data.lng);
+            
+            if (hasId && hasCoords && data.nombre) {
+              console.log('✅ QR válido:', normalizedData);
+              setScannedData(normalizedData);
               setIsScanning(false);
               
               toast({
@@ -102,7 +127,7 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
               console.warn('⚠️ QR inválido:', data);
               toast({
                 title: "QR Inválido",
-                description: "El código QR no contiene información válida",
+                description: "El código QR no contiene información válida del cliente",
                 variant: "destructive"
               });
             }
@@ -270,13 +295,15 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
                 </div>
                 
                 <div>
-                  <Badge variant="outline">ID: {scannedData.id_cliente}</Badge>
+                  <Badge variant="outline">
+                    {scannedData.numero_cuenta ? `N°: ${scannedData.numero_cuenta}` : `ID: ${scannedData.id_cliente}`}
+                  </Badge>
                 </div>
                 
                 <div className="text-sm text-muted-foreground">
                   <p>Coordenadas:</p>
-                  <p>Lat: {scannedData.coordenadas.latitud}</p>
-                  <p>Lng: {scannedData.coordenadas.longitud}</p>
+                  <p>Lat: {scannedData.coordenadas?.latitud || scannedData.lat || '0'}</p>
+                  <p>Lng: {scannedData.coordenadas?.longitud || scannedData.lng || '0'}</p>
                 </div>
               </CardContent>
             </Card>

@@ -83,12 +83,25 @@ const GestionClientes = () => {
   const generateQRCode = async (cliente: any) => {
     try {
       const qrData = JSON.stringify({
+        // New format (preferred)
         id: cliente.numero_cuenta || cliente.id,
+        numero_cuenta: cliente.numero_cuenta,
+        
+        // Old format (backward compatibility)
+        id_cliente: cliente.id,
+        
+        // Client info
         nombre: cliente.nombre,
         direccion: cliente.direccion,
+        
+        // New coordinate format (preferred)
+        lat: cliente.latitud?.toString() || '0',
+        lng: cliente.longitud?.toString() || '0',
+        
+        // Old coordinate format (backward compatibility)
         coordenadas: {
-          lat: cliente.latitud || 0,
-          lng: cliente.longitud || 0
+          latitud: cliente.latitud?.toString() || '0',
+          longitud: cliente.longitud?.toString() || '0'
         }
       });
       

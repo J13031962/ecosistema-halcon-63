@@ -39,6 +39,7 @@ interface AlarmaEnhanced {
   clientes?: {
     nombre: string;
     telefono: string | null;
+    numero_cuenta?: string | null;
   } | null;
 }
 
@@ -81,7 +82,8 @@ export const useSupabaseAlarmasEnhanced = () => {
           *,
           clientes (
             nombre,
-            telefono
+            telefono,
+            numero_cuenta
           )
         `)
         .order('created_at', { ascending: false });
@@ -114,7 +116,8 @@ export const useSupabaseAlarmasEnhanced = () => {
           *,
           clientes (
             nombre,
-            telefono
+            telefono,
+            numero_cuenta
           )
         `)
         .single();
@@ -166,7 +169,8 @@ export const useSupabaseAlarmasEnhanced = () => {
           *,
           clientes (
             nombre,
-            telefono
+            telefono,
+            numero_cuenta
           )
         `)
         .single();
@@ -217,7 +221,8 @@ export const useSupabaseAlarmasEnhanced = () => {
           *,
           clientes (
             nombre,
-            telefono
+            telefono,
+            numero_cuenta
           )
         `)
         .single();
@@ -277,7 +282,8 @@ export const useSupabaseAlarmasEnhanced = () => {
           *,
           clientes (
             nombre,
-            telefono
+            telefono,
+            numero_cuenta
           )
         `)
         .single();
@@ -400,7 +406,8 @@ export const useSupabaseAlarmasEnhanced = () => {
           *,
           clientes (
             nombre,
-            telefono
+            telefono,
+            numero_cuenta
           )
         `)
         .single();
@@ -451,7 +458,8 @@ export const useSupabaseAlarmasEnhanced = () => {
           *,
           clientes (
             nombre,
-            telefono
+            telefono,
+            numero_cuenta
           )
         `)
         .single();
