@@ -45,7 +45,11 @@ export const useOptimizedCronometer = ({
       return new Date(resolved_at);
     }
     return new Date(currentTime);
-  }, [estado, resolved_at, currentTime]);
+  }, [
+    estado, 
+    resolved_at, 
+    ...(estado !== 'cancelada' && estado !== 'resuelta' ? [currentTime] : [])
+  ]);
 
   // Memoize date objects to avoid recreation on every render
   const dateObjects = useMemo(() => ({

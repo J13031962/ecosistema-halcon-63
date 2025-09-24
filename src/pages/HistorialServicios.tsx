@@ -87,25 +87,48 @@ const HistorialServicios = () => {
     const fechaAceptacion = servicio.tiempo_aceptacion_supervisor ? new Date(servicio.tiempo_aceptacion_supervisor) : null;
     const fechaLlegada = servicio.tiempo_primera_lectura_qr ? new Date(servicio.tiempo_primera_lectura_qr) : null;
     const fechaSalida = servicio.tiempo_segunda_lectura_qr ? new Date(servicio.tiempo_segunda_lectura_qr) : null;
+    const fechaFinalizacion = servicio.resolved_at ? new Date(servicio.resolved_at) : null;
 
     return {
       // 1. Aceptación Despachador: Desde creación hasta clic en alarma
-      aceptacionDespachador: fechaTomaDespachador ? differenceInSeconds(fechaTomaDespachador, fechaCreacion) : 0,
+      aceptacionDespachador: fechaTomaDespachador 
+        ? differenceInSeconds(fechaTomaDespachador, fechaCreacion) 
+        : fechaFinalizacion ? differenceInSeconds(fechaFinalizacion, fechaCreacion) : 0,
       
       // 2. Despachador envío: Desde clic en alarma hasta asignación de supervisor
-      despachadorEnvio: fechaTomaDespachador && fechaAsignacion ? differenceInSeconds(fechaAsignacion, fechaTomaDespachador) : 0,
+      despachadorEnvio: fechaTomaDespachador && fechaAsignacion 
+        ? differenceInSeconds(fechaAsignacion, fechaTomaDespachador) 
+        : fechaTomaDespachador && fechaFinalizacion
+          ? differenceInSeconds(fechaFinalizacion, fechaTomaDespachador)
+          : 0,
       
       // 3. Supervisor aceptación: Desde asignación hasta que supervisor acepta
-      supervisorAceptacion: fechaAsignacion && fechaAceptacion ? differenceInSeconds(fechaAceptacion, fechaAsignacion) : 0,
+      supervisorAceptacion: fechaAsignacion && fechaAceptacion 
+        ? differenceInSeconds(fechaAceptacion, fechaAsignacion) 
+        : fechaAsignacion && fechaFinalizacion && servicio.estado === 'cancelada'
+          ? differenceInSeconds(fechaFinalizacion, fechaAsignacion)
+          : 0,
       
       // 4. Supervisor llegada: Desde aceptación hasta primer QR (llegada)
-      supervisorLlegada: fechaAceptacion && fechaLlegada ? differenceInSeconds(fechaLlegada, fechaAceptacion) : 0,
+      supervisorLlegada: fechaAceptacion && fechaLlegada 
+        ? differenceInSeconds(fechaLlegada, fechaAceptacion) 
+        : fechaAceptacion && fechaFinalizacion
+          ? differenceInSeconds(fechaFinalizacion, fechaAceptacion)
+          : 0,
       
       // 5. Supervisor salida: Desde primer QR hasta segundo QR (salida)
-      supervisorSalida: fechaLlegada && fechaSalida ? differenceInSeconds(fechaSalida, fechaLlegada) : 0,
+      supervisorSalida: fechaLlegada && fechaSalida 
+        ? differenceInSeconds(fechaSalida, fechaLlegada) 
+        : fechaLlegada && fechaFinalizacion
+          ? differenceInSeconds(fechaFinalizacion, fechaLlegada)
+          : 0,
       
       // Tiempo Total: Desde creación hasta finalización
-      tiempoTotal: fechaSalida ? differenceInSeconds(fechaSalida, fechaCreacion) : 0
+      tiempoTotal: fechaSalida 
+        ? differenceInSeconds(fechaSalida, fechaCreacion) 
+        : fechaFinalizacion 
+          ? differenceInSeconds(fechaFinalizacion, fechaCreacion) 
+          : 0
     };
   };
 
