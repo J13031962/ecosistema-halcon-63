@@ -16,3 +16,13 @@ export function capitalizeWords(text: string): string {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 }
+
+export function normalizeAccountNumber(account: string | null | undefined): string {
+  if (!account) return '';
+  return account.toString().replace(/^0+/, '') || '0';
+}
+
+export function accountNumbersMatch(input: string, storedAccount: string | null | undefined): boolean {
+  if (!input || !storedAccount) return false;
+  return normalizeAccountNumber(input) === normalizeAccountNumber(storedAccount);
+}

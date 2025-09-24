@@ -14,6 +14,7 @@ import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
 import { useSupabaseLlamadas } from "@/hooks/useSupabaseLlamadas";
 import { useAuthConsolidatedContext } from "@/contexts/AuthContextConsolidated";
 import { ClienteServiciosDisplay } from "@/components/alarmas/ClienteServiciosDisplay";
+import { accountNumbersMatch } from '@/lib/utils';
 
 interface ClienteFormData {
   id_numerico: string;
@@ -103,11 +104,12 @@ const GenerarAlarma = () => {
       return;
     }
 
-    const cliente = clientes.find(c => 
-      c.numero_cuenta === clienteId || 
-      c.id === clienteId ||
-      c.nombre.toLowerCase().includes(clienteId.toLowerCase())
-    );
+      const cliente = clientes.find(c => 
+        accountNumbersMatch(clienteId, c.numero_cuenta) || 
+        c.numero_cuenta === clienteId || 
+        c.id === clienteId ||
+        c.nombre.toLowerCase().includes(clienteId.toLowerCase())
+      );
 
     if (cliente) {
       setClienteEncontrado(cliente);

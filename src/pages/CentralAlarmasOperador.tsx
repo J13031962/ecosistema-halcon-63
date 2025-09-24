@@ -18,6 +18,7 @@ import { useThrottledRealtime } from "@/hooks/useThrottledRealtime";
 import { CalendarioTurnosGenerados } from '@/components/personal/CalendarioTurnosGenerados';
 import { useSupabaseTurnos } from '@/hooks/useSupabaseTurnos';
 import { useSupabaseClientes } from "@/hooks/useSupabaseClientes";
+import { accountNumbersMatch } from '@/lib/utils';
 import { useSupabaseLlamadas } from "@/hooks/useSupabaseLlamadas";
 import { AlarmaActivaCard } from "@/components/alarmas/AlarmaActivaCard";
 import { format, differenceInSeconds, isValid } from "date-fns";
@@ -366,6 +367,7 @@ useEffect(() => {
     }
 
     const cliente = clientes.find(c => 
+      accountNumbersMatch(clienteId, c.numero_cuenta) || 
       c.numero_cuenta === clienteId || 
       c.id === clienteId ||
       c.nombre.toLowerCase().includes(clienteId.toLowerCase())
