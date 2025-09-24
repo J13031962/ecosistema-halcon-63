@@ -21,6 +21,12 @@ interface QRData {
   };
   nombre: string;
   direccion: string;
+  supervisor_location?: {
+    latitud: number;
+    longitud: number;
+    accuracy?: number;
+    timestamp: string;
+  };
 }
 
 // Extended alarma type to include new fields
@@ -218,6 +224,7 @@ const MisAsignaciones = () => {
             tiempo_llegada_sitio: now,
             tiempo_primera_lectura_qr: now,
             qr_llegada_data: qrData as any,
+            ubicacion_supervisor_llegada: qrData.supervisor_location || null,
             tiempo_aceptacion_supervisor: alarma.tiempo_aceptacion_supervisor || now,
             estado: 'en_proceso'
           })
@@ -230,9 +237,12 @@ const MisAsignaciones = () => {
         }
         
         console.log('✅ Arrival marked successfully:', data);
+        const locationText = qrData.supervisor_location 
+          ? " Tu ubicación GPS ha sido registrada."
+          : " (Ubicación GPS no disponible)";
         toast({
           title: "Llegada Confirmada",
-          description: `Has llegado al sitio de ${qrData.nombre}. El contador de tiempo ha iniciado.`,
+          description: `Has llegado al sitio de ${qrData.nombre}. El contador de tiempo ha iniciado.${locationText}`,
         });
       } else {
         // Mark departure from site
@@ -255,6 +265,7 @@ const MisAsignaciones = () => {
           .update({
             tiempo_salida_sitio: now,
             qr_salida_data: qrData as any,
+            ubicacion_supervisor_salida: qrData.supervisor_location || null,
             tiempo_segunda_lectura_qr: now,
             // Asegurar consistencia de tiempos si faltan
             tiempo_aceptacion_supervisor: alarma.tiempo_aceptacion_supervisor || now,
@@ -273,9 +284,12 @@ const MisAsignaciones = () => {
         }
         
         console.log('✅ Departure marked successfully:', data);
+        const locationText = qrData.supervisor_location 
+          ? " Tu ubicación GPS de salida ha sido registrada."
+          : " (Ubicación GPS no disponible)";
         toast({
           title: "Servicio Finalizado",
-          description: `Has finalizado el servicio en ${qrData.nombre} exitosamente.`,
+          description: `Has finalizado el servicio en ${qrData.nombre} exitosamente.${locationText}`,
         });
       }
 

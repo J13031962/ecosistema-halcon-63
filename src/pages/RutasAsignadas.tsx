@@ -21,6 +21,12 @@ interface QRData {
   };
   nombre: string;
   direccion: string;
+  supervisor_location?: {
+    latitud: number;
+    longitud: number;
+    accuracy?: number;
+    timestamp: string;
+  };
 }
 
 const RutasAsignadas = () => {
@@ -138,15 +144,19 @@ const RutasAsignadas = () => {
             tiempo_llegada_sitio: now,
             tiempo_primera_lectura_qr: now, // This stops the supervisor llegada timer
             qr_llegada_data: qrData as any,
+            ubicacion_supervisor_llegada: qrData.supervisor_location || null,
             estado: 'en_proceso'
           })
           .eq('id', selectedAlarmaId);
 
         if (error) throw error;
 
+        const locationText = qrData.supervisor_location 
+          ? " Tu ubicación GPS ha sido registrada."
+          : " (Ubicación GPS no disponible)";
         toast({
           title: "Llegada Confirmada",
-          description: `Has llegado al sitio de ${qrData.nombre}. El contador de tiempo ha iniciado.`,
+          description: `Has llegado al sitio de ${qrData.nombre}. El contador de tiempo ha iniciado.${locationText}`,
         });
       } else {
         // Mark departure from site - Update tiempo_segunda_lectura_qr to stop supervisor salida timer
@@ -156,6 +166,7 @@ const RutasAsignadas = () => {
             tiempo_salida_sitio: now,
             tiempo_segunda_lectura_qr: now, // This stops the supervisor salida timer
             qr_salida_data: qrData as any,
+            ubicacion_supervisor_salida: qrData.supervisor_location || null,
             resolved_at: now,
             estado: 'resuelta'
           })
@@ -163,9 +174,12 @@ const RutasAsignadas = () => {
 
         if (error) throw error;
 
+        const locationText = qrData.supervisor_location 
+          ? " Tu ubicación GPS de salida ha sido registrada."
+          : " (Ubicación GPS no disponible)";
         toast({
           title: "Servicio Finalizado",
-          description: `Has finalizado el servicio en ${qrData.nombre} exitosamente.`,
+          description: `Has finalizado el servicio en ${qrData.nombre} exitosamente.${locationText}`,
         });
       }
 

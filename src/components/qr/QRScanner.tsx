@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Camera, X, MapPin, User, CheckCircle, AlertCircle } from "lucide-react";
+import { Camera, X, MapPin, User, CheckCircle, AlertCircle, Navigation } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import QrScanner from 'qr-scanner';
 
@@ -23,6 +23,14 @@ interface QRData {
   
   nombre: string;
   direccion: string;
+  
+  // Supervisor GPS location
+  supervisor_location?: {
+    latitud: number;
+    longitud: number;
+    accuracy?: number;
+    timestamp: string;
+  };
 }
 
 interface QRScannerProps {
@@ -38,6 +46,8 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
   const [isScanning, setIsScanning] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // Limpiar cuando se cierre
   useEffect(() => {
@@ -64,6 +74,25 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
     }
     setIsScanning(false);
     setCameraError(null);
+    setIsGettingLocation(false);
+    setLocationError(null);
+  };
+
+  const getGPSLocation = (): Promise<GeolocationPosition> => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('GPS no disponible en este dispositivo'));
+        return;
+      }
+
+      const options: PositionOptions = {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 60000 // Use location from last minute if available
+      };
+
+      navigator.geolocation.getCurrentPosition(resolve, reject, options);
+    });
   };
 
   const initCamera = async () => {
@@ -115,14 +144,49 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
             const hasCoords = normalizedData.coordenadas || (data.lat && data.lng);
             
             if (hasId && hasCoords && data.nombre) {
-              console.log('✅ QR válido:', normalizedData);
-              setScannedData(normalizedData);
+              console.log('✅ QR válido, obteniendo ubicación GPS...');
               setIsScanning(false);
+              setIsGettingLocation(true);
+              setLocationError(null);
               
-              toast({
-                title: "QR Escaneado",
-                description: `Cliente: ${data.nombre} detectado`,
-              });
+              // Get GPS location
+              getGPSLocation()
+                .then((position) => {
+                  const locationData = {
+                    latitud: position.coords.latitude,
+                    longitud: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    timestamp: new Date().toISOString()
+                  };
+
+                  const dataWithLocation = {
+                    ...normalizedData,
+                    supervisor_location: locationData
+                  };
+
+                  console.log('✅ QR válido con ubicación GPS:', dataWithLocation);
+                  setScannedData(dataWithLocation);
+                  setIsGettingLocation(false);
+                  
+                  toast({
+                    title: "QR Escaneado",
+                    description: `Cliente: ${data.nombre} detectado con ubicación GPS`,
+                  });
+                })
+                .catch((gpsError) => {
+                  console.warn('⚠️ GPS Error:', gpsError);
+                  
+                  // Still proceed without GPS but show warning
+                  setScannedData(normalizedData);
+                  setIsGettingLocation(false);
+                  setLocationError(gpsError.message);
+                  
+                  toast({
+                    title: "QR Escaneado (Sin GPS)",
+                    description: `Cliente: ${data.nombre} detectado. GPS no disponible: ${gpsError.message}`,
+                    variant: "destructive"
+                  });
+                });
             } else {
               console.warn('⚠️ QR inválido:', data);
               toast({
@@ -250,6 +314,16 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
                       )}
                     </div>
                   </div>
+                ) : isGettingLocation ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80">
+                    <div className="text-white text-center p-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                      <p className="text-sm">Obteniendo ubicación GPS...</p>
+                      <p className="text-xs text-gray-300 mt-2">
+                        Esto confirma tu presencia en el sitio
+                      </p>
+                    </div>
+                  </div>
                 ) : !isScanning ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-60">
                     <div className="text-white text-center">
@@ -301,10 +375,31 @@ export const QRScannerComponent = ({ onScanSuccess, isOpen, onClose }: QRScanner
                 </div>
                 
                 <div className="text-sm text-muted-foreground">
-                  <p>Coordenadas:</p>
+                  <p>Coordenadas del cliente:</p>
                   <p>Lat: {scannedData.coordenadas?.latitud || scannedData.lat || '0'}</p>
                   <p>Lng: {scannedData.coordenadas?.longitud || scannedData.lng || '0'}</p>
                 </div>
+                
+                {scannedData.supervisor_location && (
+                  <div className="text-sm text-green-600 border border-green-200 bg-green-50 rounded p-2">
+                    <p className="font-medium flex items-center gap-1">
+                      <Navigation className="h-3 w-3" />
+                      Ubicación GPS confirmada
+                    </p>
+                    <p>Tu ubicación: {scannedData.supervisor_location.latitud.toFixed(6)}, {scannedData.supervisor_location.longitud.toFixed(6)}</p>
+                    <p>Precisión: ±{scannedData.supervisor_location.accuracy?.toFixed(0)}m</p>
+                  </div>
+                )}
+                
+                {locationError && (
+                  <div className="text-sm text-amber-600 border border-amber-200 bg-amber-50 rounded p-2">
+                    <p className="font-medium flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      GPS no disponible
+                    </p>
+                    <p>{locationError}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

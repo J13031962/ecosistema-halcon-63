@@ -96,6 +96,8 @@ export type Database = {
           tipo_sensor: string | null
           ubicacion_primer_qr: string | null
           ubicacion_segundo_qr: string | null
+          ubicacion_supervisor_llegada: Json | null
+          ubicacion_supervisor_salida: Json | null
         }
         Insert: {
           attended_at?: string | null
@@ -137,6 +139,8 @@ export type Database = {
           tipo_sensor?: string | null
           ubicacion_primer_qr?: string | null
           ubicacion_segundo_qr?: string | null
+          ubicacion_supervisor_llegada?: Json | null
+          ubicacion_supervisor_salida?: Json | null
         }
         Update: {
           attended_at?: string | null
@@ -178,6 +182,8 @@ export type Database = {
           tipo_sensor?: string | null
           ubicacion_primer_qr?: string | null
           ubicacion_segundo_qr?: string | null
+          ubicacion_supervisor_llegada?: Json | null
+          ubicacion_supervisor_salida?: Json | null
         }
         Relationships: [
           {
