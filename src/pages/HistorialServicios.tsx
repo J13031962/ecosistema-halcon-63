@@ -111,54 +111,69 @@ const HistorialServicios = () => {
     let supervisorLlegada = 0;
     let supervisorSalida = 0;
 
+    // 1. Aceptación Despachador
     if (fechaTomaDespachador) {
-      // Si hay timestamp de toma despachador, usarlo
       aceptacionDespachador = differenceInSeconds(fechaTomaDespachador, fechaCreacion);
     } else if (tiempoTotalReal > 0) {
-      // Estimar 2-5 minutos para aceptación despachador
-      aceptacionDespachador = Math.min(300, Math.floor(tiempoTotalReal * 0.1)); // 10% del tiempo total o 5 min máximo
+      // Estimar 1-3 minutos para aceptación despachador
+      aceptacionDespachador = Math.max(60, Math.min(180, Math.floor(tiempoTotalReal * 0.05)));
     }
 
+    // 2. Despachador Envío
     if (fechaAsignacion && fechaTomaDespachador) {
-      // Si hay ambos timestamps, calcular exacto
       despachadorEnvio = differenceInSeconds(fechaAsignacion, fechaTomaDespachador);
-    } else if (fechaTomaDespachador) {
-      // Si solo hay toma despachador, calcular hasta freeze time
-      despachadorEnvio = differenceInSeconds(freezeTime, fechaTomaDespachador);
+    } else if (fechaTomaDespachador && fechaFinalizacion) {
+      // Para servicios cancelados: estimar desde toma hasta cancelación
+      const tiempoRestante = differenceInSeconds(fechaFinalizacion, fechaTomaDespachador);
+      despachadorEnvio = Math.max(60, Math.min(600, tiempoRestante * 0.3)); // 30% del tiempo restante
     } else if (tiempoTotalReal > aceptacionDespachador) {
-      // Estimar tiempo de envío (2-8 minutos típicamente)
-      despachadorEnvio = Math.min(480, Math.floor((tiempoTotalReal - aceptacionDespachador) * 0.15)); // 15% del tiempo restante o 8 min máximo
+      // Estimar 2-10 minutos para envío
+      despachadorEnvio = Math.max(120, Math.min(600, Math.floor((tiempoTotalReal - aceptacionDespachador) * 0.2)));
     }
 
+    // 3. Supervisor Aceptación
     if (fechaAceptacion && fechaAsignacion) {
       supervisorAceptacion = differenceInSeconds(fechaAceptacion, fechaAsignacion);
-    } else if (fechaAsignacion) {
-      supervisorAceptacion = differenceInSeconds(freezeTime, fechaAsignacion);
+    } else if (fechaAsignacion && fechaFinalizacion) {
+      // Para servicios cancelados después de asignación
+      const tiempoRestante = differenceInSeconds(fechaFinalizacion, fechaAsignacion);
+      supervisorAceptacion = Math.max(60, Math.min(300, tiempoRestante * 0.2)); // 20% del tiempo restante
     } else if (tiempoTotalReal > (aceptacionDespachador + despachadorEnvio)) {
-      // Estimar aceptación supervisor (1-5 minutos)
-      supervisorAceptacion = Math.min(300, Math.floor((tiempoTotalReal - aceptacionDespachador - despachadorEnvio) * 0.1));
+      // Estimar 1-3 minutos para aceptación supervisor
+      supervisorAceptacion = Math.max(60, Math.min(180, Math.floor((tiempoTotalReal - aceptacionDespachador - despachadorEnvio) * 0.1)));
     }
 
+    // 4. Supervisor Llegada
     if (fechaLlegada && fechaAceptacion) {
       supervisorLlegada = differenceInSeconds(fechaLlegada, fechaAceptacion);
-    } else if (fechaAceptacion) {
-      supervisorLlegada = differenceInSeconds(freezeTime, fechaAceptacion);
+    } else if (fechaAceptacion && fechaFinalizacion) {
+      // Para servicios cancelados después de aceptación
+      const tiempoRestante = differenceInSeconds(fechaFinalizacion, fechaAceptacion);
+      supervisorLlegada = Math.max(180, Math.min(1800, tiempoRestante * 0.8)); // 80% del tiempo restante para llegada
     } else if (tiempoTotalReal > (aceptacionDespachador + despachadorEnvio + supervisorAceptacion)) {
-      // Estimar tiempo de llegada (resto del tiempo menos tiempo en sitio)
+      // Estimar 5-30 minutos para llegada
       const tiempoUsado = aceptacionDespachador + despachadorEnvio + supervisorAceptacion;
       const tiempoRestante = tiempoTotalReal - tiempoUsado;
-      supervisorLlegada = Math.floor(tiempoRestante * 0.7); // 70% del tiempo restante para llegada
+      supervisorLlegada = Math.max(300, Math.min(1800, Math.floor(tiempoRestante * 0.6))); // 60% del tiempo restante
     }
 
+    // 5. Supervisor en Sitio
     if (fechaSalida && fechaLlegada) {
       supervisorSalida = differenceInSeconds(fechaSalida, fechaLlegada);
-    } else if (fechaLlegada) {
-      supervisorSalida = differenceInSeconds(freezeTime, fechaLlegada);
+    } else if (fechaLlegada && fechaFinalizacion) {
+      supervisorSalida = differenceInSeconds(fechaFinalizacion, fechaLlegada);
     } else {
-      // Estimar tiempo en sitio (resto del tiempo)
+      // Estimar tiempo en sitio (resto del tiempo disponible)
       const tiempoUsado = aceptacionDespachador + despachadorEnvio + supervisorAceptacion + supervisorLlegada;
       supervisorSalida = Math.max(0, tiempoTotalReal - tiempoUsado);
     }
+
+    // Validar que ningún tiempo sea negativo
+    aceptacionDespachador = Math.max(0, aceptacionDespachador);
+    despachadorEnvio = Math.max(0, despachadorEnvio);
+    supervisorAceptacion = Math.max(0, supervisorAceptacion);
+    supervisorLlegada = Math.max(0, supervisorLlegada);
+    supervisorSalida = Math.max(0, supervisorSalida);
 
     return {
       aceptacionDespachador,
