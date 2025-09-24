@@ -13,6 +13,7 @@ import { format, differenceInSeconds, isWithinInterval, startOfDay, endOfDay } f
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
+import GPSLocationModal from "@/components/ui/gps-location-modal";
 
 const Alarmas = () => {
   const { user } = useAuthConsolidated();
@@ -24,6 +25,7 @@ const Alarmas = () => {
   const [tipoOrdenamiento, setTipoOrdenamiento] = useState("modificacion");
   const [fechaInicio, setFechaInicio] = useState<Date | undefined>();
   const [fechaFin, setFechaFin] = useState<Date | undefined>();
+  const [selectedAlarmForGPS, setSelectedAlarmForGPS] = useState<any>(null);
 
   // Obtener lista única de supervisores
   const supervisores = useMemo(() => {
@@ -674,6 +676,24 @@ const Alarmas = () => {
                             </p>
                           </div>
                         )}
+
+                        {/* Sección de Verificación GPS */}
+                        {(alarma.estado === 'resuelta' || alarma.estado === 'cancelada') && (
+                          <div className="border-t pt-4">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium">Verificación GPS</h4>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedAlarmForGPS(alarma)}
+                                className="flex items-center gap-2"
+                              >
+                                <MapPin className="h-4 w-4" />
+                                Ver GPS
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -683,6 +703,16 @@ const Alarmas = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* GPS Location Modal */}
+      <GPSLocationModal
+        isOpen={!!selectedAlarmForGPS}
+        onClose={() => setSelectedAlarmForGPS(null)}
+        ubicacionLlegada={selectedAlarmForGPS?.ubicacion_supervisor_llegada}
+        ubicacionSalida={selectedAlarmForGPS?.ubicacion_supervisor_salida}
+        tiempoLlegada={selectedAlarmForGPS?.tiempo_llegada_sitio}
+        tiempoSalida={selectedAlarmForGPS?.tiempo_salida_sitio}
+      />
     </div>
     </OperationalThemeWrapper>
   );

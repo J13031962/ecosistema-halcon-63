@@ -12,7 +12,7 @@ import { format, differenceInSeconds, isWithinInterval, startOfDay, endOfDay } f
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { calcularTiemposServicio, formatearTiempoAlarma } from "@/utils/tiemposAlarmas";
-import LocationDisplay from "@/components/ui/location-display";
+import GPSLocationModal from "@/components/ui/gps-location-modal";
 
 const HistorialServicios = () => {
   const { alarmas } = useSupabaseAlarmasEnhanced();
@@ -22,6 +22,7 @@ const HistorialServicios = () => {
   const [tipoOrdenamiento, setTipoOrdenamiento] = useState("modificacion");
   const [fechaInicio, setFechaInicio] = useState<Date | undefined>();
   const [fechaFin, setFechaFin] = useState<Date | undefined>();
+  const [selectedServiceForGPS, setSelectedServiceForGPS] = useState<any>(null);
 
   // Filtrar servicios completados y cancelados
   const serviciosCompletados = alarmas.filter(a => 
@@ -480,12 +481,18 @@ const HistorialServicios = () => {
 
                           {/* Sección de Verificación GPS */}
                           <div className="border-t pt-4">
-                            <LocationDisplay
-                              ubicacionLlegada={servicio.ubicacion_supervisor_llegada}
-                              ubicacionSalida={servicio.ubicacion_supervisor_salida}
-                              tiempoLlegada={servicio.tiempo_llegada_sitio}
-                              tiempoSalida={servicio.tiempo_salida_sitio}
-                            />
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium">Verificación GPS</h4>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedServiceForGPS(servicio)}
+                                className="flex items-center gap-2"
+                              >
+                                <MapPin className="h-4 w-4" />
+                                Ver GPS
+                              </Button>
+                            </div>
                           </div>
                        </div>
                      </CardContent>
@@ -496,6 +503,16 @@ const HistorialServicios = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* GPS Location Modal */}
+      <GPSLocationModal
+        isOpen={!!selectedServiceForGPS}
+        onClose={() => setSelectedServiceForGPS(null)}
+        ubicacionLlegada={selectedServiceForGPS?.ubicacion_supervisor_llegada}
+        ubicacionSalida={selectedServiceForGPS?.ubicacion_supervisor_salida}
+        tiempoLlegada={selectedServiceForGPS?.tiempo_llegada_sitio}
+        tiempoSalida={selectedServiceForGPS?.tiempo_salida_sitio}
+      />
     </div>
   );
 };
