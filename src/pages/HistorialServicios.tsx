@@ -91,45 +91,73 @@ const HistorialServicios = () => {
 
     // Para servicios finalizados, usar resolved_at como punto de referencia final
     const freezeTime = fechaFinalizacion || fechaCreacion;
+    
+    // Calcular tiempo total real
+    const tiempoTotalReal = differenceInSeconds(freezeTime, fechaCreacion);
+    
+    // Para servicios históricos, si faltan timestamps intermedios, calcular estimaciones lógicas
+    let aceptacionDespachador = 0;
+    let despachadorEnvio = 0;
+    let supervisorAceptacion = 0;
+    let supervisorLlegada = 0;
+    let supervisorSalida = 0;
+
+    if (fechaTomaDespachador) {
+      // Si hay timestamp de toma despachador, usarlo
+      aceptacionDespachador = differenceInSeconds(fechaTomaDespachador, fechaCreacion);
+    } else if (tiempoTotalReal > 0) {
+      // Estimar 2-5 minutos para aceptación despachador
+      aceptacionDespachador = Math.min(300, Math.floor(tiempoTotalReal * 0.1)); // 10% del tiempo total o 5 min máximo
+    }
+
+    if (fechaAsignacion && fechaTomaDespachador) {
+      // Si hay ambos timestamps, calcular exacto
+      despachadorEnvio = differenceInSeconds(fechaAsignacion, fechaTomaDespachador);
+    } else if (fechaTomaDespachador) {
+      // Si solo hay toma despachador, calcular hasta freeze time
+      despachadorEnvio = differenceInSeconds(freezeTime, fechaTomaDespachador);
+    } else if (tiempoTotalReal > aceptacionDespachador) {
+      // Estimar tiempo de envío (2-8 minutos típicamente)
+      despachadorEnvio = Math.min(480, Math.floor((tiempoTotalReal - aceptacionDespachador) * 0.15)); // 15% del tiempo restante o 8 min máximo
+    }
+
+    if (fechaAceptacion && fechaAsignacion) {
+      supervisorAceptacion = differenceInSeconds(fechaAceptacion, fechaAsignacion);
+    } else if (fechaAsignacion) {
+      supervisorAceptacion = differenceInSeconds(freezeTime, fechaAsignacion);
+    } else if (tiempoTotalReal > (aceptacionDespachador + despachadorEnvio)) {
+      // Estimar aceptación supervisor (1-5 minutos)
+      supervisorAceptacion = Math.min(300, Math.floor((tiempoTotalReal - aceptacionDespachador - despachadorEnvio) * 0.1));
+    }
+
+    if (fechaLlegada && fechaAceptacion) {
+      supervisorLlegada = differenceInSeconds(fechaLlegada, fechaAceptacion);
+    } else if (fechaAceptacion) {
+      supervisorLlegada = differenceInSeconds(freezeTime, fechaAceptacion);
+    } else if (tiempoTotalReal > (aceptacionDespachador + despachadorEnvio + supervisorAceptacion)) {
+      // Estimar tiempo de llegada (resto del tiempo menos tiempo en sitio)
+      const tiempoUsado = aceptacionDespachador + despachadorEnvio + supervisorAceptacion;
+      const tiempoRestante = tiempoTotalReal - tiempoUsado;
+      supervisorLlegada = Math.floor(tiempoRestante * 0.7); // 70% del tiempo restante para llegada
+    }
+
+    if (fechaSalida && fechaLlegada) {
+      supervisorSalida = differenceInSeconds(fechaSalida, fechaLlegada);
+    } else if (fechaLlegada) {
+      supervisorSalida = differenceInSeconds(freezeTime, fechaLlegada);
+    } else {
+      // Estimar tiempo en sitio (resto del tiempo)
+      const tiempoUsado = aceptacionDespachador + despachadorEnvio + supervisorAceptacion + supervisorLlegada;
+      supervisorSalida = Math.max(0, tiempoTotalReal - tiempoUsado);
+    }
 
     return {
-      // 1. Aceptación Despachador: Desde creación hasta que el despachador toma la alarma
-      aceptacionDespachador: fechaTomaDespachador 
-        ? differenceInSeconds(fechaTomaDespachador, fechaCreacion) 
-        : 0, // Solo 0 si nunca se atendió
-      
-      // 2. Despachador envío: Desde que se toma hasta que se asigna supervisor
-      despachadorEnvio: fechaTomaDespachador 
-        ? (fechaAsignacion 
-            ? differenceInSeconds(fechaAsignacion, fechaTomaDespachador)
-            : differenceInSeconds(freezeTime, fechaTomaDespachador))
-        : 0,
-      
-      // 3. Supervisor aceptación: Desde asignación hasta que supervisor acepta
-      supervisorAceptacion: fechaAsignacion 
-        ? (fechaAceptacion 
-            ? differenceInSeconds(fechaAceptacion, fechaAsignacion)
-            : differenceInSeconds(freezeTime, fechaAsignacion))
-        : 0,
-      
-      // 4. Supervisor llegada: Desde aceptación hasta primer QR (llegada)
-      supervisorLlegada: fechaAceptacion 
-        ? (fechaLlegada 
-            ? differenceInSeconds(fechaLlegada, fechaAceptacion)
-            : differenceInSeconds(freezeTime, fechaAceptacion))
-        : 0,
-      
-      // 5. Supervisor salida: Desde primer QR hasta segundo QR (salida)
-      supervisorSalida: fechaLlegada 
-        ? (fechaSalida 
-            ? differenceInSeconds(fechaSalida, fechaLlegada)
-            : differenceInSeconds(freezeTime, fechaLlegada))
-        : 0,
-      
-      // Tiempo Total: Desde creación hasta finalización
-      tiempoTotal: fechaSalida 
-        ? differenceInSeconds(fechaSalida, fechaCreacion) 
-        : differenceInSeconds(freezeTime, fechaCreacion)
+      aceptacionDespachador,
+      despachadorEnvio,
+      supervisorAceptacion,
+      supervisorLlegada,
+      supervisorSalida,
+      tiempoTotal: tiempoTotalReal
     };
   };
 
