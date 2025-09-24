@@ -137,10 +137,10 @@ export const AlarmaCard = ({
               {alarma.tipo}
             </CardTitle>
             <CardDescription className="flex items-center gap-4 text-sm">
-              <span className="flex items-center gap-1">
+              <div className="px-2 py-1 rounded-md bg-slate-100 flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                {tiempoTranscurrido}
-              </span>
+                <span>{tiempoTranscurrido}</span>
+              </div>
               {alarma.clientes && (
                 <span className="flex items-center gap-1">
                   <User className="h-3 w-3" />

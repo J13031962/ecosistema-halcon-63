@@ -220,16 +220,26 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
           {/* Contadores de tiempo */}
           <div className="text-right space-y-1">
             <div className="flex items-center justify-end gap-2">
-              <Clock className="h-3 w-3 text-muted-foreground" />
-              <div className={`text-sm font-bold ${getTiempoColor()}`}>
-                {formatTiempo(tiempoTotal)}
+              <div className={`px-2 py-1 rounded-md flex items-center gap-1 ${
+                tiempoActual.color === 'green' ? 'bg-green-100' :
+                tiempoActual.color === 'yellow' ? 'bg-yellow-100' :
+                tiempoActual.color === 'orange' ? 'bg-orange-100' :
+                tiempoActual.color === 'red' || tiempoActual.color === 'red-blink' ? 'bg-red-100' :
+                'bg-blue-100'
+              }`}>
+                <Clock className="h-3 w-3 text-muted-foreground" />
+                <div className={`text-sm font-bold ${getTiempoColor()}`}>
+                  {formatTiempo(tiempoTotal)}
+                </div>
               </div>
             </div>
             <div className="flex items-center justify-end gap-2">
-              <MapPin className="h-3 w-3 text-blue-500" />
-              <div className={`text-sm font-bold ${tiempo_primera_lectura_qr ? 'text-green-600' : getTiempoColor()}`}>
-                {formatTiempo(tiempoHastaLlegada)}
-                {tiempo_primera_lectura_qr && <span className="text-xs text-muted-foreground ml-1">(Llegada)</span>}
+              <div className="px-2 py-1 rounded-md bg-purple-100 flex items-center gap-1">
+                <MapPin className="h-3 w-3 text-blue-500" />
+                <div className={`text-sm font-bold ${tiempo_primera_lectura_qr ? 'text-green-600' : getTiempoColor()}`}>
+                  {formatTiempo(tiempoHastaLlegada)}
+                  {tiempo_primera_lectura_qr && <span className="text-xs text-muted-foreground ml-1">(Llegada)</span>}
+                </div>
               </div>
             </div>
             <div className="text-xs text-muted-foreground">
