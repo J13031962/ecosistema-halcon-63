@@ -98,8 +98,12 @@ const HistorialServicios = () => {
     const fechaSalida = servicio.tiempo_segunda_lectura_qr ? new Date(servicio.tiempo_segunda_lectura_qr) : null;
     const fechaFinalizacion = servicio.resolved_at ? new Date(servicio.resolved_at) : null;
 
-    // Para servicios finalizados, usar resolved_at como punto de referencia final
-    const freezeTime = fechaFinalizacion || fechaCreacion;
+    // Para servicios cancelados sin resolved_at, usar el último timestamp disponible
+    let fechaReferencia = fechaFinalizacion;
+    if (!fechaReferencia && (servicio.estado === 'cancelada' || servicio.estado === 'cancelado')) {
+      fechaReferencia = fechaSalida || fechaLlegada || fechaAceptacion || fechaAsignacion || fechaTomaDespachador || fechaCreacion;
+    }
+    const freezeTime = fechaReferencia || fechaCreacion;
     
     // Calcular tiempo total real
     const tiempoTotalReal = differenceInSeconds(freezeTime, fechaCreacion);
@@ -117,38 +121,47 @@ const HistorialServicios = () => {
     } else if (tiempoTotalReal > 0) {
       // Estimar 1-3 minutos para aceptación despachador
       aceptacionDespachador = Math.max(60, Math.min(180, Math.floor(tiempoTotalReal * 0.05)));
+    } else {
+      // Valor mínimo si no hay datos
+      aceptacionDespachador = 60;
     }
 
     // 2. Despachador Envío
     if (fechaAsignacion && fechaTomaDespachador) {
       despachadorEnvio = differenceInSeconds(fechaAsignacion, fechaTomaDespachador);
-    } else if (fechaTomaDespachador && fechaFinalizacion) {
-      // Para servicios cancelados: estimar desde toma hasta cancelación
-      const tiempoRestante = differenceInSeconds(fechaFinalizacion, fechaTomaDespachador);
+    } else if (fechaTomaDespachador && freezeTime) {
+      // Para servicios cancelados: estimar desde toma hasta cancelación/fin
+      const tiempoRestante = differenceInSeconds(freezeTime, fechaTomaDespachador);
       despachadorEnvio = Math.max(60, Math.min(600, tiempoRestante * 0.3)); // 30% del tiempo restante
     } else if (tiempoTotalReal > aceptacionDespachador) {
       // Estimar 2-10 minutos para envío
       despachadorEnvio = Math.max(120, Math.min(600, Math.floor((tiempoTotalReal - aceptacionDespachador) * 0.2)));
+    } else {
+      // Valor mínimo si no hay datos
+      despachadorEnvio = 120;
     }
 
     // 3. Supervisor Aceptación
     if (fechaAceptacion && fechaAsignacion) {
       supervisorAceptacion = differenceInSeconds(fechaAceptacion, fechaAsignacion);
-    } else if (fechaAsignacion && fechaFinalizacion) {
+    } else if (fechaAsignacion && freezeTime) {
       // Para servicios cancelados después de asignación
-      const tiempoRestante = differenceInSeconds(fechaFinalizacion, fechaAsignacion);
+      const tiempoRestante = differenceInSeconds(freezeTime, fechaAsignacion);
       supervisorAceptacion = Math.max(60, Math.min(300, tiempoRestante * 0.2)); // 20% del tiempo restante
     } else if (tiempoTotalReal > (aceptacionDespachador + despachadorEnvio)) {
       // Estimar 1-3 minutos para aceptación supervisor
       supervisorAceptacion = Math.max(60, Math.min(180, Math.floor((tiempoTotalReal - aceptacionDespachador - despachadorEnvio) * 0.1)));
+    } else if (fechaAsignacion) {
+      // Valor mínimo si hay asignación pero faltan datos
+      supervisorAceptacion = 60;
     }
 
     // 4. Supervisor Llegada
     if (fechaLlegada && fechaAceptacion) {
       supervisorLlegada = differenceInSeconds(fechaLlegada, fechaAceptacion);
-    } else if (fechaAceptacion && fechaFinalizacion) {
+    } else if (fechaAceptacion && freezeTime) {
       // Para servicios cancelados después de aceptación
-      const tiempoRestante = differenceInSeconds(fechaFinalizacion, fechaAceptacion);
+      const tiempoRestante = differenceInSeconds(freezeTime, fechaAceptacion);
       supervisorLlegada = Math.max(180, Math.min(1800, tiempoRestante * 0.8)); // 80% del tiempo restante para llegada
     } else if (tiempoTotalReal > (aceptacionDespachador + despachadorEnvio + supervisorAceptacion)) {
       // Estimar 5-30 minutos para llegada
