@@ -4,13 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Progress } from "@/components/ui/progress";
-import { Siren, Shield, AlertTriangle, Flame, Eye, UserCheck, Clock, Timer, QrCode, Users } from "lucide-react";
+import { Siren, Shield, AlertTriangle, Flame, Eye, UserCheck, Clock, Timer, QrCode, Users, MapPin } from "lucide-react";
 import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
 import { useUserSpecificData } from "@/hooks/useUserSpecificData";
 import { format, differenceInSeconds, differenceInMinutes } from "date-fns";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorModal";
 import { ClienteServiciosDisplay } from "@/components/alarmas/ClienteServiciosDisplay";
+import GPSLocationModal from "@/components/ui/gps-location-modal";
 import { supabase } from "@/integrations/supabase/client";
 
 const CentralAlarmas = () => {
@@ -25,6 +26,8 @@ const CentralAlarmas = () => {
   const [timers, setTimers] = useState<{ [key: string]: string }>({});
   const [supervisorModalOpen, setSupervisorModalOpen] = useState(false);
   const [selectedAlarmaForSupervisor, setSelectedAlarmaForSupervisor] = useState<any>(null);
+  const [gpsModalOpen, setGpsModalOpen] = useState(false);
+  const [selectedAlarmaForGPS, setSelectedAlarmaForGPS] = useState<any>(null);
 
   // Cargar tiempos de cada alarma
   useEffect(() => {
@@ -579,6 +582,21 @@ const CentralAlarmas = () => {
                                 Escanear QR Salida
                               </Button>
                             )}
+                            
+                            {/* Botón para ver ubicación del supervisor */}
+                            {alarma.supervisor && (alarma.ubicacion_primer_qr || alarma.ubicacion_segundo_qr) && (
+                              <Button 
+                                size="sm" 
+                                variant="secondary"
+                                onClick={() => {
+                                  setSelectedAlarmaForGPS(alarma);
+                                  setGpsModalOpen(true);
+                                }}
+                              >
+                                <MapPin className="h-4 w-4 mr-2" />
+                                Ver Ubicación
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -685,6 +703,19 @@ const CentralAlarmas = () => {
           created_at: selectedAlarmaForSupervisor.created_at
         } : null}
         onAssign={handleAssignSupervisor}
+      />
+
+      {/* Modal para ver ubicación GPS del supervisor */}
+      <GPSLocationModal
+        isOpen={gpsModalOpen}
+        onClose={() => {
+          setGpsModalOpen(false);
+          setSelectedAlarmaForGPS(null);
+        }}
+        ubicacionLlegada={selectedAlarmaForGPS?.ubicacion_primer_qr}
+        ubicacionSalida={selectedAlarmaForGPS?.ubicacion_segundo_qr}
+        tiempoLlegada={selectedAlarmaForGPS?.tiempo_primera_lectura_qr}
+        tiempoSalida={selectedAlarmaForGPS?.tiempo_segunda_lectura_qr}
       />
     </div>
   );
