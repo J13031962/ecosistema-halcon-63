@@ -80,7 +80,9 @@ const ClientesDirCentral = () => {
   const generateQRCode = async (cliente: any) => {
     try {
       const qrData = {
-        id_cliente: cliente.id_numerico || cliente.numero_cuenta,
+        id: cliente.numero_cuenta || cliente.id, // Use numero_cuenta as primary ID
+        numero_cuenta: cliente.numero_cuenta,
+        id_cliente: cliente.id, // Keep for backwards compatibility
         coordenadas: {
           latitud: cliente.latitud,
           longitud: cliente.longitud

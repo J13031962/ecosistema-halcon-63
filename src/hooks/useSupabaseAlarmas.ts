@@ -39,6 +39,7 @@ export interface Alarma {
     direccion: string;
     municipio: string;
     telefono?: string;
+    numero_cuenta?: string;
   };
 }
 

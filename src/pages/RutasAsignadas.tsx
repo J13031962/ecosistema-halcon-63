@@ -12,7 +12,9 @@ import { QRScannerComponent } from "@/components/qr/QRScanner";
 import { supabase } from "@/integrations/supabase/client";
 
 interface QRData {
-  id_cliente: string;
+  id_cliente?: string; // Old format (UUID)
+  numero_cuenta?: string; // New format 
+  id?: string; // Generic ID field
   coordenadas: {
     latitud: string;
     longitud: string;
@@ -85,14 +87,44 @@ const RutasAsignadas = () => {
         return;
       }
 
-      // Verify QR matches the client
+      // Verify QR matches the client - Support both old and new formats
       const expectedClientId = alarma.cliente_id;
-      if (qrData.id_cliente !== expectedClientId) {
+      const expectedNumeroCuenta = alarma.clientes?.numero_cuenta;
+      const expectedName = alarma.clientes?.nombre || '';
+
+      const normalize = (s: string | null | undefined) => (s ?? '').toString().trim().toLowerCase();
+      
+      // Check multiple ID formats for compatibility
+      let idMatches = false;
+      
+      // New format: numero_cuenta
+      if (qrData.numero_cuenta && expectedNumeroCuenta) {
+        idMatches = normalize(qrData.numero_cuenta) === normalize(expectedNumeroCuenta);
+      }
+      
+      // Old format: id_cliente (UUID)
+      if (!idMatches && qrData.id_cliente && expectedClientId) {
+        idMatches = normalize(qrData.id_cliente) === normalize(expectedClientId);
+      }
+      
+      // Generic id field
+      if (!idMatches && qrData.id) {
+        idMatches = normalize(qrData.id) === normalize(expectedNumeroCuenta) || 
+                   normalize(qrData.id) === normalize(expectedClientId);
+      }
+      
+      // Fallback to name match
+      const nameMatches = normalize(qrData.nombre) !== '' && normalize(expectedName) !== ''
+        ? normalize(qrData.nombre) === normalize(expectedName)
+        : false;
+
+      if (!idMatches && !nameMatches) {
         toast({
           title: "QR Incorrecto",
-          description: "El código QR no corresponde a este cliente",
+          description: `El código QR escaneado pertenece a "${qrData.nombre}" pero esta alarma es para otro cliente. Por favor, escanee el QR correcto.`,
           variant: "destructive"
         });
+        setIsQRScannerOpen(false);
         return;
       }
 
