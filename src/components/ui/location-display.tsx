@@ -27,23 +27,29 @@ const LocationDisplay: React.FC<LocationDisplayProps> = ({
   tiempoSalida,
   className = ""
 }) => {
-  const formatCoordinates = (lat: number, lng: number) => {
+  const formatCoordinates = (lat?: number, lng?: number) => {
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+      return 'Coordenadas no disponibles';
+    }
     return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
   };
 
-  const getAccuracyColor = (accuracy: number) => {
+  const getAccuracyColor = (accuracy?: number) => {
+    if (typeof accuracy !== 'number') return "text-gray-600";
     if (accuracy <= 10) return "text-green-600";
     if (accuracy <= 50) return "text-yellow-600";
     return "text-red-600";
   };
 
-  const getAccuracyLabel = (accuracy: number) => {
+  const getAccuracyLabel = (accuracy?: number) => {
+    if (typeof accuracy !== 'number') return "Desconocida";
     if (accuracy <= 10) return "Excelente";
     if (accuracy <= 50) return "Buena";
     return "Baja";
   };
 
-  const openInMaps = (lat: number, lng: number) => {
+  const openInMaps = (lat?: number, lng?: number) => {
+    if (typeof lat !== 'number' || typeof lng !== 'number') return;
     const url = `https://www.google.com/maps?q=${lat},${lng}`;
     window.open(url, '_blank');
   };
@@ -66,7 +72,7 @@ const LocationDisplay: React.FC<LocationDisplayProps> = ({
         <span className="font-medium text-sm">Verificación GPS</span>
       </div>
 
-      {ubicacionLlegada && (
+      {ubicacionLlegada && ubicacionLlegada.latitude && ubicacionLlegada.longitude && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
@@ -83,6 +89,7 @@ const LocationDisplay: React.FC<LocationDisplayProps> = ({
               variant="outline"
               onClick={() => openInMaps(ubicacionLlegada.latitude, ubicacionLlegada.longitude)}
               className="h-6 px-2 text-xs"
+              disabled={!ubicacionLlegada.latitude || !ubicacionLlegada.longitude}
             >
               <ExternalLink className="h-3 w-3 mr-1" />
               Ver
@@ -95,14 +102,14 @@ const LocationDisplay: React.FC<LocationDisplayProps> = ({
             <div className="flex items-center gap-2">
               <Signal className="h-3 w-3" />
               <span className={`font-medium ${getAccuracyColor(ubicacionLlegada.accuracy)}`}>
-                ±{ubicacionLlegada.accuracy}m ({getAccuracyLabel(ubicacionLlegada.accuracy)})
+                ±{ubicacionLlegada.accuracy || 0}m ({getAccuracyLabel(ubicacionLlegada.accuracy)})
               </span>
             </div>
           </div>
         </div>
       )}
 
-      {ubicacionSalida && (
+      {ubicacionSalida && ubicacionSalida.latitude && ubicacionSalida.longitude && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
@@ -119,6 +126,7 @@ const LocationDisplay: React.FC<LocationDisplayProps> = ({
               variant="outline"
               onClick={() => openInMaps(ubicacionSalida.latitude, ubicacionSalida.longitude)}
               className="h-6 px-2 text-xs"
+              disabled={!ubicacionSalida.latitude || !ubicacionSalida.longitude}
             >
               <ExternalLink className="h-3 w-3 mr-1" />
               Ver
@@ -131,7 +139,7 @@ const LocationDisplay: React.FC<LocationDisplayProps> = ({
             <div className="flex items-center gap-2">
               <Signal className="h-3 w-3" />
               <span className={`font-medium ${getAccuracyColor(ubicacionSalida.accuracy)}`}>
-                ±{ubicacionSalida.accuracy}m ({getAccuracyLabel(ubicacionSalida.accuracy)})
+                ±{ubicacionSalida.accuracy || 0}m ({getAccuracyLabel(ubicacionSalida.accuracy)})
               </span>
             </div>
           </div>
