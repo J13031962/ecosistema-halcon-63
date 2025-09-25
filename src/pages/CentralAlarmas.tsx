@@ -646,7 +646,7 @@ const CentralAlarmas = () => {
 
                             {/* Botón para ver ubicación actual del supervisor (tiempo real) */}
                             {(() => {
-                              const shouldShow = alarma.tiempo_aceptacion_supervisor && alarma.estado === 'en_proceso' && !alarma.tiempo_segunda_lectura_qr;
+                              const shouldShow = alarma.tiempo_aceptacion_supervisor && !alarma.tiempo_segunda_lectura_qr;
                               console.log(`GPS Button Debug - Alarma ${alarma.id}:`, {
                                 tiempo_aceptacion_supervisor: !!alarma.tiempo_aceptacion_supervisor,
                                 estado: alarma.estado,
@@ -841,7 +841,16 @@ const CentralAlarmas = () => {
                             )}
 
                             {/* Botón para ver ubicación actual del supervisor (tiempo real) - COPIADO EXACTO DEL DESPACHADOR */}
-                            {alarma.tiempo_aceptacion_supervisor && alarma.estado === 'en_proceso' && !alarma.tiempo_segunda_lectura_qr && (
+                            {(() => {
+                              const shouldShow = alarma.tiempo_aceptacion_supervisor && !alarma.tiempo_segunda_lectura_qr;
+                              console.log(`GPS Button Debug (Sección 2) - Alarma ${alarma.id}:`, {
+                                tiempo_aceptacion_supervisor: !!alarma.tiempo_aceptacion_supervisor,
+                                estado: alarma.estado,
+                                tiempo_segunda_lectura_qr: !!alarma.tiempo_segunda_lectura_qr,
+                                shouldShow
+                              });
+                              return shouldShow;
+                            })() && (
                               <Button 
                                 size="sm" 
                                 variant="outline"
