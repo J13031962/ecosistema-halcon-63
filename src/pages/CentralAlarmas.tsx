@@ -11,7 +11,7 @@ import { format, differenceInSeconds, differenceInMinutes } from "date-fns";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorModal";
 import { ClienteServiciosDisplay } from "@/components/alarmas/ClienteServiciosDisplay";
-import CronometroAlarma from "@/components/alarmas/CronometroAlarma";
+
 import GPSLocationModal from "@/components/ui/gps-location-modal";
 import { RealTimeGPSModal } from "@/components/ui/real-time-gps-modal";
 import { useRealTimeGPS } from "@/hooks/useRealTimeGPS";
@@ -748,36 +748,157 @@ const CentralAlarmas = () => {
                 calcularDuracion(alarma.tiempo_primera_lectura_qr, alarma.tiempo_segunda_lectura_qr) : null;
 
               return (
-                <CronometroAlarma
-                  key={alarma.id}
-                  alarmaId={alarma.id}
-                  tipo={alarma.tipo}
-                  cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
-                  direccion={alarma.direccion}
-                  municipio={alarma.municipio}
-                  telefono={alarma.clientes?.telefono}
-                  prioridad={alarma.prioridad}
-                  estado={alarma.estado as any}
-                  created_at={alarma.created_at}
-                  attended_at={alarma.attended_at || undefined}
-                  tiempo_toma_despachador={alarma.tiempo_toma_despachador || undefined}
-                  tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
-                  tiempo_aceptacion_supervisor={alarma.tiempo_aceptacion_supervisor || undefined}
-                  tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
-                  tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
-                  supervisor={alarma.supervisor || undefined}
-                  supervisor_id={alarma.supervisor_id || undefined}
-                  patrulla_asignada={alarma.patrulla_asignada || undefined}
-                  resolved_at={alarma.resolved_at || undefined}
-                  showCancelButton={false}
-                  onViewGPS={(alarmaId, supervisorId, supervisorName) => {
-                    setSelectedAlarmaForRealTimeGPS(alarma);
-                    setRealTimeGpsModalOpen(true);
-                  }}
-                  userRole={user?.role}
-                  currentUserId={user?.id}
-                  currentUserName={user?.email}
-                />
+                <Card key={alarma.id} className={`border-l-4 ${getAlarmTypeColor(alarma.tipo)}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="flex flex-col items-center gap-1">
+                          {getAlarmTypeIcon(alarma.tipo)}
+                          <Badge variant="default" className="text-xs">
+                            en proceso
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-lg">{alarma.tipo}</h3>
+                          </div>
+                          
+                          <p className="text-sm font-medium text-muted-foreground mb-1">
+                            {alarma.clientes?.nombre || 'TELEGUARDIA LTDA'}
+                          </p>
+                          
+                          {/* Servicios del cliente */}
+                          <div className="mb-4">
+                            <ClienteServiciosDisplay 
+                              clienteId={alarma.cliente_id}
+                              clienteNombre={alarma.clientes?.nombre}
+                            />
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-4 mb-3">
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium">Estado:</span> {
+                                !alarma.tiempo_primera_lectura_qr ? 'En ruta' :
+                                !alarma.tiempo_segunda_lectura_qr ? 'En sitio' : 'Completado'
+                              }
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium">Dirección:</span> {alarma.direccion || 'No especificada'}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium">Supervisor:</span> {
+                                alarma.supervisor ? (
+                                  <span className="text-green-600 font-medium">{alarma.supervisor}</span>
+                                ) : (
+                                  <span className="text-orange-600 font-medium">Sin asignar</span>
+                                )
+                              }
+                            </p>
+                          </div>
+
+                          {/* Botones de acción según el rol y estado */}
+                          <div className="flex flex-wrap gap-2">
+                            {user?.role === 'supervisor_motorizado' && alarma.tiempo_aceptacion_supervisor && !alarma.tiempo_primera_lectura_qr && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleQRScan(alarma.id, 'primera')}
+                              >
+                                <QrCode className="h-4 w-4 mr-2" />
+                                Escanear QR Llegada
+                              </Button>
+                            )}
+                            
+                            {user?.role === 'supervisor_motorizado' && alarma.tiempo_primera_lectura_qr && !alarma.tiempo_segunda_lectura_qr && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleQRScan(alarma.id, 'segunda')}
+                              >
+                                <QrCode className="h-4 w-4 mr-2" />
+                                Escanear QR Salida
+                              </Button>
+                            )}
+
+                            {/* Botón para ver ubicación actual del supervisor (tiempo real) - COPIADO EXACTO DEL DESPACHADOR */}
+                            {alarma.tiempo_aceptacion_supervisor && alarma.estado === 'en_proceso' && !alarma.tiempo_segunda_lectura_qr && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedAlarmaForRealTimeGPS(alarma);
+                                  setRealTimeGpsModalOpen(true);
+                                }}
+                              >
+                                <MapPin className="h-4 w-4 mr-2" />
+                                Ver Ubicación Actual
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      
+                      {/* Tiempos de proceso */}
+                      <div className="flex flex-col items-end gap-1 min-w-[200px]">
+                        <div className="grid grid-cols-3 gap-2 text-right">
+                          {/* Tiempo total */}
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-muted-foreground" />
+                            <span className={`text-xl font-bold ${getTimerColor(alarma.created_at)}`}>
+                              {tiempoDesdeCreacion}
+                            </span>
+                          </div>
+
+                          {/* Cronómetros específicos */}
+                          {tiempoTomaDespachador && (
+                            <div className="flex items-center gap-1">
+                              <Timer className="h-3 w-3 text-blue-500" />
+                              <span className="text-sm text-blue-600 font-medium">
+                                Despachador: {tiempoTomaDespachador}
+                              </span>
+                            </div>
+                          )}
+
+                          {tiempoAsignacionSupervisor && (
+                            <div className="flex items-center gap-1">
+                              <UserCheck className="h-3 w-3 text-orange-500" />
+                              <span className="text-sm text-orange-600 font-medium">
+                                Asignación: {tiempoAsignacionSupervisor}
+                              </span>
+                            </div>
+                          )}
+
+                          {tiempoAceptacionSupervisor && (
+                            <div className="flex items-center gap-1">
+                              <Shield className="h-3 w-3 text-green-500" />
+                              <span className="text-sm text-green-600 font-medium">
+                                Aceptación: {tiempoAceptacionSupervisor}
+                              </span>
+                            </div>
+                          )}
+
+                          {tiempoPrimeraLecturaQR && (
+                            <div className="flex items-center gap-1">
+                              <QrCode className="h-3 w-3 text-purple-500" />
+                              <span className="text-sm text-purple-600 font-medium">
+                                Llegada: {tiempoPrimeraLecturaQR}
+                              </span>
+                            </div>
+                          )}
+
+                          {tiempoSegundaLecturaQR && (
+                            <div className="flex items-center gap-1">
+                              <QrCode className="h-3 w-3 text-red-500" />
+                              <span className="text-sm text-red-600 font-medium">
+                                Salida: {tiempoSegundaLecturaQR}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
