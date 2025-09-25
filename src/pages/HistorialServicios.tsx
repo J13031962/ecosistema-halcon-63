@@ -512,6 +512,12 @@ const HistorialServicios = () => {
         ubicacionSalida={selectedServiceForGPS?.ubicacion_supervisor_salida}
         tiempoLlegada={selectedServiceForGPS?.tiempo_llegada_sitio}
         tiempoSalida={selectedServiceForGPS?.tiempo_salida_sitio}
+        clienteData={selectedServiceForGPS?.clientes ? {
+          nombre: selectedServiceForGPS.clientes.nombre,
+          direccion: selectedServiceForGPS.direccion || selectedServiceForGPS.clientes.direccion || 'Dirección no disponible',
+          latitud: selectedServiceForGPS.clientes.latitud,
+          longitud: selectedServiceForGPS.clientes.longitud
+        } : undefined}
       />
     </div>
   );
