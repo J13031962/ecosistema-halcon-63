@@ -4,14 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Progress } from "@/components/ui/progress";
-import { Siren, Shield, AlertTriangle, Flame, Eye, UserCheck, Clock, Timer, QrCode, Users, MapPin } from "lucide-react";
+import { Siren, Shield, AlertTriangle, Flame, Eye, UserCheck, Clock, Timer, QrCode, Users, MapPin, CheckCircle } from "lucide-react";
 import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
 import { useUserSpecificData } from "@/hooks/useUserSpecificData";
 import { format, differenceInSeconds, differenceInMinutes } from "date-fns";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorModal";
 import { ClienteServiciosDisplay } from "@/components/alarmas/ClienteServiciosDisplay";
-import { CronometroAlarma } from "@/components/alarmas/CronometroAlarma";
+import CronometroAlarma from "@/components/alarmas/CronometroAlarma";
 import GPSLocationModal from "@/components/ui/gps-location-modal";
 import { RealTimeGPSModal } from "@/components/ui/real-time-gps-modal";
 import { useRealTimeGPS } from "@/hooks/useRealTimeGPS";
@@ -781,8 +781,8 @@ const CentralAlarmas = () => {
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Servicios Atendidos Completados */}
       {alarmasResueltas.length > 0 && (
