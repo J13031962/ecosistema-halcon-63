@@ -44,7 +44,7 @@ export const RoleBasedDashboard = () => {
         return <Navigate to="/patrullas-activas" replace />;
       
       case 'supervisor_motorizado':
-        return <Navigate to="/mi-patrulla" replace />;
+        return <Navigate to="/rutas-asignadas" replace />;
       
       case 'director_tecnico':
         return <Navigate to="/director-tecnico-section" replace />;

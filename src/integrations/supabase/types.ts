@@ -1161,6 +1161,42 @@ export type Database = {
         }
         Relationships: []
       }
+      supervisor_observaciones_alarma: {
+        Row: {
+          alarma_id: string
+          created_at: string
+          foto_url: string | null
+          id: string
+          observacion_texto: string | null
+          supervisor_id: string
+          supervisor_nombre: string
+          tipo_observacion: string
+          updated_at: string
+        }
+        Insert: {
+          alarma_id: string
+          created_at?: string
+          foto_url?: string | null
+          id?: string
+          observacion_texto?: string | null
+          supervisor_id: string
+          supervisor_nombre: string
+          tipo_observacion?: string
+          updated_at?: string
+        }
+        Update: {
+          alarma_id?: string
+          created_at?: string
+          foto_url?: string | null
+          id?: string
+          observacion_texto?: string | null
+          supervisor_id?: string
+          supervisor_nombre?: string
+          tipo_observacion?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       supervisor_ubicaciones_tiempo_real: {
         Row: {
           alarma_id: string

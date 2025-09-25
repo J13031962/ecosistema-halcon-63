@@ -10,7 +10,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import Login from "@/components/auth/Login";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import Reports from "./pages/Reports";
 import TurnosOperador from "./pages/TurnosOperador";
 import TurnosSupervisor from "./pages/TurnosSupervisor";
@@ -98,11 +98,11 @@ const AppContent = () => {
     <Routes>
       <Route path="/" element={<RoleBasedDashboard />} />
       
-      {/* Protected routes with sidebar layout - Acceso simplificado */}
+      {/* Admin routes only - Dashboard removed for supervisors */}
       <Route path="/dashboard" element={
-        <ProtectedRoute>
+        <ProtectedRoute requiredRoles={['administrador']}>
           <MainLayout>
-            <Dashboard />
+            <AdminDashboard />
           </MainLayout>
         </ProtectedRoute>
       } />

@@ -9,6 +9,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { format, differenceInSeconds } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { QRScannerComponent } from "@/components/qr/QRScanner";
+import { SupervisorObservacionesCard } from "@/components/supervisor/SupervisorObservacionesCard";
 import { supabase } from "@/integrations/supabase/client";
 
 interface QRData {
@@ -531,6 +532,25 @@ const RutasAsignadas = () => {
                             return null;
                           })()}
                         </div>
+
+                        {/* Componente de Observaciones - Solo visible entre llegada y finalización */}
+                        {(() => {
+                          const extendedAlarma = alarma as any;
+                          const isObservacionesActive = extendedAlarma.tiempo_llegada_sitio && !extendedAlarma.tiempo_salida_sitio;
+                          
+                          if (isObservacionesActive) {
+                            return (
+                              <div className="py-4">
+                                <SupervisorObservacionesCard 
+                                  alarmaId={alarma.id}
+                                  isActive={true}
+                                />
+                              </div>
+                            );
+                          }
+                          
+                          return null;
+                        })()}
 
                         <div className="flex flex-wrap gap-2 pt-4 border-t">
                           {(() => {
