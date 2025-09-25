@@ -344,27 +344,7 @@ const TurnosOperador = () => {
           )}
         </div>
         
-        <div className="flex gap-2">
-          <Dialog open={showGeneradorModal} onOpenChange={setShowGeneradorModal}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Crear Turnos
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Crear Nuevos Turnos</DialogTitle>
-              </DialogHeader>
-              <GeneradorTurnos
-                isOpen={showGeneradorModal}
-                onClose={() => setShowGeneradorModal(false)}
-                onGenerate={handleGenerarTurnos}
-                personal={personalOperadores}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
+        {/* Eliminar botón duplicado - solo mantener el GeneradorTurnosAvanzado en la pestaña */}
       </div>
 
       <Tabs defaultValue="calendar" className="w-full">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -48,34 +49,29 @@ interface ConfiguracionTurnos {
   generarFestivos: boolean;
 }
 
-const OPERADORES_DISPONIBLES = [
-  { id: '1', nombre: 'Juan Pérez', experiencia: 'Senior', disponibilidad: ['mañana', 'tarde', 'noche'] },
-  { id: '2', nombre: 'María García', experiencia: 'Senior', disponibilidad: ['mañana', 'tarde'] },
-  { id: '3', nombre: 'Carlos López', experiencia: 'Junior', disponibilidad: ['tarde', 'noche'] },
-  { id: '4', nombre: 'Ana Martín', experiencia: 'Senior', disponibilidad: ['mañana', 'tarde', 'noche'] },
-  { id: '5', nombre: 'Luis Fernández', experiencia: 'Junior', disponibilidad: ['noche'] },
-  { id: '6', nombre: 'Elena Torres', experiencia: 'Senior', disponibilidad: ['mañana', 'tarde'] }
+// Operadores reales desde la base de datos - se cargan dinámicamente
+let OPERADORES_DISPONIBLES = [
+  { id: 'd535858a-487c-459b-ba69-7766d22b0ecf', nombre: 'Carlos Betancur', experiencia: 'Senior', disponibilidad: ['dia', 'noche'] },
+  { id: '5075049d-ac7f-45be-953e-317c79d0eb04', nombre: 'Cristian Osorio', experiencia: 'Senior', disponibilidad: ['dia', 'noche'] },
+  { id: '04b7d02e-84cd-4c88-b623-08669f3a0fc1', nombre: 'Jaime Alvarez', experiencia: 'Senior', disponibilidad: ['dia', 'noche'] },
+  { id: '9b930af5-8967-4570-8642-47aff09a984f', nombre: 'Luis Perez', experiencia: 'Senior', disponibilidad: ['dia', 'noche'] },
+  { id: '2858bcf8-520c-405e-9a1d-1295575044a6', nombre: 'Operador Central', experiencia: 'Senior', disponibilidad: ['dia', 'noche'] },
+  { id: 'e5d66b6a-cc0c-4fe9-8c84-88cf8a4e4a29', nombre: 'pepito', experiencia: 'Junior', disponibilidad: ['dia', 'noche'] },
+  { id: '4f203389-8dcc-4a3c-aeaa-fd687a5cf2ff', nombre: 'prueba', experiencia: 'Junior', disponibilidad: ['dia', 'noche'] }
 ];
 
 const TIPOS_TURNO = {
-  mañana: { 
-    label: 'Mañana', 
-    horario: '06:00-14:00', 
+  dia: { 
+    label: 'Día', 
+    horario: '06:00-18:00', 
     inicio: '06:00', 
-    fin: '14:00',
-    color: 'bg-blue-100 text-blue-800 border-blue-200' 
-  },
-  tarde: { 
-    label: 'Tarde', 
-    horario: '14:00-22:00', 
-    inicio: '14:00', 
-    fin: '22:00',
-    color: 'bg-green-100 text-green-800 border-green-200' 
+    fin: '18:00',
+    color: 'bg-yellow-100 text-yellow-800 border-yellow-200' 
   },
   noche: { 
     label: 'Noche', 
-    horario: '22:00-06:00', 
-    inicio: '22:00', 
+    horario: '18:00-06:00', 
+    inicio: '18:00', 
     fin: '06:00',
     color: 'bg-purple-100 text-purple-800 border-purple-200' 
   },
@@ -89,22 +85,22 @@ const TIPOS_TURNO = {
 };
 
 const PATRONES_ROTACION = {
-  '2-2-3': { 
-    nombre: 'Patrón 2-2-3', 
-    descripcion: '2 días trabajo, 2 descanso, 3 trabajo',
-    ciclo: ['trabajo', 'trabajo', 'descanso', 'descanso', 'trabajo', 'trabajo', 'trabajo'],
-    empleadosOptimo: 4
+  '2-2-2': { 
+    nombre: 'Patrón 2-2-2', 
+    descripcion: '2 días, 2 noches, 2 descansos',
+    ciclo: ['dia', 'dia', 'noche', 'noche', 'descanso', 'descanso'],
+    empleadosOptimo: 2
   },
   '4-4-4': { 
     nombre: 'Patrón 4-4-4', 
     descripcion: '4 días trabajo, 4 descanso, 4 noches',
-    ciclo: ['trabajo', 'trabajo', 'trabajo', 'trabajo', 'descanso', 'descanso', 'descanso', 'descanso'],
+    ciclo: ['dia', 'dia', 'dia', 'dia', 'descanso', 'descanso', 'descanso', 'descanso'],
     empleadosOptimo: 3
   },
   panama: { 
     nombre: 'Panamá', 
     descripcion: 'Rotación 2-2-3-2-2-3',
-    ciclo: ['trabajo', 'trabajo', 'descanso', 'descanso', 'trabajo', 'trabajo', 'trabajo', 'descanso', 'descanso', 'trabajo', 'trabajo', 'trabajo', 'descanso', 'descanso'],
+    ciclo: ['dia', 'dia', 'descanso', 'descanso', 'dia', 'dia', 'dia', 'descanso', 'descanso', 'dia', 'dia', 'dia', 'descanso', 'descanso'],
     empleadosOptimo: 4
   }
 };
@@ -123,12 +119,46 @@ export function GeneradorTurnosAvanzado() {
   const { toast } = useToast();
   const { addTurnoOperador, turnosOperador, refetch } = useSupabaseTurnos();
   
+  // Cargar operadores reales desde la base de datos
+  useEffect(() => {
+    const loadOperadores = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select(`
+            id,
+            full_name,
+            email,
+            user_roles!inner(role)
+          `)
+          .eq('user_roles.role', 'operador_alarmas')
+          .eq('active', true)
+          .order('full_name');
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          OPERADORES_DISPONIBLES = data.map(op => ({
+            id: op.id,
+            nombre: op.full_name || op.email,
+            experiencia: 'Senior',
+            disponibilidad: ['dia', 'noche']
+          }));
+        }
+      } catch (error) {
+        console.error('Error cargando operadores:', error);
+      }
+    };
+
+    loadOperadores();
+  }, []);
+  
   const [configuracion, setConfiguracion] = useState<ConfiguracionTurnos>({
     fechaInicio: new Date(),
     periodo: 'semanal',
     tiposPeriodo: { dias: 7, descripcion: 'Semanal (7 días)' },
     operadoresSeleccionados: [],
-    patronRotacion: '2-2-3',
+    patronRotacion: '2-2-2',
     cobertura24h: true,
     generarDomingos: true,
     generarFestivos: false
@@ -221,20 +251,17 @@ export function GeneradorTurnosAvanzado() {
           continue;
         }
         
-        operadoresSeleccionados.forEach((operador, index) => {
-          const posicionPatron = (dia + index) % patron.ciclo.length;
+        // Asegurar máximo 2 operadores por día
+        const maxOperadoresPorDia = 2;
+        const operadoresActivos = operadoresSeleccionados.length > maxOperadoresPorDia 
+          ? operadoresSeleccionados.slice(0, maxOperadoresPorDia)
+          : operadoresSeleccionados;
+
+        operadoresActivos.forEach((operador, operadorIndex) => {
+          const posicionPatron = (dia + operadorIndex) % patron.ciclo.length;
           const estadoPatron = patron.ciclo[posicionPatron];
           
-          let tipoTurno = 'descanso';
-          
-          if (estadoPatron === 'trabajo') {
-            if (configuracion.cobertura24h) {
-              const turnos = ['mañana', 'tarde', 'noche'];
-              tipoTurno = turnos[index % turnos.length];
-            } else {
-              tipoTurno = index % 2 === 0 ? 'mañana' : 'tarde';
-            }
-          }
+          let tipoTurno = estadoPatron === 'descanso' ? 'descanso' : estadoPatron;
           
           const turnoInfo = TIPOS_TURNO[tipoTurno];
           const { horasDiurnas, horasNocturnas, horasDominicales, horasFestivas, totalHoras } = 
@@ -291,9 +318,13 @@ export function GeneradorTurnosAvanzado() {
     try {
       for (const turno of turnosGenerados) {
         if (turno.turno !== 'descanso') {
+          // Mapear 'dia' a 'diurno' y 'noche' a 'nocturno' para la BD
+          const turnoMapeado = turno.turno === 'dia' ? 'diurno' : 
+                              turno.turno === 'noche' ? 'nocturno' : turno.turno;
+          
           await addTurnoOperador({
             fecha: turno.fecha,
-            turno: turno.turno,
+            turno: turnoMapeado,
             operador_id: turno.operador_id,
             operador_nombre: turno.operador_nombre,
             horario_inicio: turno.horario_inicio,
@@ -616,7 +647,7 @@ export function GeneradorTurnosAvanzado() {
                       <div className="flex gap-1 mt-1">
                         {operador.disponibilidad.map(turno => (
                           <Badge key={turno} variant="secondary" className="text-xs">
-                            {TIPOS_TURNO[turno]?.label}
+                            {TIPOS_TURNO[turno]?.label || turno}
                           </Badge>
                         ))}
                       </div>
