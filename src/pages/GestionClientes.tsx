@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Plus, Search, Edit, Trash2, Building2, QrCode, MapPin } from "lucide-react";
+import { Users, Plus, Search, Edit, Trash2, Building2, QrCode, MapPin, ExternalLink } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -202,6 +202,28 @@ const GestionClientes = () => {
     setEditingCliente(null);
     form.reset();
     setIsModalOpen(true);
+  };
+
+  const openInGoogleMaps = (cliente: any) => {
+    let mapUrl = '';
+    
+    if (cliente.latitud && cliente.longitud) {
+      // Use coordinates if available
+      mapUrl = `https://maps.google.com/maps?q=${cliente.latitud},${cliente.longitud}`;
+    } else if (cliente.direccion && cliente.municipio) {
+      // Use address if coordinates are not available
+      const address = encodeURIComponent(`${cliente.direccion}, ${cliente.municipio}`);
+      mapUrl = `https://maps.google.com/maps?q=${address}`;
+    } else {
+      toast({
+        title: "Error",
+        description: "No hay información de ubicación disponible",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    window.open(mapUrl, '_blank');
   };
 
   if (loading) return <div className="p-6">Cargando...</div>;
@@ -517,9 +539,26 @@ const GestionClientes = () => {
               <CardContent className="space-y-3">
                 <div className="flex items-start gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div className="text-sm">
-                    <div>{cliente.direccion}</div>
+                  <div className="flex-1 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span>{cliente.direccion}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openInGoogleMaps(cliente)}
+                        className="h-6 w-6 p-0"
+                        title="Ver en Google Maps"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    </div>
                     <div className="text-muted-foreground">{cliente.municipio}</div>
+                    {(cliente.latitud && cliente.longitud) && (
+                      <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        Lat: {parseFloat(cliente.latitud.toString()).toFixed(6)}, Lng: {parseFloat(cliente.longitud.toString()).toFixed(6)}
+                      </div>
+                    )}
                   </div>
                 </div>
                 
