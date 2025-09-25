@@ -206,7 +206,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
         { 
           category: "📊 Turnos y Horarios", 
           items: [
-            { title: "Gestión Personal Operadores", url: "/personal", icon: Users },
             { title: "Turnos Operador", url: "/turnos-operador", icon: Clock },
           ]
         },

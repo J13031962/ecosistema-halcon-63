@@ -32,7 +32,7 @@ import Ubicaciones from "./pages/Ubicaciones";
 import ReportesEjecutivos from "./pages/ReportesEjecutivos";
 import Analisis from "./pages/Analisis";
 import EstadoGeneral from "./pages/EstadoGeneral";
-import Personal from "./pages/Personal";
+
 import CentralAlarmas from "./pages/CentralAlarmas";
 import CentralAlarmasOperador from "./pages/CentralAlarmasOperador";
 
@@ -339,13 +339,6 @@ const AppContent = () => {
         </ProtectedRoute>
       } />
       
-      <Route path="/personal" element={
-        <ProtectedRoute>
-          <MainLayout>
-            <Personal />
-          </MainLayout>
-        </ProtectedRoute>
-      } />
       
         <Route path="/turnos-operador" element={
           <ProtectedRoute>
