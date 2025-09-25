@@ -18,6 +18,7 @@ import {
   Navigation,
   Building,
   Wrench,
+  Key,
   DollarSign,
   UserCheck,
   UserPlus,
@@ -178,6 +179,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           category: "👥 Gestión de Usuarios", 
           items: [
             { title: "Gestión de Usuarios", url: "/gestion-usuarios-director", icon: Users },
+            { title: "Cambio de Contraseña", url: "/cambio-contrasena-director", icon: Key },
           ]
         },
         { 

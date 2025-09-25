@@ -69,6 +69,7 @@ import ClientesDirCentral from "./pages/ClientesDirCentral";
 import ElementosCotizables from "./pages/ElementosCotizables";
 import ReporteUbicacion from "./pages/ReporteUbicacion";
 import MinutaOperador from "./pages/MinutaOperador";
+import CambioContrasenaDirector from "./pages/CambioContrasenaDirector";
 
 const queryClient = new QueryClient();
 
@@ -128,6 +129,14 @@ const AppContent = () => {
         <ProtectedRoute requiredRoles={['director']}>
           <MainLayout>
             <GestionUsuariosCompartida isDirectorCentral={true} />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/cambio-contrasena-director" element={
+        <ProtectedRoute requiredRoles={['director']}>
+          <MainLayout>
+            <CambioContrasenaDirector />
           </MainLayout>
         </ProtectedRoute>
       } />
