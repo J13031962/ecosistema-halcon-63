@@ -227,14 +227,47 @@ export const useAuthConsolidated = (): AuthContextConsolidated => {
           }
         }, 5000);
 
-        // Primero verificar sesión de Supabase
+        // PRIMERO: Configurar listener para cambios de autenticación
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (event, supabaseSession) => {
+            console.log('🔄 Auth state change:', event, 'Session:', supabaseSession);
+            
+            if (!mounted) return;
+            
+            // Configurar sesión sincrónicamente
+            setSession(supabaseSession);
+            
+            if (event === 'SIGNED_IN' && supabaseSession) {
+              console.log('✅ Usuario se logueó');
+              // Defer user data fetching to avoid blocking
+              setTimeout(() => {
+                if (mounted && supabaseSession.user?.email) {
+                  fetchConsolidatedUserData(supabaseSession.user.email).then(consolidatedUser => {
+                    if (mounted) setUser(consolidatedUser);
+                  });
+                }
+              }, 0);
+            } else if (event === 'SIGNED_OUT') {
+              console.log('🚪 Usuario se deslogueó');
+              setUser(null);
+              localStorage.removeItem('teleguardia_user');
+            } else if (event === 'TOKEN_REFRESHED' && supabaseSession) {
+              console.log('🔄 Token refreshed, maintaining session');
+              // Don't set loading to true during token refresh
+            }
+          }
+        );
+
+        // SEGUNDO: verificar sesión inicial de Supabase
         const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
         console.log('👤 Sesión actual de Supabase:', currentSession);
         console.log('❌ Error de sesión:', sessionError);
         
         if (currentSession?.user) {
           console.log('✅ Usuario autenticado en Supabase, configurando sesión...');
-          await setupSession(currentSession);
+          setSession(currentSession);
+          const consolidatedUser = await fetchConsolidatedUserData(currentSession.user.email);
+          if (mounted) setUser(consolidatedUser);
         } else {
           console.log('🔍 No hay sesión de Supabase, verificando localStorage...');
           // FALLBACK: verificar localStorage para usuarios legacy
@@ -249,10 +282,8 @@ export const useAuthConsolidated = (): AuthContextConsolidated => {
                 console.log('❌ Usuario inactivo, limpiando localStorage y redirigiendo');
                 localStorage.removeItem('teleguardia_user');
                 setUser(null);
-                // Usuario inactivo, no autenticar
               } else {
                 setUser(parsedUser);
-                // Usuario activo, autenticar
               }
             } catch (error) {
               console.error('❌ Error parsing stored user:', error);
@@ -262,25 +293,6 @@ export const useAuthConsolidated = (): AuthContextConsolidated => {
             console.log('❌ No hay usuario en localStorage');
           }
         }
-        
-        // Configurar listener para cambios de autenticación
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, supabaseSession) => {
-            console.log('🔄 Auth state change:', event, 'Session:', supabaseSession);
-            
-            if (!mounted) return;
-            
-            if (event === 'SIGNED_IN' && supabaseSession) {
-              console.log('✅ Usuario se logueó, configurando sesión...');
-              await setupSession(supabaseSession);
-            } else if (event === 'SIGNED_OUT') {
-              console.log('🚪 Usuario se deslogueó');
-              setUser(null);
-              setSession(null);
-              localStorage.removeItem('teleguardia_user');
-            }
-          }
-        );
 
         // Limpiar timeout si llegamos aquí
         clearTimeout(timeoutId);
@@ -303,7 +315,7 @@ export const useAuthConsolidated = (): AuthContextConsolidated => {
       mounted = false;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [setupSession]);
+  }, [fetchConsolidatedUserData]);
 
   return {
     user,

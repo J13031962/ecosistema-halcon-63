@@ -6,6 +6,7 @@ import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
 import { useSupabaseAlarmasEnhanced } from "@/hooks/useSupabaseAlarmasEnhanced";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { useRealTimeGPS } from "@/hooks/useRealTimeGPS";
+import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
 import { MapPin, Clock, Phone, AlertTriangle, CheckCircle, Camera, Timer, LogOut, Navigation } from "lucide-react";
 import { format, differenceInSeconds } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -79,6 +80,14 @@ const MisAsignaciones = () => {
     }
   }, [user?.id, refetch]);
 
+  // Use visibility refresh to maintain active session
+  useVisibilityRefresh({
+    onRefresh: async () => {
+      await refetch();
+    },
+    interval: 30000
+  });
+
   
   // Update site times every second for active alarms
   useEffect(() => {
@@ -133,6 +142,13 @@ const MisAsignaciones = () => {
     try {
       console.log('🎯 Supervisor aceptando servicio:', alarmaId);
       
+      // Refresh session before critical operation
+      try {
+        await supabase.auth.getSession();
+      } catch (sessionError) {
+        console.warn('⚠️ Session refresh failed:', sessionError);
+      }
+      
       // Solicitar permisos de geolocalización
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -177,11 +193,29 @@ const MisAsignaciones = () => {
       }
     } catch (error: any) {
       console.error('❌ Error aceptando servicio:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo aceptar el servicio",
-        variant: "destructive",
-      });
+      
+      // Retry with session refresh if auth error
+      if (error.message?.includes('JWT') || error.message?.includes('401')) {
+        try {
+          await supabase.auth.getSession();
+          toast({
+            title: "Sesión Actualizada",
+            description: "Por favor, intenta la operación nuevamente",
+          });
+        } catch (retryError) {
+          toast({
+            title: "Error de Sesión",
+            description: "Por favor, recarga la página y vuelve a intentar",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "No se pudo aceptar el servicio",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -582,26 +616,28 @@ const MisAsignaciones = () => {
                     )}
                     
                   {/* Botón para marcar llegada (después de aceptar servicio) */}
-                  {alarma.tiempo_aceptacion_supervisor && !extendedAlarma.tiempo_llegada_sitio && (
-                    <Button 
-                      onClick={() => handleArrivalScan(alarma.id)}
-                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-                    >
-                      <Navigation className="h-4 w-4" />
-                      Marcar Llegada (Escanear QR)
-                    </Button>
-                  )}
-                    
-                    {extendedAlarma.tiempo_llegada_sitio && !extendedAlarma.tiempo_salida_sitio && (
-                      <Button 
-                        onClick={() => handleDepartureScan(alarma.id)}
-                        className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
-                        variant="destructive"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Finalizar Servicio (Escanear QR)
-                      </Button>
-                    )}
+                   {alarma.tiempo_aceptacion_supervisor && !extendedAlarma.tiempo_llegada_sitio && (
+                     <Button 
+                       onClick={() => handleArrivalScan(alarma.id)}
+                       translate="no"
+                       className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 notranslate"
+                     >
+                       <Navigation className="h-4 w-4" />
+                       Marcar Llegada (Escanear QR)
+                     </Button>
+                   )}
+                     
+                     {extendedAlarma.tiempo_llegada_sitio && !extendedAlarma.tiempo_salida_sitio && (
+                       <Button 
+                         onClick={() => handleDepartureScan(alarma.id)}
+                         translate="no"
+                         className="flex items-center gap-2 bg-red-600 hover:bg-red-700 notranslate"
+                         variant="destructive"
+                       >
+                         <LogOut className="h-4 w-4" />
+                         Finalizar Servicio (Escanear QR)
+                       </Button>
+                     )}
                     
                     {alarma.estado === 'resuelta' && (
                       <div className="flex items-center gap-2 text-green-600">

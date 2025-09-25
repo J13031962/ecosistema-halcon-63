@@ -227,11 +227,12 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               <Button
                 variant="outline"
                 size="sm"
+                translate="no"
                 onClick={(e) => {
                   e.stopPropagation();
                   onViewGPS(alarmaId, supervisor_id, supervisor || 'Supervisor');
                 }}
-                className="h-6 px-2 text-xs ml-auto"
+                className="h-6 px-2 text-xs ml-auto notranslate"
               >
                 <MapPin className="h-3 w-3 mr-1" />
                 Ver Ubicación
@@ -335,8 +336,9 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
                 <Button
                   variant="default"
                   size="sm"
+                  translate="no"
                   onClick={memoizedCallbacks.onSupervisorAcceptHandler}
-                  className="bg-green-600 hover:bg-green-700 text-white h-8 px-4 text-sm"
+                  className="bg-green-600 hover:bg-green-700 text-white h-8 px-4 text-sm notranslate"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Atender
@@ -350,8 +352,9 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
                 <Button
                   variant="default"
                   size="sm"
+                  translate="no"
                   onClick={memoizedCallbacks.onSupervisorArriveHandler}
-                  className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-sm notranslate"
                 >
                   <MapPin className="h-4 w-4 mr-2" />
                   Marcar Llegada
@@ -365,8 +368,9 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
                 <Button
                   variant="default"
                   size="sm"
+                  translate="no"
                   onClick={memoizedCallbacks.onSupervisorLeaveHandler}
-                  className="bg-orange-600 hover:bg-orange-700 text-white h-8 px-4 text-sm"
+                  className="bg-orange-600 hover:bg-orange-700 text-white h-8 px-4 text-sm notranslate"
                 >
                   <Clock className="h-4 w-4 mr-2" />
                   Marcar Salida

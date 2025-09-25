@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Siren, Shield, AlertTriangle, Flame, Eye, UserCheck, Clock, Timer, QrCode, Users, MapPin, CheckCircle } from "lucide-react";
 import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
 import { useUserSpecificData } from "@/hooks/useUserSpecificData";
+import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
 import { format, differenceInSeconds, differenceInMinutes } from "date-fns";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorModal";
@@ -59,6 +60,15 @@ const CentralAlarmas = () => {
     
     cargarTiemposAlarmas();
   }, [alarmas]);
+
+  // Use visibility refresh to maintain active session
+  useVisibilityRefresh({
+    onRefresh: async () => {
+      // Refresh the page when tab becomes visible to ensure fresh data
+      window.location.reload();
+    },
+    interval: 30000
+  });
 
   // Actualizar timers cada segundo
   useEffect(() => {

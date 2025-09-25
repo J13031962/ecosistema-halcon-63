@@ -519,10 +519,11 @@ export function SidebarByRole() {
           <Button
             onClick={logout}
             variant="outline"
-            className="w-full"
+            translate="no"
+            className="w-full notranslate"
           >
             <LogOut className="h-4 w-4" />
-            {!collapsed && <span className="ml-2">Cerrar Sesión</span>}
+            {!collapsed && <span className="ml-2" translate="no">Cerrar Sesión</span>}
           </Button>
         </div>
       </SidebarContent>

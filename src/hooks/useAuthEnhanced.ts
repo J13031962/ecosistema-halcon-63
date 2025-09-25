@@ -189,20 +189,28 @@ export const useAuthEnhancedHook = () => {
   // Auth state listener
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         
+        // Set session synchronously
         setSession(session);
         
-        if (session?.user) {
-          const userData = await fetchUserData(session.user);
-          setUser(userData);
-        } else {
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Defer user data fetching to avoid blocking
+          setTimeout(() => {
+            fetchUserData(session.user).then(userData => {
+              setUser(userData);
+              setLoading(false);
+            });
+          }, 0);
+        } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setUserPermissions([]);
+          setLoading(false);
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          console.log('🔄 Token refreshed, maintaining session');
+          // Don't set loading during token refresh
         }
-        
-        setLoading(false);
       }
     );
 
@@ -210,9 +218,13 @@ export const useAuthEnhancedHook = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        fetchUserData(session.user).then(setUser);
+        fetchUserData(session.user).then(userData => {
+          setUser(userData);
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
