@@ -251,17 +251,31 @@ export function GeneradorTurnosAvanzado() {
           continue;
         }
         
-        // Asegurar máximo 2 operadores por día
-        const maxOperadoresPorDia = 2;
-        const operadoresActivos = operadoresSeleccionados.length > maxOperadoresPorDia 
-          ? operadoresSeleccionados.slice(0, maxOperadoresPorDia)
-          : operadoresSeleccionados;
-
-        operadoresActivos.forEach((operador, operadorIndex) => {
-          const posicionPatron = (dia + operadorIndex) % patron.ciclo.length;
-          const estadoPatron = patron.ciclo[posicionPatron];
+        // Distribución inteligente para múltiples operadores
+        operadoresSeleccionados.forEach((operador, operadorIndex) => {
+          let tipoTurno: string;
           
-          let tipoTurno = estadoPatron === 'descanso' ? 'descanso' : estadoPatron;
+          if (operadoresSeleccionados.length === 1) {
+            // Si solo hay 1 operador, sigue el patrón 2-2-2 normal
+            const posicionPatron = dia % patron.ciclo.length;
+            tipoTurno = patron.ciclo[posicionPatron];
+          } else {
+            // Para múltiples operadores: distribución inteligente
+            const posicionCiclo = dia % 6; // Ciclo de 6 días del patrón 2-2-2
+            const cicloOperador = Math.floor(dia / 6); // Qué ciclo completo estamos
+            const operadorRotado = (operadorIndex + cicloOperador) % operadoresSeleccionados.length;
+            
+            if (posicionCiclo < 2) {
+              // Días 1-2: día
+              tipoTurno = operadorRotado === 0 ? 'dia' : 'descanso';
+            } else if (posicionCiclo < 4) {
+              // Días 3-4: noche  
+              tipoTurno = operadorRotado === 1 ? 'noche' : 'descanso';
+            } else {
+              // Días 5-6: descanso para operadores principales, día para siguiente
+              tipoTurno = operadorRotado >= 2 ? 'dia' : 'descanso';
+            }
+          }
           
           const turnoInfo = TIPOS_TURNO[tipoTurno];
           const { horasDiurnas, horasNocturnas, horasDominicales, horasFestivas, totalHoras } = 
