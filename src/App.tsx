@@ -64,6 +64,7 @@ import RegistroActividades from "./pages/RegistroActividades";
 import ReportesSupervisor from "./pages/ReportesSupervisor";
 import Mantenimiento from "./pages/Mantenimiento";
 import { RoleBasedDashboard } from "@/components/auth/RoleBasedDashboard";
+import { SupervisorGPSProvider } from "@/components/supervisor/SupervisorGPSProvider";
 import ClientesDirCentral from "./pages/ClientesDirCentral";
 import ElementosCotizables from "./pages/ElementosCotizables";
 import ReporteUbicacion from "./pages/ReporteUbicacion";
@@ -584,9 +585,11 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <AuthProviderConsolidated>
-              <AlarmasProvider>
-                <AppContent />
-              </AlarmasProvider>
+              <SupervisorGPSProvider>
+                <AlarmasProvider>
+                  <AppContent />
+                </AlarmasProvider>
+              </SupervisorGPSProvider>
             </AuthProviderConsolidated>
           </BrowserRouter>
         </TooltipProvider>

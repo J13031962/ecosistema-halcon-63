@@ -141,10 +141,38 @@ export const useAuthConsolidated = (): AuthContextConsolidated => {
         }
         
         await setupSession(authData.session);
+        
+        // NUEVO: Disparar evento para supervisores después del login exitoso
+        setTimeout(() => {
+          if (consolidatedUser?.role === 'supervisor_motorizado') {
+            console.log('🎯 Disparando evento supervisor-login para:', consolidatedUser.id);
+            window.dispatchEvent(new CustomEvent('supervisor-login', { 
+              detail: { supervisorId: consolidatedUser.id } 
+            }));
+          }
+        }, 500);
+        
         return true;
       }
 
-      // Si falla Supabase Auth, intentar con el sistema legacy
+      // NUEVO: Bloquear login legacy para supervisores - deben usar Supabase Auth
+      if (authError && authError.message.includes('credentials')) {
+        // Verificar si es un supervisor intentando hacer login legacy
+        const { data: legacyCheck } = await supabase
+          .from('users_auth')
+          .select('role')
+          .eq('email', email)
+          .eq('active', true)
+          .single();
+          
+        if (legacyCheck?.role === 'supervisor_motorizado') {
+          console.log('❌ Supervisor debe usar Supabase Auth, bloqueando login legacy');
+          setLoading(false);
+          throw new Error('Los supervisores deben usar el sistema de autenticación actualizado. Contacte al administrador para restablecer su contraseña.');
+        }
+      }
+
+      // Si falla Supabase Auth, intentar con el sistema legacy (excepto supervisores)
       console.log('🔄 Intentando con sistema legacy...');
       const { data: legacyUser, error: legacyError } = await supabase
         .from('users_auth')
@@ -158,6 +186,13 @@ export const useAuthConsolidated = (): AuthContextConsolidated => {
       console.log('❌ Error legacy:', legacyError);
 
       if (!legacyError && legacyUser) {
+        // Verificar nuevamente que no sea supervisor
+        if (legacyUser.role === 'supervisor_motorizado') {
+          console.log('❌ Bloqueando login legacy para supervisor');
+          setLoading(false);
+          throw new Error('Los supervisores deben usar el sistema de autenticación actualizado.');
+        }
+        
         console.log('✅ Login exitoso con sistema legacy');
         // Crear una sesión simulada para el usuario legacy
         const consolidatedUser: ConsolidatedUser = {
@@ -182,20 +217,12 @@ export const useAuthConsolidated = (): AuthContextConsolidated => {
     } catch (error) {
       console.error('❌ Error en login:', error);
       setLoading(false);
-      return false;
-    } finally {
-      // NUEVO: Activar GPS automáticamente para supervisores después del login exitoso
-      if (user?.role === 'supervisor_motorizado') {
-        console.log('👨‍💼 Usuario supervisor detectado, activando GPS automáticamente...');
-        
-        // Pequeño delay para asegurar que el componente esté montado
-        setTimeout(() => {
-          // Disparar evento personalizado para que el hook de GPS se active
-          window.dispatchEvent(new CustomEvent('supervisor-login', { 
-            detail: { supervisorId: user.id } 
-          }));
-        }, 1000);
+      
+      // Propagar el error para mostrarlo en la UI
+      if (error instanceof Error) {
+        throw error;
       }
+      return false;
     }
   };
 
@@ -280,7 +307,19 @@ export const useAuthConsolidated = (): AuthContextConsolidated => {
           console.log('✅ Usuario autenticado en Supabase, configurando sesión...');
           setSession(currentSession);
           const consolidatedUser = await fetchConsolidatedUserData(currentSession.user.email);
-          if (mounted) setUser(consolidatedUser);
+          if (mounted) {
+            setUser(consolidatedUser);
+            
+            // NUEVO: Disparar evento supervisor-login si hay una sesión existente de supervisor
+            if (consolidatedUser?.role === 'supervisor_motorizado') {
+              setTimeout(() => {
+                console.log('🎯 Disparando evento supervisor-login para sesión existente:', consolidatedUser.id);
+                window.dispatchEvent(new CustomEvent('supervisor-login', { 
+                  detail: { supervisorId: consolidatedUser.id } 
+                }));
+              }, 1000);
+            }
+          }
         } else {
           console.log('🔍 No hay sesión de Supabase, verificando localStorage...');
           // FALLBACK: verificar localStorage para usuarios legacy

@@ -136,16 +136,26 @@ export const useSupervisorGPSTracking = (options: SupervisorGPSTrackingOptions) 
         console.error('❌ Error guardando ubicación GPS:', error);
         setError('Error guardando ubicación GPS');
         
-        // Show toast only for critical errors
-        if (error.code !== '23505') { // Ignore duplicate key errors
+        // Improved error handling with more specific messages
+        let errorMessage = "No se pudo guardar la ubicación";
+        if (error.code === '42501') {
+          errorMessage = "Permisos insuficientes para guardar ubicación. Verifique que tenga una sesión activa de Supabase.";
+        } else if (error.code === '23503') {
+          errorMessage = "ID de supervisor no válido";
+        } else if (error.code !== '23505') { // Ignore duplicate key errors
+          errorMessage = error.message || errorMessage;
+        }
+        
+        if (error.code !== '23505') { // Only show toast for non-duplicate errors
           toast({
             title: "Error GPS",
-            description: "No se pudo guardar la ubicación",
+            description: errorMessage,
             variant: "destructive",
           });
         }
       } else {
         setLastUpdate(new Date());
+        setError(null); // Clear any previous errors
         console.log('📍 Ubicación GPS guardada para supervisor:', supervisorId);
       }
     } catch (err) {

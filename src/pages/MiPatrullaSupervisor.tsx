@@ -22,6 +22,7 @@ import {
   Camera
 } from "lucide-react";
 import { QRScannerComponent } from "@/components/qr/QRScanner";
+import { SupervisorGPSStatus } from "@/components/supervisor/SupervisorGPSStatus";
 
 const MiPatrullaSupervisor = () => {
   const { user } = useAuthConsolidatedContext();
@@ -180,17 +181,27 @@ const MiPatrullaSupervisor = () => {
             </p>
           )}
         </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => setShowQRScanner(true)}
-            className="flex items-center gap-2"
-          >
-            <QrCode className="h-4 w-4" />
-            Escanear QR Cliente
-          </Button>
-          {scannedCliente && (
-            <div className="text-sm text-muted-foreground">
-              Último cliente: {scannedCliente.nombre}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowQRScanner(true)}
+              className="flex items-center gap-2"
+            >
+              <QrCode className="h-4 w-4" />
+              Escanear QR Cliente
+            </Button>
+            {scannedCliente && (
+              <div className="text-sm text-muted-foreground">
+                Último cliente: {scannedCliente.nombre}
+              </div>
+            )}
+          </div>
+          
+          {/* GPS Status and Controls */}
+          {user?.id && (
+            <div className="p-3 border rounded-lg bg-muted/30">
+              <h4 className="text-sm font-medium mb-2">Estado GPS</h4>
+              <SupervisorGPSStatus supervisorId={user.id} />
             </div>
           )}
         </div>
