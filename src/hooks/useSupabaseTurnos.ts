@@ -237,6 +237,66 @@ export const useSupabaseTurnos = () => {
     }
   };
 
+  const deleteTurnoPeriodoOperador = async (fechaInicio: string, fechaFin: string, operadorIds: string[]) => {
+    try {
+      const { error } = await supabase
+        .from('turnos_operador')
+        .delete()
+        .gte('fecha', fechaInicio)
+        .lte('fecha', fechaFin)
+        .in('operador_id', operadorIds);
+
+      if (error) throw error;
+      
+      setTurnosOperador(prev => prev.filter(turno => 
+        !(turno.fecha >= fechaInicio && turno.fecha <= fechaFin && operadorIds.includes(turno.operador_id || ''))
+      ));
+      
+      toast({
+        title: "Período eliminado",
+        description: `Turnos del período ${fechaInicio} al ${fechaFin} eliminados exitosamente`
+      });
+      return true;
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive"
+      });
+      throw err;
+    }
+  };
+
+  const deleteTurnoPeriodoSupervisor = async (fechaInicio: string, fechaFin: string, supervisorIds: string[]) => {
+    try {
+      const { error } = await supabase
+        .from('turnos_supervisor')
+        .delete()
+        .gte('fecha', fechaInicio)
+        .lte('fecha', fechaFin)
+        .in('supervisor_id', supervisorIds);
+
+      if (error) throw error;
+      
+      setTurnosSupervisor(prev => prev.filter(turno => 
+        !(turno.fecha >= fechaInicio && turno.fecha <= fechaFin && supervisorIds.includes(turno.supervisor_id || ''))
+      ));
+      
+      toast({
+        title: "Período eliminado",
+        description: `Turnos del período ${fechaInicio} al ${fechaFin} eliminados exitosamente`
+      });
+      return true;
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive"
+      });
+      throw err;
+    }
+  };
+
   useEffect(() => {
     fetchTurnos();
 
@@ -307,6 +367,8 @@ export const useSupabaseTurnos = () => {
     updateTurnoSupervisor,
     deleteTurnoOperador,
     deleteTurnoSupervisor,
+    deleteTurnoPeriodoOperador,
+    deleteTurnoPeriodoSupervisor,
     refetch: fetchTurnos
   };
 };
