@@ -196,6 +196,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           category: "🚨 Monitoreo Operaciones", 
           items: [
             { title: "Monitoreo de Alarmas", url: "/central-alarmas", icon: AlertTriangle },
+            { title: "Minuta de Operaciones", url: "/minuta-operador", icon: FileText },
             { title: "Patrullas Activas", url: "/patrullas-activas", icon: Car },
             { title: "Todas las Patrullas", url: "/patrullas", icon: Car },
             { title: "Historial de Servicios", url: "/historial-servicios", icon: History },

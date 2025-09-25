@@ -135,11 +135,27 @@ export const useSupabaseClientes = () => {
       } as Cliente;
       
       setClientes(prev => [transformedData, ...prev]);
+      
+      // Registrar en minuta de operaciones automáticamente
+      try {
+        await supabase.from('minuta_operaciones').insert({
+          tipo_entrada: 'general',
+          contenido: `Cliente registrado: ${clienteData.nombre} - Tipo: ${clienteData.tipo_servicio || 'No especificado'} - Cuenta: ${clienteData.numero_cuenta || 'Generada automáticamente'}`,
+          prioridad: 'normal',
+          usuario_id: user.id,
+          usuario_nombre: user.email || 'Usuario'
+        });
+        console.log('✅ Registro en minuta de operaciones exitoso');
+      } catch (minutaError) {
+        console.error('❌ Error al registrar en minuta:', minutaError);
+        // No lanzar error para no afectar el registro del cliente
+      }
+      
       toast({
         title: "Cliente registrado",
         description: "El cliente ha sido registrado exitosamente"
       });
-      return { success: true, data };
+      return { success: true, data: transformedData };
     } catch (err: any) {
       console.error('❌ Error completo en addCliente:', err);
       toast({

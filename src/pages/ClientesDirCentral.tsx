@@ -6,13 +6,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { useSupabaseClientes } from "@/hooks/useSupabaseClientes";
+import { useSupabaseMinutaOperaciones } from "@/hooks/useSupabaseMinutaOperaciones";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { useEmpresasContratadas } from "@/hooks/useEmpresasContratadas";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building, MapPin, Plus, QrCode, Download, Eye, Edit, Power, Trash2 } from "lucide-react";
+import { Building, MapPin, Plus, QrCode, Download, Eye, Edit, Power, Trash2, FileText, Clock, Users, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import QRCode from 'qrcode';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface ClienteFormData {
   id_numerico: string;
@@ -33,6 +38,7 @@ interface ClienteFormData {
 
 const ClientesDirCentral = () => {
   const { clientes, loading, addCliente, updateCliente, deleteCliente, refetch } = useSupabaseClientes();
+  const { entradas, loading: loadingMinuta } = useSupabaseMinutaOperaciones();
   const { empresas } = useEmpresasContratadas();
   const { user } = useAuthConsolidated();
   const [showModal, setShowModal] = useState(false);
@@ -283,6 +289,30 @@ const ClientesDirCentral = () => {
     }
   };
 
+  // Filtrar entradas de minuta relacionadas con registro de clientes
+  const entradasClientes = entradas.filter(entrada => 
+    entrada.contenido.toLowerCase().includes('cliente registrado')
+  );
+
+  const getTipoColor = (tipo: string) => {
+    switch (tipo) {
+      case 'general': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+      case 'cambio_turno': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      case 'consigna': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+      case 'incidente': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      case 'mantenimiento': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+    }
+  };
+
+  const getPrioridadColor = (prioridad: string) => {
+    switch (prioridad) {
+      case 'critica': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      case 'alta': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
+      default: return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -309,7 +339,7 @@ const ClientesDirCentral = () => {
             Gestión de Clientes
           </h1>
           <p className="text-muted-foreground">
-            Registro y gestión de clientes con códigos QR
+            Registro y gestión de clientes con códigos QR y minuta de operaciones
           </p>
         </div>
         <Dialog open={showModal} onOpenChange={setShowModal}>
@@ -524,7 +554,15 @@ const ClientesDirCentral = () => {
         </Dialog>
       </div>
 
-      {/* Estadísticas */}
+      {/* Tabs para Gestión de Clientes y Minuta */}
+      <Tabs defaultValue="clientes" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="clientes">Gestión de Clientes</TabsTrigger>
+          <TabsTrigger value="minuta">Minuta de Operaciones</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="clientes" className="space-y-6">
+          {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -674,6 +712,91 @@ const ClientesDirCentral = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="minuta" className="space-y-6">
+          {/* Minuta de Operaciones */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Minuta de Operaciones - Registro de Clientes
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Historial de clientes registrados por operadores ({entradasClientes.length} registros)
+              </p>
+            </CardHeader>
+            <CardContent>
+              {loadingMinuta ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="text-sm text-muted-foreground mt-2">Cargando minuta...</p>
+                </div>
+              ) : entradasClientes.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No hay registros de clientes</p>
+                  <p className="text-sm">Los registros de clientes aparecerán aquí automáticamente</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {entradasClientes.map((entrada) => (
+                    <div 
+                      key={entrada.id} 
+                      className="border rounded-lg p-4 space-y-3 hover:bg-muted/50 transition-colors"
+                    >
+                      {/* Header con información del operador y fecha */}
+                      <div className="flex items-center justify-between border-b pb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium text-sm">
+                              {entrada.usuario_nombre}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          <span>
+                            {format(new Date(entrada.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Contenido principal */}
+                      <div className="space-y-3">
+                        {/* Tipo de entrada y prioridad */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-muted-foreground">Tipo:</span>
+                          <Badge className={getTipoColor(entrada.tipo_entrada)}>
+                            Registro de Cliente
+                          </Badge>
+                          {entrada.prioridad !== 'normal' && (
+                            <>
+                              <span className="text-sm font-medium text-muted-foreground">Prioridad:</span>
+                              <Badge className={getPrioridadColor(entrada.prioridad)}>
+                                {entrada.prioridad.charAt(0).toUpperCase() + entrada.prioridad.slice(1)}
+                              </Badge>
+                            </>
+                          )}
+                        </div>
+                        
+                        {/* Detalles del registro */}
+                        <div className="space-y-1">
+                          <span className="text-sm font-medium text-muted-foreground">Detalles del registro:</span>
+                          <p className="text-sm leading-relaxed bg-muted/30 p-3 rounded border-l-4 border-primary/20">
+                            {entrada.contenido}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Modal QR Code */}
       <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
