@@ -781,19 +781,18 @@ const CentralAlarmas = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-semibold text-lg">{alarma.tipo}</h3>
-                            {/* Botón ubicación GPS - solo para operadores de alarmas */}
-                            {user?.role === 'operador_alarmas' && alarma.tiempo_aceptacion_supervisor && !alarma.tiempo_segunda_lectura_qr && (
+                            {/* Botón ubicación GPS - igual que en sección despachador */}
+                            {alarma.tiempo_aceptacion_supervisor && !alarma.tiempo_segunda_lectura_qr && (
                               <Button 
                                 size="sm" 
                                 variant="outline"
                                 className="h-6 px-2 text-xs"
                                 onClick={() => {
-                                  if (alarma.supervisor_id) {
-                                    setSelectedAlarmaForRealTimeGPS(alarma);
-                                    setRealTimeGpsModalOpen(true);
-                                  }
+                                  setSelectedAlarmaForRealTimeGPS(alarma);
+                                  setRealTimeGpsModalOpen(true);
                                 }}
                               >
+                                <MapPin className="h-4 w-4 mr-2" />
                                 ubicación gps
                               </Button>
                             )}
