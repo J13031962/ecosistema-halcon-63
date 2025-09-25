@@ -13,7 +13,9 @@ import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorMod
 import { ClienteServiciosDisplay } from "@/components/alarmas/ClienteServiciosDisplay";
 import GPSLocationModal from "@/components/ui/gps-location-modal";
 import { RealTimeGPSModal } from "@/components/ui/real-time-gps-modal";
+import { useRealTimeGPS } from "@/hooks/useRealTimeGPS";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const CentralAlarmas = () => {
   const { user } = useAuthConsolidated();
@@ -133,6 +135,14 @@ const CentralAlarmas = () => {
     // Implementar eliminación si es necesario
   };
 
+  // GPS tracking for supervisor
+  const { startTracking, stopTracking, isTracking } = useRealTimeGPS({
+    alarmaId: '', // Will be set dynamically
+    supervisorId: user?.id || '',
+    isActive: false, // Will be controlled manually
+    updateInterval: 60000 // Update every minute
+  });
+
   // Función para que supervisor acepte la alarma
   const handleSupervisorAccept = async (alarmaId: string) => {
     try {
@@ -143,8 +153,30 @@ const CentralAlarmas = () => {
           estado: 'en_proceso'
         })
         .eq('id', alarmaId);
+
+      // Automatically start GPS tracking for supervisor
+      if (user?.role === 'supervisor_motorizado') {
+        try {
+          // Request GPS permissions and start tracking
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              toast.success("GPS activado correctamente");
+              // GPS permissions granted, tracking will be handled by useRealTimeGPS
+            },
+            (error) => {
+              console.error('GPS error:', error);
+              toast.error("Error al acceder al GPS. Verifica los permisos de ubicación.");
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+          );
+        } catch (error) {
+          console.error('Error starting GPS tracking:', error);
+          toast.error("Error al activar el seguimiento GPS");
+        }
+      }
     } catch (error) {
       console.error('Error accepting alarm by supervisor:', error);
+      toast.error("Error al aceptar la asignación");
     }
   };
 
@@ -586,7 +618,7 @@ const CentralAlarmas = () => {
                               </Button>
                             )}
                             
-                            {/* Botón para ver ubicación del supervisor */}
+                            {/* Botón para ver ubicación histórica del supervisor */}
                             {alarma.supervisor && (alarma.ubicacion_supervisor_llegada || alarma.ubicacion_supervisor_salida) && (
                               <Button 
                                 size="sm" 
@@ -598,6 +630,21 @@ const CentralAlarmas = () => {
                               >
                                 <MapPin className="h-4 w-4 mr-2" />
                                 Ver Ubicación
+                              </Button>
+                            )}
+
+                            {/* Botón para ver ubicación actual del supervisor (tiempo real) */}
+                            {alarma.supervisor_id && alarma.tiempo_aceptacion_supervisor && !alarma.tiempo_segunda_lectura_qr && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedAlarmaForRealTimeGPS(alarma);
+                                  setRealTimeGpsModalOpen(true);
+                                }}
+                              >
+                                <MapPin className="h-4 w-4 mr-2" />
+                                Ver Ubicación Actual
                               </Button>
                             )}
                           </div>
@@ -678,6 +725,193 @@ const CentralAlarmas = () => {
           </div>
         )}
       </div>
+
+      {/* Servicios en Proceso */}
+      {alarmasEnProceso.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold mb-2">Servicios en Proceso</h2>
+          <p className="text-muted-foreground mb-4">Servicios aceptados por supervisores en desarrollo</p>
+          
+          <div className="space-y-4">
+            {alarmasEnProceso.map((alarma) => {
+              const tiempoDesdeCreacion = calcularDuracion(alarma.created_at);
+              const tiempoTomaDespachador = alarma.tiempo_toma_despachador ? 
+                calcularDuracion(alarma.created_at, alarma.tiempo_toma_despachador) : null;
+              const tiempoAsignacionSupervisor = alarma.tiempo_asignacion_supervisor && alarma.tiempo_toma_despachador ? 
+                calcularDuracion(alarma.tiempo_toma_despachador, alarma.tiempo_asignacion_supervisor) : null;
+              const tiempoAceptacionSupervisor = alarma.tiempo_aceptacion_supervisor && alarma.tiempo_asignacion_supervisor ? 
+                calcularDuracion(alarma.tiempo_asignacion_supervisor, alarma.tiempo_aceptacion_supervisor) : null;
+              const tiempoPrimeraLecturaQR = alarma.tiempo_primera_lectura_qr && alarma.tiempo_aceptacion_supervisor ? 
+                calcularDuracion(alarma.tiempo_aceptacion_supervisor, alarma.tiempo_primera_lectura_qr) : null;
+              const tiempoSegundaLecturaQR = alarma.tiempo_segunda_lectura_qr && alarma.tiempo_primera_lectura_qr ? 
+                calcularDuracion(alarma.tiempo_primera_lectura_qr, alarma.tiempo_segunda_lectura_qr) : null;
+
+              return (
+                <Card key={alarma.id} className={`border-l-4 ${getAlarmTypeColor(alarma.tipo)}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="flex flex-col items-center gap-1">
+                          {getAlarmTypeIcon(alarma.tipo)}
+                          <Badge variant="default" className="text-xs">
+                            en proceso
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-lg">{alarma.tipo}</h3>
+                          </div>
+                          
+                          <p className="text-sm font-medium text-muted-foreground mb-1">
+                            {alarma.clientes?.nombre || 'TELEGUARDIA LTDA'}
+                          </p>
+                          
+                          {/* Servicios del cliente */}
+                          <div className="mb-4">
+                            <ClienteServiciosDisplay 
+                              clienteId={alarma.cliente_id}
+                              clienteNombre={alarma.clientes?.nombre}
+                            />
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-4 mb-3">
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium">Estado:</span> {
+                                !alarma.tiempo_primera_lectura_qr ? 'En ruta' :
+                                !alarma.tiempo_segunda_lectura_qr ? 'En sitio' : 'Completado'
+                              }
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium">Dirección:</span> {alarma.direccion || 'No especificada'}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium">Supervisor:</span> {
+                                alarma.supervisor ? (
+                                  <span className="text-green-600 font-medium">{alarma.supervisor}</span>
+                                ) : (
+                                  <span className="text-orange-600 font-medium">Sin asignar</span>
+                                )
+                              }
+                            </p>
+                          </div>
+
+                          {/* Botones de acción según el rol y estado */}
+                          <div className="flex flex-wrap gap-2">
+                            {user?.role === 'supervisor_motorizado' && alarma.tiempo_aceptacion_supervisor && !alarma.tiempo_primera_lectura_qr && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleQRScan(alarma.id, 'primera')}
+                              >
+                                <QrCode className="h-4 w-4 mr-2" />
+                                Escanear QR Llegada
+                              </Button>
+                            )}
+                            
+                            {user?.role === 'supervisor_motorizado' && alarma.tiempo_primera_lectura_qr && !alarma.tiempo_segunda_lectura_qr && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleQRScan(alarma.id, 'segunda')}
+                              >
+                                <QrCode className="h-4 w-4 mr-2" />
+                                Escanear QR Salida
+                              </Button>
+                            )}
+
+                            {/* Botón para ver ubicación actual del supervisor (tiempo real) */}
+                            {alarma.supervisor_id && alarma.tiempo_aceptacion_supervisor && !alarma.tiempo_segunda_lectura_qr && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedAlarmaForRealTimeGPS(alarma);
+                                  setRealTimeGpsModalOpen(true);
+                                }}
+                              >
+                                <MapPin className="h-4 w-4 mr-2" />
+                                Ver Ubicación Actual
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Tiempos de proceso */}
+                      <div className="flex flex-col items-end gap-1 min-w-[200px]">
+                        <div className="grid grid-cols-3 gap-2 text-right">
+                          {/* Tiempo total */}
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-muted-foreground" />
+                            <span className={`text-xl font-bold ${getTimerColor(alarma.created_at)}`}>
+                              {tiempoDesdeCreacion}
+                            </span>
+                          </div>
+                          
+                          {/* Tiempo toma despachador */}
+                          <div className="flex items-center gap-1">
+                            <UserCheck className="h-3 w-3 text-blue-500" />
+                            <span className={`text-lg font-semibold ${tiempoTomaDespachador ? 'text-green-600' : 'text-gray-400'}`}>
+                              {tiempoTomaDespachador || '0:00'}
+                            </span>
+                          </div>
+                          
+                          {/* Tiempo asignación supervisor */}
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3 text-purple-500" />
+                            <span className={`text-lg font-semibold ${tiempoAsignacionSupervisor ? 'text-orange-600' : 'text-gray-400'}`}>
+                              {tiempoAsignacionSupervisor || '0:00'}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-2 text-right mt-1">
+                          {/* Tiempo aceptación supervisor */}
+                          <div className="flex items-center gap-1">
+                            <Shield className="h-3 w-3 text-green-500" />
+                            <span className={`text-sm font-medium ${tiempoAceptacionSupervisor ? 'text-green-600' : 'text-gray-400'}`}>
+                              {tiempoAceptacionSupervisor || '0:00'}
+                            </span>
+                          </div>
+                          
+                          {/* Tiempo primera lectura QR */}
+                          <div className="flex items-center gap-1">
+                            <QrCode className="h-3 w-3 text-orange-500" />
+                            <span className={`text-sm font-medium ${tiempoPrimeraLecturaQR ? 'text-blue-600' : 'text-gray-400'}`}>
+                              {tiempoPrimeraLecturaQR || '0:00'}
+                            </span>
+                          </div>
+                          
+                          {/* Tiempo segunda lectura QR */}
+                          <div className="flex items-center gap-1">
+                            <QrCode className="h-3 w-3 text-teal-500" />
+                            <span className={`text-sm font-medium ${tiempoSegundaLecturaQR ? 'text-teal-600' : 'text-gray-400'}`}>
+                              {tiempoSegundaLecturaQR || '0:00'}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Etiquetas de tiempos */}
+                        <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground mt-1">
+                          <span>Tiempo Total</span>
+                          <span>Despachador</span>
+                          <span>Asignación</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                          <span>Aceptación</span>
+                          <span>Llegada</span>
+                          <span>Finalización</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Modal para asignar supervisor */}
       <AsignarSupervisorModal
