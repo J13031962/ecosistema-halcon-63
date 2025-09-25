@@ -108,8 +108,23 @@ const GPSLocationModal: React.FC<GPSLocationModalProps> = ({
 
   const openInMaps = (lat?: number, lng?: number) => {
     if (typeof lat !== 'number' || typeof lng !== 'number') return;
-    const url = `https://www.google.com/maps?q=${lat},${lng}`;
-    window.open(url, '_blank');
+    
+    // Validate coordinates are within valid ranges
+    if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+      // Use official Google Maps API URL format
+      const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+      const newWindow = window.open(url, '_blank');
+      
+      // Handle case where popup is blocked
+      if (!newWindow) {
+        // Fallback: copy coordinates to clipboard
+        navigator.clipboard?.writeText(`${lat}, ${lng}`).then(() => {
+          console.log('Coordenadas copiadas al portapapeles:', `${lat}, ${lng}`);
+        });
+      }
+    } else {
+      console.error('Coordenadas inválidas:', { lat, lng });
+    }
   };
 
   const formatDateTime = (dateString?: string | null) => {
