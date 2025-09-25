@@ -896,7 +896,8 @@ const CentralAlarmas = () => {
                           )}
                         </div>
                       </div>
-                    </div>
+                       </div>
+                     </div>
                   </CardContent>
                 </Card>
               );
