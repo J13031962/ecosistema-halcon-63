@@ -61,24 +61,34 @@ export const useSupabaseUbicacionesSupervisores = () => {
 
       console.log('📍 Ubicaciones GPS encontradas:', ubicacionesData?.length || 0);
 
-      // Obtener información de supervisores desde profiles
+      // Obtener información de supervisores - CORREGIDO para evitar JOIN problemático
       const { data: supervisoresData, error: supervisoresError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          email,
-          full_name,
-          user_roles!inner(role)
-        `)
-        .eq('active', true)
-        .eq('user_roles.role', 'supervisor_motorizado');
+        .select('id, email, full_name, active')
+        .eq('active', true);
 
       if (supervisoresError) {
         console.error('❌ Error obteniendo supervisores:', supervisoresError);
         throw supervisoresError;
       }
 
-      console.log('👥 Supervisores encontrados:', supervisoresData?.length || 0);
+      // Obtener roles de usuario por separado
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .eq('role', 'supervisor_motorizado');
+
+      if (rolesError) {
+        console.error('❌ Error obteniendo roles:', rolesError);
+        throw rolesError;
+      }
+
+      // Filtrar solo supervisores motorizados
+      const supervisoresMotorizados = supervisoresData?.filter(supervisor => 
+        userRoles?.some(role => role.user_id === supervisor.id)
+      ) || [];
+
+      console.log('👥 Supervisores motorizados encontrados:', supervisoresMotorizados?.length || 0);
 
       // Obtener información de alarmas activas
       const { data: alarmasData, error: alarmasError } = await supabase
@@ -100,7 +110,7 @@ export const useSupabaseUbicacionesSupervisores = () => {
       // Procesar datos para crear el estado de cada supervisor
       const supervisoresConEstado: SupervisorLocationStatus[] = [];
 
-      supervisoresData?.forEach(supervisor => {
+      supervisoresMotorizados?.forEach(supervisor => {
         // Buscar la última ubicación GPS de este supervisor
         const ultimaUbicacion = ubicacionesData
           ?.filter(loc => loc.supervisor_id === supervisor.id)

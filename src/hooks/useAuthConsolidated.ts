@@ -183,6 +183,19 @@ export const useAuthConsolidated = (): AuthContextConsolidated => {
       console.error('❌ Error en login:', error);
       setLoading(false);
       return false;
+    } finally {
+      // NUEVO: Activar GPS automáticamente para supervisores después del login exitoso
+      if (user?.role === 'supervisor_motorizado') {
+        console.log('👨‍💼 Usuario supervisor detectado, activando GPS automáticamente...');
+        
+        // Pequeño delay para asegurar que el componente esté montado
+        setTimeout(() => {
+          // Disparar evento personalizado para que el hook de GPS se active
+          window.dispatchEvent(new CustomEvent('supervisor-login', { 
+            detail: { supervisorId: user.id } 
+          }));
+        }, 1000);
+      }
     }
   };
 

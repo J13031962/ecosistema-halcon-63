@@ -33,7 +33,7 @@ interface SupervisorEvent {
 }
 
 const ReporteUbicacion = () => {
-  const { supervisoresStatus, loading } = useSupabaseUbicacionesSupervisores();
+  const { supervisoresStatus, loading, refetch } = useSupabaseUbicacionesSupervisores();
   const [activeTab, setActiveTab] = useState('eventos');
 
   // Generar eventos de supervisores activos basados en datos reales
@@ -96,7 +96,7 @@ const ReporteUbicacion = () => {
   };
 
   const handleRefresh = () => {
-    window.location.reload();
+    refetch();
   };
 
   const supervisoresOnline = supervisoresStatus.filter(s => s.isOnline && s.position);
@@ -247,10 +247,29 @@ const ReporteUbicacion = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {supervisoresOnline.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">
-                      No hay supervisores con GPS activo
-                    </p>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-2"></div>
+                      <span className="text-sm">Cargando ubicaciones...</span>
+                    </div>
+                  ) : supervisoresOnline.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground mb-4">
+                        No hay supervisores con GPS activo
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Los supervisores deben iniciar sesión para activar el GPS automáticamente
+                      </p>
+                      <Button 
+                        onClick={refetch} 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-4"
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Actualizar
+                      </Button>
+                    </div>
                   ) : (
                     supervisoresOnline.map((supervisor) => (
                       <div
