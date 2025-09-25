@@ -12,6 +12,7 @@ import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorModal";
 import { ClienteServiciosDisplay } from "@/components/alarmas/ClienteServiciosDisplay";
 import GPSLocationModal from "@/components/ui/gps-location-modal";
+import { RealTimeGPSModal } from "@/components/ui/real-time-gps-modal";
 import { supabase } from "@/integrations/supabase/client";
 
 const CentralAlarmas = () => {
@@ -28,6 +29,8 @@ const CentralAlarmas = () => {
   const [selectedAlarmaForSupervisor, setSelectedAlarmaForSupervisor] = useState<any>(null);
   const [gpsModalOpen, setGpsModalOpen] = useState(false);
   const [selectedAlarmaForGPS, setSelectedAlarmaForGPS] = useState<any>(null);
+  const [realTimeGpsModalOpen, setRealTimeGpsModalOpen] = useState(false);
+  const [selectedAlarmaForRealTimeGPS, setSelectedAlarmaForRealTimeGPS] = useState<any>(null);
 
   // Cargar tiempos de cada alarma
   useEffect(() => {
@@ -723,6 +726,26 @@ const CentralAlarmas = () => {
           longitud: selectedAlarmaForGPS.clientes.longitud
         } : undefined}
       />
+
+      {/* Real-time GPS Modal */}
+      {selectedAlarmaForRealTimeGPS && (
+        <RealTimeGPSModal
+          isOpen={realTimeGpsModalOpen}
+          onClose={() => {
+            setRealTimeGpsModalOpen(false);
+            setSelectedAlarmaForRealTimeGPS(null);
+          }}
+          supervisorId={selectedAlarmaForRealTimeGPS.supervisor_id!}
+          supervisorNombre={selectedAlarmaForRealTimeGPS.supervisor!}
+          alarmaId={selectedAlarmaForRealTimeGPS.id}
+          clienteData={{
+            nombre: selectedAlarmaForRealTimeGPS.clientes?.nombre || 'Cliente no encontrado',
+            direccion: selectedAlarmaForRealTimeGPS.direccion || 'Dirección no disponible',
+            latitud: selectedAlarmaForRealTimeGPS.clientes?.latitud || null,
+            longitud: selectedAlarmaForRealTimeGPS.clientes?.longitud || null
+          }}
+        />
+      )}
     </div>
   );
 };

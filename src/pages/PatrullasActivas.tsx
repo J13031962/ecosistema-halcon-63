@@ -12,6 +12,7 @@ import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import CronometroAlarma from "@/components/alarmas/CronometroAlarma";
 import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorModal";
 import { useToast } from "@/hooks/use-toast";
+import { RealTimeGPSModal } from "@/components/ui/real-time-gps-modal";
 import { Car, MapPin, Clock, Search, Filter, Download, Shield, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,8 @@ const PatrullasActivas = () => {
   const [syncHoldUntil, setSyncHoldUntil] = useState<number>(0);
   const [hiddenPendingIds, setHiddenPendingIds] = useState<Set<string>>(new Set());
   const [patchedAceptacionIds, setPatchedAceptacionIds] = useState<Set<string>>(new Set());
+  const [realTimeGpsModalOpen, setRealTimeGpsModalOpen] = useState(false);
+  const [selectedAlarmaForRealTimeGPS, setSelectedAlarmaForRealTimeGPS] = useState<any>(null);
   
   // Filtrar solo supervisores (que tienen patrullas asignadas)
   const supervisoresPatrulla = patrullas.filter(p => p.supervisor_nombre);
@@ -747,11 +750,29 @@ const PatrullasActivas = () => {
                      onCancel={() => handleCancelAlarma(alarma.id)}
                      onSupervisorAccept={handleSupervisorAccept}
                      onSupervisorArrive={handleSupervisorArrive}
-                     onSupervisorLeave={handleSupervisorLeave}
-                     userRole={userRole}
-                     currentUserId={consolidatedUser?.id}
-                     currentUserName={consolidatedUser?.email}
-                  />
+                      onSupervisorLeave={handleSupervisorLeave}
+                      userRole={userRole}
+                      currentUserId={consolidatedUser?.id}
+                      currentUserName={consolidatedUser?.email}
+                   />
+                ))}
+
+                {/* Real-time GPS buttons for active services */}
+                {alarmasActivas.filter(a => a.estado === 'en_proceso' && a.supervisor_id).map((alarma) => (
+                  <div key={`gps-${alarma.id}`} className="mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedAlarmaForRealTimeGPS(alarma);
+                        setRealTimeGpsModalOpen(true);
+                      }}
+                      className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                    >
+                      <MapPin className="h-4 w-4 mr-1" />
+                      Ver Ubicación de {alarma.supervisor}
+                    </Button>
+                  </div>
                 ))}
                 
                 {/* Servicios técnicos activos */}
@@ -835,6 +856,26 @@ const PatrullasActivas = () => {
         alarma={selectedAlarmaForAssign}
         onAssign={handleAssignSupervisor}
       />
+
+      {/* Real-time GPS Modal */}
+      {selectedAlarmaForRealTimeGPS && (
+        <RealTimeGPSModal
+          isOpen={realTimeGpsModalOpen}
+          onClose={() => {
+            setRealTimeGpsModalOpen(false);
+            setSelectedAlarmaForRealTimeGPS(null);
+          }}
+          supervisorId={selectedAlarmaForRealTimeGPS.supervisor_id}
+          supervisorNombre={selectedAlarmaForRealTimeGPS.supervisor}
+          alarmaId={selectedAlarmaForRealTimeGPS.id}
+          clienteData={{
+            nombre: selectedAlarmaForRealTimeGPS.clientes?.nombre || 'Cliente no especificado',
+            direccion: selectedAlarmaForRealTimeGPS.direccion || 'Dirección no disponible',
+            latitud: selectedAlarmaForRealTimeGPS.clientes?.latitud || null,
+            longitud: selectedAlarmaForRealTimeGPS.clientes?.longitud || null
+          }}
+        />
+      )}
     </div>
     </OperationalThemeWrapper>
   );

@@ -1161,6 +1161,39 @@ export type Database = {
         }
         Relationships: []
       }
+      supervisor_ubicaciones_tiempo_real: {
+        Row: {
+          alarma_id: string
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          precision_meters: number | null
+          supervisor_id: string
+          updated_at: string
+        }
+        Insert: {
+          alarma_id: string
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          precision_meters?: number | null
+          supervisor_id: string
+          updated_at?: string
+        }
+        Update: {
+          alarma_id?: string
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          precision_meters?: number | null
+          supervisor_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       turnos_cambios: {
         Row: {
           changed_by: string | null
