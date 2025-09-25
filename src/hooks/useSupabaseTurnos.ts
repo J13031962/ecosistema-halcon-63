@@ -187,6 +187,56 @@ export const useSupabaseTurnos = () => {
     }
   };
 
+  const deleteTurnoOperador = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('turnos_operador')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setTurnosOperador(prev => prev.filter(turno => turno.id !== id));
+      toast({
+        title: "Turno eliminado",
+        description: "El turno del operador ha sido eliminado exitosamente"
+      });
+      return true;
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive"
+      });
+      throw err;
+    }
+  };
+
+  const deleteTurnoSupervisor = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('turnos_supervisor')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setTurnosSupervisor(prev => prev.filter(turno => turno.id !== id));
+      toast({
+        title: "Turno eliminado",
+        description: "El turno del supervisor ha sido eliminado exitosamente"
+      });
+      return true;
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive"
+      });
+      throw err;
+    }
+  };
+
   useEffect(() => {
     fetchTurnos();
 
@@ -255,6 +305,8 @@ export const useSupabaseTurnos = () => {
     addTurnoSupervisor,
     updateTurnoOperador,
     updateTurnoSupervisor,
+    deleteTurnoOperador,
+    deleteTurnoSupervisor,
     refetch: fetchTurnos
   };
 };

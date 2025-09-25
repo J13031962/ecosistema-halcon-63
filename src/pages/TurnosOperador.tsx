@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { GeneradorTurnos } from "@/components/personal/GeneradorTurnos";
 import { GeneradorTurnosAvanzado } from "@/components/turnos/GeneradorTurnosAvanzado";
 import { VisualizadorTurnosOperador } from "@/components/turnos/VisualizadorTurnosOperador";
+import { VistaDetalladaTurnos } from "@/components/turnos/VistaDetalladaTurnos";
 import { useSupabaseTurnos, TurnoOperador } from "@/hooks/useSupabaseTurnos";
 import { Plus, Calendar, Users, Clock, Settings, Eye, AlertCircle, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -415,7 +416,7 @@ const TurnosOperador = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <VisualizadorTurnosOperador />
+              <VistaDetalladaTurnos />
             </CardContent>
           </Card>
         </TabsContent>
