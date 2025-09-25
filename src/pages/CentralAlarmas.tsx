@@ -11,6 +11,7 @@ import { format, differenceInSeconds, differenceInMinutes } from "date-fns";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
 import { AsignarSupervisorModal } from "@/components/modals/AsignarSupervisorModal";
 import { ClienteServiciosDisplay } from "@/components/alarmas/ClienteServiciosDisplay";
+import { CronometroAlarma } from "@/components/alarmas/CronometroAlarma";
 import GPSLocationModal from "@/components/ui/gps-location-modal";
 import { RealTimeGPSModal } from "@/components/ui/real-time-gps-modal";
 import { useRealTimeGPS } from "@/hooks/useRealTimeGPS";
@@ -747,6 +748,63 @@ const CentralAlarmas = () => {
                 calcularDuracion(alarma.tiempo_primera_lectura_qr, alarma.tiempo_segunda_lectura_qr) : null;
 
               return (
+                <CronometroAlarma
+                  key={alarma.id}
+                  alarmaId={alarma.id}
+                  tipo={alarma.tipo}
+                  cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
+                  direccion={alarma.direccion}
+                  municipio={alarma.municipio}
+                  telefono={alarma.clientes?.telefono}
+                  prioridad={alarma.prioridad}
+                  estado={alarma.estado as any}
+                  created_at={alarma.created_at}
+                  attended_at={alarma.attended_at || undefined}
+                  tiempo_toma_despachador={alarma.tiempo_toma_despachador || undefined}
+                  tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                  tiempo_aceptacion_supervisor={alarma.tiempo_aceptacion_supervisor || undefined}
+                  tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
+                  tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
+                  supervisor={alarma.supervisor || undefined}
+                  supervisor_id={alarma.supervisor_id || undefined}
+                  patrulla_asignada={alarma.patrulla_asignada || undefined}
+                  resolved_at={alarma.resolved_at || undefined}
+                  showCancelButton={false}
+                  onViewGPS={(alarmaId, supervisorId, supervisorName) => {
+                    setSelectedAlarmaForRealTimeGPS(alarma);
+                    setRealTimeGpsModalOpen(true);
+                  }}
+                  userRole={user?.role}
+                  currentUserId={user?.id}
+                  currentUserName={user?.email}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Servicios Atendidos Completados */}
+      {alarmasResueltas.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold mb-2">Servicios Atendidos Completados</h2>
+          <p className="text-muted-foreground mb-4">Servicios finalizados exitosamente</p>
+          
+          <div className="space-y-4">
+            {alarmasResueltas.map((alarma) => {
+              const tiempoDesdeCreacion = calcularDuracion(alarma.created_at);
+              const tiempoTomaDespachador = alarma.tiempo_toma_despachador ? 
+                calcularDuracion(alarma.created_at, alarma.tiempo_toma_despachador) : null;
+              const tiempoAsignacionSupervisor = alarma.tiempo_asignacion_supervisor && alarma.tiempo_toma_despachador ? 
+                calcularDuracion(alarma.tiempo_toma_despachador, alarma.tiempo_asignacion_supervisor) : null;
+              const tiempoAceptacionSupervisor = alarma.tiempo_aceptacion_supervisor && alarma.tiempo_asignacion_supervisor ? 
+                calcularDuracion(alarma.tiempo_asignacion_supervisor, alarma.tiempo_aceptacion_supervisor) : null;
+              const tiempoPrimeraLecturaQR = alarma.tiempo_primera_lectura_qr && alarma.tiempo_aceptacion_supervisor ? 
+                calcularDuracion(alarma.tiempo_aceptacion_supervisor, alarma.tiempo_primera_lectura_qr) : null;
+              const tiempoSegundaLecturaQR = alarma.tiempo_segunda_lectura_qr && alarma.tiempo_primera_lectura_qr ? 
+                calcularDuracion(alarma.tiempo_primera_lectura_qr, alarma.tiempo_segunda_lectura_qr) : null;
+
+              return (
                 <Card key={alarma.id} className={`border-l-4 ${getAlarmTypeColor(alarma.tipo)}`}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
@@ -754,34 +812,21 @@ const CentralAlarmas = () => {
                         <div className="flex flex-col items-center gap-1">
                           {getAlarmTypeIcon(alarma.tipo)}
                           <Badge variant="default" className="text-xs">
-                            en proceso
+                            completado
                           </Badge>
                         </div>
                         
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-semibold text-lg">{alarma.tipo}</h3>
+                            <CheckCircle className="h-5 w-5 text-green-500" />
                           </div>
                           
                           <p className="text-sm font-medium text-muted-foreground mb-1">
                             {alarma.clientes?.nombre || 'TELEGUARDIA LTDA'}
                           </p>
                           
-                          {/* Servicios del cliente */}
-                          <div className="mb-4">
-                            <ClienteServiciosDisplay 
-                              clienteId={alarma.cliente_id}
-                              clienteNombre={alarma.clientes?.nombre}
-                            />
-                          </div>
-                          
                           <div className="flex flex-wrap gap-4 mb-3">
-                            <p className="text-sm text-muted-foreground">
-                              <span className="font-medium">Estado:</span> {
-                                !alarma.tiempo_primera_lectura_qr ? 'En ruta' :
-                                !alarma.tiempo_segunda_lectura_qr ? 'En sitio' : 'Completado'
-                              }
-                            </p>
                             <p className="text-sm text-muted-foreground">
                               <span className="font-medium">Dirección:</span> {alarma.direccion || 'No especificada'}
                             </p>
@@ -794,46 +839,6 @@ const CentralAlarmas = () => {
                                 )
                               }
                             </p>
-                          </div>
-
-                          {/* Botones de acción según el rol y estado */}
-                          <div className="flex flex-wrap gap-2">
-                            {user?.role === 'supervisor_motorizado' && alarma.tiempo_aceptacion_supervisor && !alarma.tiempo_primera_lectura_qr && (
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => handleQRScan(alarma.id, 'primera')}
-                              >
-                                <QrCode className="h-4 w-4 mr-2" />
-                                Escanear QR Llegada
-                              </Button>
-                            )}
-                            
-                            {user?.role === 'supervisor_motorizado' && alarma.tiempo_primera_lectura_qr && !alarma.tiempo_segunda_lectura_qr && (
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => handleQRScan(alarma.id, 'segunda')}
-                              >
-                                <QrCode className="h-4 w-4 mr-2" />
-                                Escanear QR Salida
-                              </Button>
-                            )}
-
-                            {/* Botón para ver ubicación actual del supervisor (tiempo real) */}
-                            {alarma.tiempo_aceptacion_supervisor && alarma.estado === 'en_proceso' && !alarma.tiempo_segunda_lectura_qr && (
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedAlarmaForRealTimeGPS(alarma);
-                                  setRealTimeGpsModalOpen(true);
-                                }}
-                              >
-                                <MapPin className="h-4 w-4 mr-2" />
-                                Ver Ubicación Actual
-                              </Button>
-                            )}
                           </div>
                         </div>
                       </div>
