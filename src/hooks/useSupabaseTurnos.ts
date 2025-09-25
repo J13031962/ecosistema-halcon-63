@@ -239,28 +239,54 @@ export const useSupabaseTurnos = () => {
 
   const deleteTurnoPeriodoOperador = async (fechaInicio: string, fechaFin: string, operadorIds: string[]) => {
     try {
-      const { error } = await supabase
+      console.log(`🗑️ Eliminando turnos - Período: ${fechaInicio} a ${fechaFin}, Operadores: ${operadorIds.length}`);
+      
+      // Optimizar la eliminación usando una sola consulta más eficiente
+      const { data: turnosAEliminar, error: selectError } = await supabase
         .from('turnos_operador')
-        .delete()
+        .select('id')
         .gte('fecha', fechaInicio)
         .lte('fecha', fechaFin)
         .in('operador_id', operadorIds);
 
+      if (selectError) throw selectError;
+      
+      if (!turnosAEliminar || turnosAEliminar.length === 0) {
+        console.log('⚠️ No se encontraron turnos para eliminar');
+        toast({
+          title: "Sin turnos",
+          description: "No se encontraron turnos para eliminar en el período especificado",
+          variant: "default"
+        });
+        return true;
+      }
+
+      console.log(`📋 Eliminando ${turnosAEliminar.length} turnos específicos`);
+      
+      const idsAEliminar = turnosAEliminar.map(t => t.id);
+      
+      const { error } = await supabase
+        .from('turnos_operador')
+        .delete()
+        .in('id', idsAEliminar);
+
       if (error) throw error;
       
-      setTurnosOperador(prev => prev.filter(turno => 
-        !(turno.fecha >= fechaInicio && turno.fecha <= fechaFin && operadorIds.includes(turno.operador_id || ''))
-      ));
+      // Actualizar estado local de forma optimizada
+      setTurnosOperador(prev => prev.filter(turno => !idsAEliminar.includes(turno.id)));
+      
+      console.log(`✅ Eliminados ${turnosAEliminar.length} turnos exitosamente`);
       
       toast({
-        title: "Período eliminado",
-        description: `Turnos del período ${fechaInicio} al ${fechaFin} eliminados exitosamente`
+        title: "✅ Período eliminado",
+        description: `${turnosAEliminar.length} turnos del período eliminados exitosamente`
       });
       return true;
     } catch (err: any) {
+      console.error('❌ Error en deleteTurnoPeriodoOperador:', err);
       toast({
-        title: "Error",
-        description: err.message,
+        title: "❌ Error al eliminar período",
+        description: err.message || "No se pudieron eliminar los turnos",
         variant: "destructive"
       });
       throw err;

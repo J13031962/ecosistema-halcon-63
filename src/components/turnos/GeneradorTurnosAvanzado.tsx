@@ -329,18 +329,37 @@ export function GeneradorTurnosAvanzado() {
       return;
     }
 
+    // Filtrar turnos que no sean descanso
+    const turnosParaGuardar = turnosGenerados.filter(turno => turno.turno !== 'descanso');
+    
+    if (turnosParaGuardar.length === 0) {
+      toast({
+        title: "Error",
+        description: "No hay turnos válidos para guardar",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setIsGenerating(true);
+      console.log('💾 Iniciando guardado de turnos:', turnosParaGuardar.length);
       
-      // Filtrar turnos que no sean descanso
-      const turnosParaGuardar = turnosGenerados.filter(turno => turno.turno !== 'descanso');
+      // Implementar timeout de 30 segundos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Operación cancelada: tiempo de espera agotado (30s)')), 30000);
+      });
       
-      console.log('Turnos a guardar:', turnosParaGuardar);
-      
-      // Usar Promise.all para mejor manejo de errores
-      const promesas = turnosParaGuardar.map(turno => {
+      // Mapear turnos con validación
+      const turnosValidados = turnosParaGuardar.map((turno, index) => {
         const turnoMapeado = turno.turno === 'dia' ? 'diurno' : 
                             turno.turno === 'noche' ? 'nocturno' : turno.turno;
+        
+        console.log(`📋 Turno ${index + 1}/${turnosParaGuardar.length}:`, {
+          fecha: turno.fecha,
+          turno: turnoMapeado,
+          operador: turno.operador_nombre
+        });
         
         return addTurnoOperador({
           fecha: turno.fecha,
@@ -352,20 +371,35 @@ export function GeneradorTurnosAvanzado() {
         });
       });
       
-      await Promise.all(promesas);
+      // Ejecutar con timeout
+      const guardarPromise = Promise.all(turnosValidados);
+      await Promise.race([guardarPromise, timeoutPromise]);
+      
+      console.log('✅ Turnos guardados exitosamente');
       
       toast({
-        title: "Turnos guardados exitosamente",
+        title: "✅ Turnos guardados exitosamente",
         description: `Se guardaron ${turnosParaGuardar.length} turnos en la base de datos`,
       });
       
+      // Limpiar turnos generados
+      setTurnosGenerados([]);
+      setConfiguracion(prev => ({ ...prev, operadoresSeleccionados: [] }));
+      
       await refetch();
       
-    } catch (error) {
-      console.error('Error al guardar turnos:', error);
+    } catch (error: any) {
+      console.error('❌ Error al guardar turnos:', error);
+      
+      const errorMessage = error.message?.includes('tiempo de espera') 
+        ? 'La operación está tardando más de lo esperado. Por favor, revisa tu conexión e intenta nuevamente.'
+        : error.message?.includes('unique constraint') 
+        ? 'Algunos turnos ya existen para estas fechas. Revisa los turnos duplicados.'
+        : error.message || "Error desconocido al guardar turnos";
+      
       toast({
-        title: "Error al guardar turnos",
-        description: error.message || "No se pudieron guardar algunos turnos",
+        title: "❌ Error al guardar turnos",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

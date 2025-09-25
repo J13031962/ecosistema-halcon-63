@@ -7,7 +7,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useSupabaseTurnos } from '@/hooks/useSupabaseTurnos';
-import { Trash2, Calendar, Clock, User, Filter, Search, ChevronDown, ChevronRight, Users } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Trash2, Calendar, Clock, User, Filter, Search, ChevronDown, ChevronRight, Users, Loader2 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -156,12 +157,41 @@ export function VistaDetalladaTurnos() {
     setOperadoresAbiertos(nuevosAbiertos);
   };
 
+  const [eliminandoPeriodo, setEliminandoPeriodo] = useState<string | null>(null);
+
   const handleEliminarPeriodo = async (periodo: PeriodoTurnos) => {
     try {
+      setEliminandoPeriodo(periodo.id);
+      console.log('🗑️ Eliminando período:', periodo.id);
+      
+      // Implementar timeout de 30 segundos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Operación cancelada: tiempo de espera agotado (30s)')), 30000);
+      });
+      
       const operadorIds = periodo.operadores.map(op => op.operador_id).filter(id => id !== 'sin_operador');
-      await deleteTurnoPeriodoOperador(periodo.fechaInicio, periodo.fechaFin, operadorIds);
-    } catch (error) {
-      console.error('Error al eliminar período:', error);
+      
+      console.log(`📊 Eliminando ${periodo.totalTurnos} turnos para ${operadorIds.length} operadores`);
+      
+      const eliminarPromise = deleteTurnoPeriodoOperador(periodo.fechaInicio, periodo.fechaFin, operadorIds);
+      await Promise.race([eliminarPromise, timeoutPromise]);
+      
+      console.log('✅ Período eliminado exitosamente');
+      
+    } catch (error: any) {
+      console.error('❌ Error al eliminar período:', error);
+      
+      const errorMessage = error.message?.includes('tiempo de espera') 
+        ? 'La eliminación está tardando más de lo esperado. Por favor, revisa tu conexión e intenta nuevamente.'
+        : error.message || "Error desconocido al eliminar período";
+      
+      toast({
+        title: "❌ Error al eliminar período",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setEliminandoPeriodo(null);
     }
   };
 
@@ -358,9 +388,23 @@ export function VistaDetalladaTurnos() {
                         
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Eliminar Período
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-destructive hover:text-destructive"
+                              disabled={eliminandoPeriodo === periodo.id}
+                            >
+                              {eliminandoPeriodo === periodo.id ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Eliminando...
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Eliminar Período
+                                </>
+                              )}
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -383,12 +427,22 @@ export function VistaDetalladaTurnos() {
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogCancel disabled={eliminandoPeriodo === periodo.id}>
+                                Cancelar
+                              </AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={() => handleEliminarPeriodo(periodo)}
+                                disabled={eliminandoPeriodo === periodo.id}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
-                                Eliminar Período Completo
+                                {eliminandoPeriodo === periodo.id ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Eliminando...
+                                  </>
+                                ) : (
+                                  'Eliminar Período Completo'
+                                )}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
