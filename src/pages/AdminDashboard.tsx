@@ -10,10 +10,15 @@ import { PatrullasCorazaStats } from "@/components/dashboard/PatrullasCorazaStat
 import { RefreshCw, TrendingUp, Users, BarChart3, Wrench, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuthConsolidatedContext } from "@/contexts/AuthContextConsolidated";
 
 const AdminDashboard = () => {
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const { analytics, loading, refetch } = useExecutiveAnalytics(selectedMonth);
+  const { user } = useAuthConsolidatedContext();
+  
+  // Determinar si el usuario es administrador para mostrar vista completa
+  const isAdmin = user?.role === 'administrador';
 
   // Generar opciones de meses (últimos 12 meses)
   const generateMonthOptions = () => {
@@ -75,9 +80,14 @@ const AdminDashboard = () => {
       {/* Header del Dashboard */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard Ejecutivo</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {isAdmin ? 'Dashboard Ejecutivo' : 'Dashboard de Métricas'}
+          </h1>
           <p className="text-muted-foreground">
-            Panel de control con métricas avanzadas y análisis comparativo
+            {isAdmin 
+              ? 'Panel de control con métricas avanzadas y análisis comparativo'
+              : 'Métricas y estadísticas operacionales'
+            }
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -139,23 +149,28 @@ const AdminDashboard = () => {
         />
       </section>
 
-      <Separator />
+      {/* Mostrar estadísticas avanzadas solo para administradores */}
+      {isAdmin && (
+        <>
+          <Separator />
 
-      {/* Estadísticas de Patrullas Contratadas */}
-      <section className="space-y-4">
-        <PatrullasCorazaStats />
-      </section>
+          {/* Estadísticas de Patrullas Contratadas */}
+          <section className="space-y-4">
+            <PatrullasCorazaStats />
+          </section>
 
-      <Separator />
+          <Separator />
 
-      {/* Estadísticas de Servicios Técnicos */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Wrench className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold">Servicios Técnicos</h2>
-        </div>
-        <ServiceTechnicalStats stats={analytics.serviceTechStats} />
-      </section>
+          {/* Estadísticas de Servicios Técnicos */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Wrench className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">Servicios Técnicos</h2>
+            </div>
+            <ServiceTechnicalStats stats={analytics.serviceTechStats} />
+          </section>
+        </>
+      )}
     </div>
   );
 };

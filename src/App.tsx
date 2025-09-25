@@ -98,9 +98,9 @@ const AppContent = () => {
     <Routes>
       <Route path="/" element={<RoleBasedDashboard />} />
       
-      {/* Admin routes only - Dashboard removed for supervisors */}
+      {/* Dashboard accessible for multiple roles */}
       <Route path="/dashboard" element={
-        <ProtectedRoute requiredRoles={['administrador']}>
+        <ProtectedRoute requiredRoles={['administrador', 'operador_alarmas', 'despachador_patrullas', 'director']}>
           <MainLayout>
             <AdminDashboard />
           </MainLayout>
