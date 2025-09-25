@@ -111,15 +111,44 @@ const GPSLocationModal: React.FC<GPSLocationModalProps> = ({
     
     // Validate coordinates are within valid ranges
     if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-      // Use official Google Maps API URL format
-      const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-      const newWindow = window.open(url, '_blank');
+      // URL-encode the query parameter for proper formatting
+      const query = encodeURIComponent(`${lat},${lng}`);
+      const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
       
-      // Handle case where popup is blocked
-      if (!newWindow) {
-        // Fallback: copy coordinates to clipboard
-        navigator.clipboard?.writeText(`${lat}, ${lng}`).then(() => {
-          console.log('Coordenadas copiadas al portapapeles:', `${lat}, ${lng}`);
+      console.log('Opening Maps with URL:', url);
+      
+      try {
+        // Try window.open first
+        const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+        
+        // If window.open is blocked, try programmatic link click
+        if (!newWindow || newWindow.closed) {
+          const link = document.createElement('a');
+          link.href = url;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // If that also fails, copy URL to clipboard as last resort
+          setTimeout(() => {
+            if (!newWindow || newWindow.closed) {
+              navigator.clipboard?.writeText(url).then(() => {
+                console.log('Enlace de Google Maps copiado al portapapeles:', url);
+              }).catch(() => {
+                console.log('No se pudo copiar al portapapeles. URL:', url);
+              });
+            }
+          }, 100);
+        }
+      } catch (error) {
+        console.error('Error opening maps:', error);
+        // Fallback: copy URL to clipboard
+        navigator.clipboard?.writeText(url).then(() => {
+          console.log('Enlace de Google Maps copiado al portapapeles:', url);
+        }).catch(() => {
+          console.log('No se pudo copiar al portapapeles. URL:', url);
         });
       }
     } else {
