@@ -234,7 +234,8 @@ const GPSLocationModal: React.FC<GPSLocationModalProps> = ({
     );
   }, [normalizedLlegada, clienteData]);
 
-  const hasClientLocation = clienteData?.latitud && clienteData?.longitud;
+  const hasClientLocation = clienteData?.latitud !== null && clienteData?.latitud !== undefined && 
+                           clienteData?.longitud !== null && clienteData?.longitud !== undefined;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
