@@ -716,6 +716,12 @@ const CentralAlarmas = () => {
         ubicacionSalida={selectedAlarmaForGPS?.ubicacion_supervisor_salida}
         tiempoLlegada={selectedAlarmaForGPS?.tiempo_llegada_sitio}
         tiempoSalida={selectedAlarmaForGPS?.tiempo_salida_sitio}
+        clienteData={selectedAlarmaForGPS?.clientes ? {
+          nombre: selectedAlarmaForGPS.clientes.nombre,
+          direccion: selectedAlarmaForGPS.direccion || selectedAlarmaForGPS.clientes.direccion || 'Dirección no disponible',
+          latitud: selectedAlarmaForGPS.clientes.latitud,
+          longitud: selectedAlarmaForGPS.clientes.longitud
+        } : undefined}
       />
     </div>
   );

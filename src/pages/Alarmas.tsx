@@ -712,6 +712,12 @@ const Alarmas = () => {
         ubicacionSalida={selectedAlarmForGPS?.ubicacion_supervisor_salida}
         tiempoLlegada={selectedAlarmForGPS?.tiempo_llegada_sitio}
         tiempoSalida={selectedAlarmForGPS?.tiempo_salida_sitio}
+        clienteData={selectedAlarmForGPS?.clientes ? {
+          nombre: selectedAlarmForGPS.clientes.nombre,
+          direccion: selectedAlarmForGPS.direccion || selectedAlarmForGPS.clientes.direccion || 'Dirección no disponible',
+          latitud: selectedAlarmForGPS.clientes.latitud,
+          longitud: selectedAlarmForGPS.clientes.longitud
+        } : undefined}
       />
     </div>
     </OperationalThemeWrapper>
