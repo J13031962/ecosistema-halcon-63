@@ -111,9 +111,8 @@ const GPSLocationModal: React.FC<GPSLocationModalProps> = ({
     
     // Validate coordinates are within valid ranges
     if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-      // URL-encode the query parameter for proper formatting
-      const query = encodeURIComponent(`${lat},${lng}`);
-      const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
+      // Use the working Google Maps URL format
+      const url = `https://www.google.com/maps/search/maps+${lat},+${lng}?sa=X&ved=1t:242&ictx=111`;
       
       console.log('Opening Maps with URL:', url);
       
