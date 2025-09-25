@@ -584,7 +584,7 @@ const CentralAlarmas = () => {
                             )}
                             
                             {/* Botón para ver ubicación del supervisor */}
-                            {alarma.supervisor && (alarma.ubicacion_primer_qr || alarma.ubicacion_segundo_qr) && (
+                            {alarma.supervisor && (alarma.ubicacion_supervisor_llegada || alarma.ubicacion_supervisor_salida) && (
                               <Button 
                                 size="sm" 
                                 variant="secondary"
@@ -712,10 +712,10 @@ const CentralAlarmas = () => {
           setGpsModalOpen(false);
           setSelectedAlarmaForGPS(null);
         }}
-        ubicacionLlegada={selectedAlarmaForGPS?.ubicacion_primer_qr}
-        ubicacionSalida={selectedAlarmaForGPS?.ubicacion_segundo_qr}
-        tiempoLlegada={selectedAlarmaForGPS?.tiempo_primera_lectura_qr}
-        tiempoSalida={selectedAlarmaForGPS?.tiempo_segunda_lectura_qr}
+        ubicacionLlegada={selectedAlarmaForGPS?.ubicacion_supervisor_llegada}
+        ubicacionSalida={selectedAlarmaForGPS?.ubicacion_supervisor_salida}
+        tiempoLlegada={selectedAlarmaForGPS?.tiempo_llegada_sitio}
+        tiempoSalida={selectedAlarmaForGPS?.tiempo_salida_sitio}
       />
     </div>
   );

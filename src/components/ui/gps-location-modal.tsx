@@ -9,14 +9,14 @@ import { es } from "date-fns/locale";
 interface LocationData {
   latitude: number;
   longitude: number;
-  accuracy: number;
+  accuracy?: number;
 }
 
 interface GPSLocationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  ubicacionLlegada?: LocationData | null;
-  ubicacionSalida?: LocationData | null;
+  ubicacionLlegada?: any;
+  ubicacionSalida?: any;
   tiempoLlegada?: string | null;
   tiempoSalida?: string | null;
 }
@@ -29,6 +29,62 @@ const GPSLocationModal: React.FC<GPSLocationModalProps> = ({
   tiempoLlegada,
   tiempoSalida
 }) => {
+  // Función para normalizar ubicaciones en diferentes formatos
+  const normalizeLocation = (input: any): LocationData | null => {
+    if (!input) return null;
+    
+    // Si es un string, intentar parsearlo como "lat,lng"
+    if (typeof input === 'string') {
+      const coords = input.split(',').map(c => parseFloat(c.trim()));
+      if (coords.length >= 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+        return {
+          latitude: coords[0],
+          longitude: coords[1],
+          accuracy: coords[2] || undefined
+        };
+      }
+      return null;
+    }
+    
+    // Si es un objeto, buscar diferentes formatos de keys
+    if (typeof input === 'object') {
+      let lat, lng, accuracy;
+      
+      // Formato en inglés
+      if ('latitude' in input && 'longitude' in input) {
+        lat = input.latitude;
+        lng = input.longitude;
+        accuracy = input.accuracy;
+      }
+      // Formato en español
+      else if ('latitud' in input && 'longitud' in input) {
+        lat = input.latitud;
+        lng = input.longitud;
+        accuracy = input.precision || input.accuracy;
+      }
+      // Formato corto
+      else if ('lat' in input && 'lng' in input) {
+        lat = input.lat;
+        lng = input.lng;
+        accuracy = input.accuracy;
+      }
+      
+      // Validar que son números válidos
+      if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+        return {
+          latitude: lat,
+          longitude: lng,
+          accuracy: typeof accuracy === 'number' ? accuracy : undefined
+        };
+      }
+    }
+    
+    return null;
+  };
+
+  // Normalizar las ubicaciones
+  const normalizedLlegada = normalizeLocation(ubicacionLlegada);
+  const normalizedSalida = normalizeLocation(ubicacionSalida);
   const formatCoordinates = (lat?: number, lng?: number) => {
     if (typeof lat !== 'number' || typeof lng !== 'number') {
       return 'Coordenadas no disponibles';
@@ -89,19 +145,19 @@ const GPSLocationModal: React.FC<GPSLocationModalProps> = ({
               Ubicación de Llegada
             </h3>
             
-            {hasValidLocation(ubicacionLlegada) ? (
+            {hasValidLocation(normalizedLlegada) ? (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Coordenadas</p>
                     <p className="font-mono text-sm">
-                      {formatCoordinates(ubicacionLlegada!.latitude, ubicacionLlegada!.longitude)}
+                      {formatCoordinates(normalizedLlegada!.latitude, normalizedLlegada!.longitude)}
                     </p>
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => openInMaps(ubicacionLlegada!.latitude, ubicacionLlegada!.longitude)}
+                    onClick={() => openInMaps(normalizedLlegada!.latitude, normalizedLlegada!.longitude)}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Ver en Maps
@@ -121,8 +177,8 @@ const GPSLocationModal: React.FC<GPSLocationModalProps> = ({
                     <p className="text-sm text-muted-foreground">Precisión GPS</p>
                     <div className="flex items-center gap-2">
                       <Signal className="h-4 w-4" />
-                      <Badge variant={getAccuracyColor(ubicacionLlegada!.accuracy)}>
-                        ±{ubicacionLlegada!.accuracy || 0}m ({getAccuracyLabel(ubicacionLlegada!.accuracy)})
+                      <Badge variant={getAccuracyColor(normalizedLlegada!.accuracy)}>
+                        ±{normalizedLlegada!.accuracy || 0}m ({getAccuracyLabel(normalizedLlegada!.accuracy)})
                       </Badge>
                     </div>
                   </div>
@@ -144,19 +200,19 @@ const GPSLocationModal: React.FC<GPSLocationModalProps> = ({
               Ubicación de Salida
             </h3>
             
-            {hasValidLocation(ubicacionSalida) ? (
+            {hasValidLocation(normalizedSalida) ? (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Coordenadas</p>
                     <p className="font-mono text-sm">
-                      {formatCoordinates(ubicacionSalida!.latitude, ubicacionSalida!.longitude)}
+                      {formatCoordinates(normalizedSalida!.latitude, normalizedSalida!.longitude)}
                     </p>
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => openInMaps(ubicacionSalida!.latitude, ubicacionSalida!.longitude)}
+                    onClick={() => openInMaps(normalizedSalida!.latitude, normalizedSalida!.longitude)}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Ver en Maps
@@ -176,8 +232,8 @@ const GPSLocationModal: React.FC<GPSLocationModalProps> = ({
                     <p className="text-sm text-muted-foreground">Precisión GPS</p>
                     <div className="flex items-center gap-2">
                       <Signal className="h-4 w-4" />
-                      <Badge variant={getAccuracyColor(ubicacionSalida!.accuracy)}>
-                        ±{ubicacionSalida!.accuracy || 0}m ({getAccuracyLabel(ubicacionSalida!.accuracy)})
+                      <Badge variant={getAccuracyColor(normalizedSalida!.accuracy)}>
+                        ±{normalizedSalida!.accuracy || 0}m ({getAccuracyLabel(normalizedSalida!.accuracy)})
                       </Badge>
                     </div>
                   </div>
@@ -193,7 +249,7 @@ const GPSLocationModal: React.FC<GPSLocationModalProps> = ({
           </div>
 
           {/* Resumen */}
-          {(hasValidLocation(ubicacionLlegada) || hasValidLocation(ubicacionSalida)) && (
+          {(hasValidLocation(normalizedLlegada) || hasValidLocation(normalizedSalida)) && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-medium mb-2 flex items-center gap-2">
                 <Signal className="h-4 w-4 text-blue-600" />
@@ -203,17 +259,17 @@ const GPSLocationModal: React.FC<GPSLocationModalProps> = ({
                 <div>
                   <p className="text-muted-foreground">Ubicaciones registradas</p>
                   <p className="font-medium">
-                    {[hasValidLocation(ubicacionLlegada) ? 'Llegada' : null, 
-                      hasValidLocation(ubicacionSalida) ? 'Salida' : null]
+                    {[hasValidLocation(normalizedLlegada) ? 'Llegada' : null, 
+                      hasValidLocation(normalizedSalida) ? 'Salida' : null]
                       .filter(Boolean).join(', ') || 'Ninguna'}
                   </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Estado de verificación</p>
                   <Badge 
-                    variant={hasValidLocation(ubicacionLlegada) && hasValidLocation(ubicacionSalida) ? "default" : "secondary"}
+                    variant={hasValidLocation(normalizedLlegada) && hasValidLocation(normalizedSalida) ? "default" : "secondary"}
                   >
-                    {hasValidLocation(ubicacionLlegada) && hasValidLocation(ubicacionSalida) 
+                    {hasValidLocation(normalizedLlegada) && hasValidLocation(normalizedSalida) 
                       ? "Verificación completa" 
                       : "Verificación parcial"}
                   </Badge>

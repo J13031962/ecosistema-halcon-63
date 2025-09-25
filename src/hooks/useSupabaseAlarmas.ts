@@ -30,6 +30,10 @@ export interface Alarma {
   tiempo_segunda_lectura_qr?: string;
   ubicacion_primer_qr?: string;
   ubicacion_segundo_qr?: string;
+  ubicacion_supervisor_llegada?: any;
+  ubicacion_supervisor_salida?: any;
+  tiempo_llegada_sitio?: string;
+  tiempo_salida_sitio?: string;
   observaciones_count?: number;
   created_at: string;
   attended_at?: string;
