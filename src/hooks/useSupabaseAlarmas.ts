@@ -44,6 +44,8 @@ export interface Alarma {
     municipio: string;
     telefono?: string;
     numero_cuenta?: string;
+    latitud?: number | null;
+    longitud?: number | null;
   };
 }
 
@@ -67,7 +69,9 @@ export const useSupabaseAlarmas = () => {
             nombre,
             direccion,
             municipio,
-            telefono
+            telefono,
+            latitud,
+            longitud
           )
         `)
         .order('created_at', { ascending: false });
@@ -126,7 +130,9 @@ export const useSupabaseAlarmas = () => {
             nombre,
             direccion,
             municipio,
-            telefono
+            telefono,
+            latitud,
+            longitud
           )
         `)
         .single();
@@ -176,7 +182,9 @@ export const useSupabaseAlarmas = () => {
             nombre,
             direccion,
             municipio,
-            telefono
+            telefono,
+            latitud,
+            longitud
           )
         `)
         .single();
@@ -221,7 +229,9 @@ export const useSupabaseAlarmas = () => {
             nombre,
             direccion,
             municipio,
-            telefono
+            telefono,
+            latitud,
+            longitud
           )
         `)
         .single();
@@ -262,7 +272,9 @@ export const useSupabaseAlarmas = () => {
             nombre,
             direccion,
             municipio,
-            telefono
+            telefono,
+            latitud,
+            longitud
           )
         `)
         .single();
@@ -301,7 +313,9 @@ export const useSupabaseAlarmas = () => {
             nombre,
             direccion,
             municipio,
-            telefono
+            telefono,
+            latitud,
+            longitud
           )
         `)
         .single();

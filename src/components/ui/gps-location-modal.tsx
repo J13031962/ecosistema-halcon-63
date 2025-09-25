@@ -223,19 +223,34 @@ const GPSLocationModal: React.FC<GPSLocationModalProps> = ({
     return "Verificación fallida";
   };
 
+  // Normalizar las coordenadas del cliente
+  const normalizedClientLocation = useMemo(() => {
+    if (!clienteData) return null;
+    
+    const lat = Number(clienteData.latitud);
+    const lng = Number(clienteData.longitud);
+    
+    if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+      return {
+        latitude: lat,
+        longitude: lng
+      };
+    }
+    return null;
+  }, [clienteData]);
+
   // Calcular la distancia si ambas ubicaciones están disponibles
   const distanceToClient = useMemo(() => {
-    if (!normalizedLlegada || !clienteData?.latitud || !clienteData?.longitud) return null;
+    if (!normalizedLlegada || !normalizedClientLocation) return null;
     return calculateDistance(
       normalizedLlegada.latitude,
       normalizedLlegada.longitude,
-      clienteData.latitud,
-      clienteData.longitud
+      normalizedClientLocation.latitude,
+      normalizedClientLocation.longitude
     );
-  }, [normalizedLlegada, clienteData]);
+  }, [normalizedLlegada, normalizedClientLocation]);
 
-  const hasClientLocation = clienteData?.latitud !== null && clienteData?.latitud !== undefined && 
-                           clienteData?.longitud !== null && clienteData?.longitud !== undefined;
+  const hasClientLocation = normalizedClientLocation !== null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -423,14 +438,14 @@ const GPSLocationModal: React.FC<GPSLocationModalProps> = ({
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">Coordenadas</p>
                       <p className="font-mono text-sm">
-                        {formatCoordinates(clienteData.latitud!, clienteData.longitud!)}
+                        {formatCoordinates(normalizedClientLocation!.latitude, normalizedClientLocation!.longitude)}
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => copyMapsLink(clienteData.latitud!, clienteData.longitud!)}
+                        onClick={() => copyMapsLink(normalizedClientLocation!.latitude, normalizedClientLocation!.longitude)}
                       >
                         <Copy className="h-4 w-4 mr-2" />
                         Copiar enlace
@@ -438,7 +453,7 @@ const GPSLocationModal: React.FC<GPSLocationModalProps> = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openInMaps(clienteData.latitud!, clienteData.longitud!)}
+                        onClick={() => openInMaps(normalizedClientLocation!.latitude, normalizedClientLocation!.longitude)}
                       >
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Ver en Maps

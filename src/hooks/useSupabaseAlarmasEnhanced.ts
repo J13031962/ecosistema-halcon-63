@@ -43,6 +43,9 @@ interface AlarmaEnhanced {
     nombre: string;
     telefono: string | null;
     numero_cuenta?: string | null;
+    latitud?: number | null;
+    longitud?: number | null;
+    direccion?: string | null;
   } | null;
 }
 
@@ -86,7 +89,10 @@ export const useSupabaseAlarmasEnhanced = () => {
           clientes (
             nombre,
             telefono,
-            numero_cuenta
+            numero_cuenta,
+            latitud,
+            longitud,
+            direccion
           )
         `)
         .order('created_at', { ascending: false });
@@ -120,7 +126,10 @@ export const useSupabaseAlarmasEnhanced = () => {
           clientes (
             nombre,
             telefono,
-            numero_cuenta
+            numero_cuenta,
+            latitud,
+            longitud,
+            direccion
           )
         `)
         .single();
@@ -173,7 +182,10 @@ export const useSupabaseAlarmasEnhanced = () => {
           clientes (
             nombre,
             telefono,
-            numero_cuenta
+            numero_cuenta,
+            latitud,
+            longitud,
+            direccion
           )
         `)
         .single();
@@ -225,7 +237,10 @@ export const useSupabaseAlarmasEnhanced = () => {
           clientes (
             nombre,
             telefono,
-            numero_cuenta
+            numero_cuenta,
+            latitud,
+            longitud,
+            direccion
           )
         `)
         .single();
@@ -286,7 +301,10 @@ export const useSupabaseAlarmasEnhanced = () => {
           clientes (
             nombre,
             telefono,
-            numero_cuenta
+            numero_cuenta,
+            latitud,
+            longitud,
+            direccion
           )
         `)
         .single();
@@ -411,7 +429,10 @@ export const useSupabaseAlarmasEnhanced = () => {
           clientes (
             nombre,
             telefono,
-            numero_cuenta
+            numero_cuenta,
+            latitud,
+            longitud,
+            direccion
           )
         `)
         .single();
@@ -463,7 +484,10 @@ export const useSupabaseAlarmasEnhanced = () => {
           clientes (
             nombre,
             telefono,
-            numero_cuenta
+            numero_cuenta,
+            latitud,
+            longitud,
+            direccion
           )
         `)
         .single();
