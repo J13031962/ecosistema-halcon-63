@@ -840,17 +840,26 @@ const CentralAlarmas = () => {
                               </Button>
                             )}
 
-                            {/* Botón para ver ubicación actual del supervisor (tiempo real) - COPIADO EXACTO DEL DESPACHADOR */}
-                            {(() => {
-                              const shouldShow = alarma.tiempo_aceptacion_supervisor && !alarma.tiempo_segunda_lectura_qr;
-                              console.log(`GPS Button Debug (Sección 2) - Alarma ${alarma.id}:`, {
-                                tiempo_aceptacion_supervisor: !!alarma.tiempo_aceptacion_supervisor,
-                                estado: alarma.estado,
-                                tiempo_segunda_lectura_qr: !!alarma.tiempo_segunda_lectura_qr,
-                                shouldShow
-                              });
-                              return shouldShow;
-                            })() && (
+                            {/* Botón para ver ubicación en Google Maps */}
+                            {alarma.tiempo_aceptacion_supervisor && !alarma.tiempo_segunda_lectura_qr && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  if (alarma.supervisor_id) {
+                                    // Abrir Google Maps con la ubicación del supervisor
+                                    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(alarma.direccion || 'Ubicación del supervisor')}`;
+                                    window.open(mapsUrl, '_blank');
+                                  }
+                                }}
+                              >
+                                <MapPin className="h-4 w-4 mr-2" />
+                                Ver en Google Maps
+                              </Button>
+                            )}
+
+                            {/* Botón para ver ubicación actual del supervisor (tiempo real) */}
+                            {alarma.tiempo_aceptacion_supervisor && !alarma.tiempo_segunda_lectura_qr && (
                               <Button 
                                 size="sm" 
                                 variant="outline"
@@ -860,7 +869,7 @@ const CentralAlarmas = () => {
                                 }}
                               >
                                 <MapPin className="h-4 w-4 mr-2" />
-                                Ver Ubicación Actual
+                                Ver Ubicación en Tiempo Real
                               </Button>
                             )}
                           </div>
