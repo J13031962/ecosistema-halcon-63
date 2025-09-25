@@ -13,7 +13,6 @@ import Index from "./pages/Index";
 import AdminDashboard from "./pages/AdminDashboard";
 import Reports from "./pages/Reports";
 import TurnosOperador from "./pages/TurnosOperador";
-import TurnosSupervisor from "./pages/TurnosSupervisor";
 import DirectorTecnico from "./pages/DirectorTecnico";
 import DirectorTecnicoSection from "./pages/DirectorTecnicoSection";
 import TecnicoPropio from "./pages/TecnicoPropio";
@@ -34,7 +33,6 @@ import ReportesEjecutivos from "./pages/ReportesEjecutivos";
 import Analisis from "./pages/Analisis";
 import EstadoGeneral from "./pages/EstadoGeneral";
 import Personal from "./pages/Personal";
-import PersonalSupervisores from "./pages/PersonalSupervisores";
 import CentralAlarmas from "./pages/CentralAlarmas";
 import CentralAlarmasOperador from "./pages/CentralAlarmasOperador";
 
@@ -349,26 +347,10 @@ const AppContent = () => {
         </ProtectedRoute>
       } />
       
-      <Route path="/personal-supervisores" element={
-        <ProtectedRoute>
-          <MainLayout>
-            <PersonalSupervisores />
-          </MainLayout>
-        </ProtectedRoute>
-      } />
-      
         <Route path="/turnos-operador" element={
           <ProtectedRoute>
             <MainLayout>
               <TurnosOperador />
-            </MainLayout>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/turnos-supervisor" element={
-          <ProtectedRoute>
-            <MainLayout>
-              <TurnosSupervisor />
             </MainLayout>
           </ProtectedRoute>
         } />

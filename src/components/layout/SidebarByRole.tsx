@@ -106,7 +106,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
             { title: "Reporte de Ubicación", url: "/reporte-ubicacion", icon: MapPin },
             { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
             { title: "Todas las Patrullas", url: "/patrullas", icon: Car },
-            { title: "Gestión Personal Supervisores", url: "/personal-supervisores", icon: UserCheck },
           ]
         },
         { 
@@ -140,7 +139,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           category: "📊 Turnos y Horarios", 
           items: [
             { title: "Turnos Operador", url: "/turnos-operador", icon: Clock },
-            { title: "Turnos Supervisor", url: "/turnos-supervisor", icon: Clock },
           ]
         },
         { 
@@ -209,9 +207,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           category: "📊 Turnos y Horarios", 
           items: [
             { title: "Gestión Personal Operadores", url: "/personal", icon: Users },
-            { title: "Gestión Personal Supervisores", url: "/personal-supervisores", icon: UserCheck },
             { title: "Turnos Operador", url: "/turnos-operador", icon: Clock },
-            { title: "Turnos Supervisor", url: "/turnos-supervisor", icon: Clock },
           ]
         },
         { 
@@ -278,13 +274,11 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
         { 
           category: "🚗 Despachador Patrullas", 
           items: [
-            
             { title: "Minuta de Operador", url: "/minuta-operador", icon: FileText },
             { title: "Alarmas Activas", url: "/patrullas-activas", icon: Car },
             { title: "Reporte de Ubicación", url: "/reporte-ubicacion", icon: MapPin },
             { title: "Historial de Servicios", url: "/historial-servicios", icon: History },
             { title: "Todas las Patrullas", url: "/patrullas", icon: Car },
-            { title: "Gestión Personal Supervisores", url: "/personal-supervisores", icon: UserCheck },
           ]
         },
         { 
@@ -312,7 +306,6 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           category: "📊 Reportes", 
           items: [
             { title: "Reportes Supervisor", url: "/reportes-supervisor", icon: FileText },
-            { title: "Mis Turnos", url: "/turnos-supervisor", icon: Clock },
           ]
         }
       ];
