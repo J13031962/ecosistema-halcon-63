@@ -402,6 +402,7 @@ export const useSupabaseAlarmasEnhanced = () => {
         .from('alarmas')
         .update({
           tiempo_aceptacion_supervisor: now,
+          supervisor_id: supervisorId, // Asegurar que el supervisor_id quede guardado
           estado: 'en_proceso' // Cambia de 'asignada' a 'en_proceso'
         })
         .eq('id', alarmaId)

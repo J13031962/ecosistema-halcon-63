@@ -166,8 +166,8 @@ export const useSupabaseAlarmas = () => {
         .from('alarmas')
         .update({ 
           estado: 'en_proceso',
-          attended_at: new Date().toISOString(),
-          tiempo_aceptacion_supervisor: new Date().toISOString()
+          attended_at: new Date().toISOString()
+          // Removed tiempo_aceptacion_supervisor - this should only be set by supervisor
         })
         .eq('id', id)
         .select(`

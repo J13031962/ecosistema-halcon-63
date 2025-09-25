@@ -634,7 +634,7 @@ const CentralAlarmas = () => {
                             )}
 
                             {/* Botón para ver ubicación actual del supervisor (tiempo real) */}
-                            {alarma.supervisor_id && !alarma.tiempo_segunda_lectura_qr && (
+                            {alarma.estado === 'en_proceso' && !alarma.tiempo_segunda_lectura_qr && (
                               <Button 
                                 size="sm" 
                                 variant="outline"
@@ -821,7 +821,7 @@ const CentralAlarmas = () => {
                             )}
 
                             {/* Botón para ver ubicación actual del supervisor (tiempo real) */}
-                            {alarma.supervisor_id && !alarma.tiempo_segunda_lectura_qr && (
+                            {alarma.estado === 'en_proceso' && !alarma.tiempo_segunda_lectura_qr && (
                               <Button 
                                 size="sm" 
                                 variant="outline"

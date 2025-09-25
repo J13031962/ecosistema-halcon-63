@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
 import { useSupabaseAlarmasEnhanced } from "@/hooks/useSupabaseAlarmasEnhanced";
 import { useAuthConsolidated } from "@/hooks/useAuthConsolidated";
+import { useRealTimeGPS } from "@/hooks/useRealTimeGPS";
 import { MapPin, Clock, Phone, AlertTriangle, CheckCircle, Camera, Timer, LogOut, Navigation } from "lucide-react";
 import { format, differenceInSeconds } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -97,13 +98,75 @@ const MisAsignaciones = () => {
     return () => clearInterval(interval);
   }, [misAsignaciones]);
 
+  // GPS tracking for active assignments
+  const [trackingAlarmaId, setTrackingAlarmaId] = useState<string | null>(null);
+  
+  // Auto-start GPS tracking for en_proceso alarms
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    const activeAlarm = misAsignaciones.find(alarma => 
+      alarma.estado === 'en_proceso' && 
+      alarma.supervisor_id === user.id && 
+      !alarma.tiempo_segunda_lectura_qr
+    );
+    
+    if (activeAlarm && trackingAlarmaId !== activeAlarm.id) {
+      console.log('🛰️ Auto-starting GPS tracking for alarm:', activeAlarm.id);
+      setTrackingAlarmaId(activeAlarm.id);
+    } else if (!activeAlarm && trackingAlarmaId) {
+      console.log('🛑 Stopping GPS tracking - no active alarm');
+      setTrackingAlarmaId(null);
+    }
+  }, [misAsignaciones, user?.id, trackingAlarmaId]);
+
+  // Initialize GPS tracking
+  const { updateGPSPosition } = useRealTimeGPS({
+    alarmaId: trackingAlarmaId || undefined,
+    supervisorId: user?.id,
+    isActive: Boolean(trackingAlarmaId),
+    updateInterval: 60000 // 1 minute
+  });
+
   // Función para aceptar servicio (nueva lógica según el flujo del usuario)
   const handleAceptarServicio = async (alarmaId: string) => {
     try {
       console.log('🎯 Supervisor aceptando servicio:', alarmaId);
+      
+      // Solicitar permisos de geolocalización
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            console.log('✅ Permisos de GPS concedidos');
+            toast({
+              title: "GPS Activado",
+              description: "Ubicación en tiempo real activada para este servicio",
+            });
+          },
+          (error) => {
+            console.warn('⚠️ Permisos de GPS denegados:', error);
+            toast({
+              title: "GPS Opcional",
+              description: "Puedes continuar sin GPS, pero no se registrará tu ubicación",
+              variant: "destructive",
+            });
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      }
+      
       const result = await aceptarServicio(alarmaId, user?.id || '');
       if (result.success) {
         console.log('✅ Servicio aceptado exitosamente, estado: asignada -> en_proceso');
+        
+        // Upload initial GPS position immediately
+        try {
+          await updateGPSPosition(false);
+          console.log('📍 Initial GPS position uploaded');
+        } catch (gpsError) {
+          console.warn('⚠️ Could not upload initial GPS position:', gpsError);
+        }
+        
         toast({
           title: "Servicio Aceptado",
           description: "Has aceptado el servicio. Ahora puedes dirigirte al sitio.",
