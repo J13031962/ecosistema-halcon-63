@@ -238,15 +238,26 @@ const TurnosOperador = () => {
       weeks.get(weekKey).push(turno);
     });
     
+    // Generar semana completa (7 días desde domingo)
+    const generarSemanaCompleta = (fechaInicio: Date) => {
+      const dias = [];
+      for (let i = 0; i < 7; i++) {
+        const fecha = new Date(fechaInicio);
+        fecha.setDate(fechaInicio.getDate() + i);
+        dias.push(format(fecha, 'yyyy-MM-dd'));
+      }
+      return dias;
+    };
+    
     const todasLasSemanas = Array.from(weeks.entries()).map(([weekStart, turnos]) => ({
       weekStart: new Date(weekStart),
-      turnos: turnos.sort((a: any, b: any) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+      turnos: turnos.sort((a: any, b: any) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()),
+      diasCompletos: generarSemanaCompleta(new Date(weekStart))
     })).sort((a, b) => a.weekStart.getTime() - b.weekStart.getTime());
 
     return (
       <div className="space-y-8">
-        {todasLasSemanas.map(({ weekStart, turnos }, weekIndex) => {
-          const fechasSemana = [...new Set(turnos.map((t: any) => t.fecha))].sort();
+        {todasLasSemanas.map(({ weekStart, turnos, diasCompletos }, weekIndex) => {
           const empleados = [...new Set(turnos.map((t: any) => t.operador_nombre))].filter(Boolean) as string[];
 
           return (
@@ -262,7 +273,7 @@ const TurnosOperador = () => {
               <div className="overflow-x-auto">
                 <div className="grid grid-cols-8 gap-2 min-w-max">
                   <div className="p-2 font-semibold text-center">Personal</div>
-                  {fechasSemana.map((fecha: string) => (
+                  {diasCompletos.map((fecha: string) => (
                     <div key={fecha} className="text-xs p-2 text-center min-w-[100px]">
                       <div className="font-medium">{format(new Date(fecha), 'EEE', { locale: es })}</div>
                       <div>{format(new Date(fecha), 'dd/MM')}</div>
@@ -274,7 +285,7 @@ const TurnosOperador = () => {
                       <div className="text-sm font-medium p-2 bg-muted rounded">
                         <div className="truncate">{empleado}</div>
                       </div>
-                      {fechasSemana.map((fecha: string) => {
+                      {diasCompletos.map((fecha: string) => {
                         const turno = turnos.find((t: any) => 
                           t.operador_nombre === empleado && t.fecha === fecha
                         );
@@ -338,7 +349,7 @@ const TurnosOperador = () => {
                 {currentUser.email}
               </Badge>
               <Badge variant="outline">
-                {misTurnos.length} turnos totales
+                {getTurnosBatches().length} período(s) generado(s)
               </Badge>
             </div>
           )}
