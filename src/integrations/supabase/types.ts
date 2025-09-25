@@ -1417,6 +1417,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      cleanup_old_gps_locations: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       emergency_admin_access: {
         Args: Record<PropertyKey, never>
         Returns: boolean
