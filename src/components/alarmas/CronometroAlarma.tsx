@@ -223,7 +223,7 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
               {prioridad}
             </Badge>
             {/* Botón Ver Ubicación Actual */}
-            {supervisor_id && estado === 'en_proceso' && onViewGPS && (
+            {tiempo_aceptacion_supervisor && estado === 'en_proceso' && onViewGPS && !tiempo_segunda_lectura_qr && (
               <Button
                 variant="outline"
                 size="sm"
