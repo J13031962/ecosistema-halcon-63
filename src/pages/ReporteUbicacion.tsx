@@ -1,24 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MapPin, Users, Activity, Route, RefreshCw, Navigation, ExternalLink, Bike } from 'lucide-react';
-import { useSupabaseSupervisores } from '@/hooks/useSupabaseSupervisores';
-import { useSupabaseAlarmasEnhanced } from '@/hooks/useSupabaseAlarmasEnhanced';
-import { useAuthConsolidated } from '@/hooks/useAuthConsolidated';
+import { useSupabaseUbicacionesSupervisores } from '@/hooks/useSupabaseUbicacionesSupervisores';
 import { format } from 'date-fns';
 import SupervisorMap from '@/components/map/SupervisorMap';
 
 interface SupervisorLocation {
   id: string;
   name: string;
-  position: [number, number];
+  position: [number, number] | null;
   status: 'disponible' | 'en_servicio' | 'en_ruta' | 'desconectado';
   alarmaId?: string;
   destino?: string;
   ultimaActualizacion: string;
   isOnline: boolean;
+  precision?: number;
 }
 
 interface SupervisorEvent {
@@ -34,108 +33,26 @@ interface SupervisorEvent {
 }
 
 const ReporteUbicacion = () => {
-  const { supervisores, loading } = useSupabaseSupervisores();
-  const { alarmas } = useSupabaseAlarmasEnhanced();
-  const { userRole } = useAuthConsolidated();
-  
-  const [supervisoresUbicacion, setSupervisoresUbicacion] = useState<SupervisorLocation[]>([]);
-  const [eventosSupervision, setEventosSupervision] = useState<SupervisorEvent[]>([]);
+  const { supervisoresStatus, loading } = useSupabaseUbicacionesSupervisores();
   const [activeTab, setActiveTab] = useState('eventos');
 
-  // Simular estado de conexión de supervisores
-  const getOnlineStatus = () => {
-    const onlineStates: Record<string, boolean> = {};
-    supervisores.forEach(supervisor => {
-      // Simular algunos supervisores online/offline
-      onlineStates[supervisor.id] = Math.random() > 0.3; // 70% probabilidad de estar online
-    });
-    return onlineStates;
-  };
-
-  // Generar ubicaciones y eventos de supervisores
-  useEffect(() => {
-    const generarUbicacionesYEventos = () => {
-      const ubicacionesBase = [
-        [6.2442, -75.5812], // Centro de Medellín
-        [6.2518, -75.5636], // El Poblado
-        [6.2308, -75.5906], // La América
-        [6.2676, -75.5658], // Belén
-        [6.2885, -75.5761], // Robledo
-        [6.1701, -75.6069]  // Envigado
-      ];
-
-      const onlineStates = getOnlineStatus();
-      const ubicacionesSupervisores: SupervisorLocation[] = supervisores.map((supervisor, index) => {
-        const alarmaAsignada = alarmas.find(a => 
-          a.supervisor_id === supervisor.id && ['asignada', 'en_proceso'].includes(a.estado)
-        );
-        
-        const isOnline = onlineStates[supervisor.id];
-        let status: 'disponible' | 'en_servicio' | 'en_ruta' | 'desconectado' = isOnline ? 'disponible' : 'desconectado';
-        let destino = '';
-        
-        if (isOnline && alarmaAsignada) {
-          if (alarmaAsignada.estado === 'asignada') {
-            status = 'en_ruta';
-            destino = alarmaAsignada.direccion || 'Ubicación del cliente';
-          } else if (alarmaAsignada.estado === 'en_proceso') {
-            status = 'en_servicio';
-            destino = alarmaAsignada.direccion || 'En el sitio del cliente';
-          }
-        }
-
-        const baseLocation = ubicacionesBase[index % ubicacionesBase.length];
-        const lat = baseLocation[0] + (Math.random() - 0.5) * 0.01;
-        const lng = baseLocation[1] + (Math.random() - 0.5) * 0.01;
-
-        return {
-          id: supervisor.id,
-          name: supervisor.full_name || supervisor.email,
-          position: [lat, lng] as [number, number],
-          status,
-          alarmaId: alarmaAsignada?.id,
-          destino,
-          ultimaActualizacion: new Date().toISOString(),
-          isOnline
-        };
-      });
-
-      // Generar eventos de supervisores activos
-      const eventos: SupervisorEvent[] = [];
-      ubicacionesSupervisores.forEach(supervisor => {
-        if (supervisor.status === 'en_ruta' || supervisor.status === 'en_servicio') {
-          const alarma = alarmas.find(a => a.id === supervisor.alarmaId);
-          if (alarma && alarma.clientes) {
-            eventos.push({
-              id: `evento-${supervisor.id}`,
-              supervisorId: supervisor.id,
-              supervisorName: supervisor.name,
-              evento: supervisor.status === 'en_ruta' ? 'Dirigiéndose al cliente' : 'Atendiendo cliente',
-              ubicacionOrigen: supervisor.position,
-              ubicacionDestino: supervisor.status === 'en_ruta' ? [
-                supervisor.position[0] + (Math.random() - 0.5) * 0.02,
-                supervisor.position[1] + (Math.random() - 0.5) * 0.02
-              ] : undefined,
-              timestamp: new Date().toISOString(),
-              alarmaId: supervisor.alarmaId,
-              clienteNombre: alarma.clientes?.nombre
-            });
-          }
-        }
-      });
-
-      setSupervisoresUbicacion(ubicacionesSupervisores);
-      setEventosSupervision(eventos);
-    };
-
-    if (supervisores.length > 0) {
-      generarUbicacionesYEventos();
-      
-      // Actualizar cada 30 segundos
-      const interval = setInterval(generarUbicacionesYEventos, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [supervisores, alarmas]);
+  // Generar eventos de supervisores activos basados en datos reales
+  const eventosSupervision: SupervisorEvent[] = supervisoresStatus
+    .filter(supervisor => supervisor.position && (supervisor.status === 'en_ruta' || supervisor.status === 'en_servicio'))
+    .map(supervisor => ({
+      id: `evento-${supervisor.id}`,
+      supervisorId: supervisor.id,
+      supervisorName: supervisor.name,
+      evento: supervisor.status === 'en_ruta' ? 'Dirigiéndose al cliente' : 'Atendiendo cliente',
+      ubicacionOrigen: supervisor.position!,
+      ubicacionDestino: supervisor.status === 'en_ruta' ? [
+        supervisor.position![0] + 0.001,
+        supervisor.position![1] + 0.001
+      ] : undefined,
+      timestamp: supervisor.ultimaActualizacion,
+      alarmaId: supervisor.alarmaId,
+      clienteNombre: supervisor.destino
+    }));
 
   const getStatusColor = (status: string, isOnline: boolean) => {
     if (!isOnline) return 'destructive';
@@ -158,19 +75,22 @@ const ReporteUbicacion = () => {
   };
 
   const abrirEnGoogleMaps = (evento: SupervisorEvent) => {
-    // Coordenadas de referencia en Medellín
-    const lat = 6.1760461;
-    const lng = -75.5625925;
-    
     if (evento.ubicacionDestino) {
-      // Si hay destino, mostrar ruta con marcador de moto azul en origen
-      const origen = `${lat},${lng}`;
+      // Si hay destino, mostrar ruta desde origen a destino
+      const origen = `${evento.ubicacionOrigen[0]},${evento.ubicacionOrigen[1]}`;
       const destino = `${evento.ubicacionDestino[0]},${evento.ubicacionDestino[1]}`;
       const url = `https://www.google.com/maps/dir/${origen}/${destino}`;
       window.open(url, '_blank');
     } else {
-      // Mostrar ubicación del supervisor con marcador de moto azul en la ubicación de referencia
-      const url = `https://www.google.com/maps/@${lat},${lng},15z?entry=ttu&g_ep=EgoyMDI1MDkwOC4wIKXMDSoASAFQAw%3D%3D`;
+      // Mostrar ubicación actual del supervisor
+      const url = `https://www.google.com/maps/@${evento.ubicacionOrigen[0]},${evento.ubicacionOrigen[1]},15z`;
+      window.open(url, '_blank');
+    }
+  };
+
+  const abrirUbicacionSupervisor = (supervisor: SupervisorLocation) => {
+    if (supervisor.position) {
+      const url = `https://www.google.com/maps/@${supervisor.position[0]},${supervisor.position[1]},15z`;
       window.open(url, '_blank');
     }
   };
@@ -179,9 +99,9 @@ const ReporteUbicacion = () => {
     window.location.reload();
   };
 
-  const supervisoresOnline = supervisoresUbicacion.filter(s => s.isOnline);
-  const supervisoresOffline = supervisoresUbicacion.filter(s => !s.isOnline);
-  const supervisoresActivos = supervisoresUbicacion.filter(s => s.isOnline && s.status !== 'disponible');
+  const supervisoresOnline = supervisoresStatus.filter(s => s.isOnline && s.position);
+  const supervisoresOffline = supervisoresStatus.filter(s => !s.isOnline || !s.position);
+  const supervisoresActivos = supervisoresStatus.filter(s => s.isOnline && s.position && s.status !== 'disponible');
 
   if (loading) {
     return (
@@ -220,13 +140,13 @@ const ReporteUbicacion = () => {
             <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{supervisoresUbicacion.length}</div>
+            <div className="text-2xl font-bold text-blue-600">{supervisoresStatus.length}</div>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Conectados</CardTitle>
+            <CardTitle className="text-sm font-medium">Con GPS Activo</CardTitle>
             <Activity className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -246,7 +166,7 @@ const ReporteUbicacion = () => {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Desconectados</CardTitle>
+            <CardTitle className="text-sm font-medium">Sin GPS / Desconectados</CardTitle>
             <Users className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
@@ -293,17 +213,17 @@ const ReporteUbicacion = () => {
                         </div>
                         {evento.clienteNombre && (
                           <p className="text-sm text-muted-foreground mb-1">
-                            Cliente: {evento.clienteNombre}
+                            Destino: {evento.clienteNombre}
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(evento.timestamp), 'HH:mm:ss')} - Medellín, Colombia: {evento.ubicacionOrigen[0].toFixed(4)}, {evento.ubicacionOrigen[1].toFixed(4)}
+                          {format(new Date(evento.timestamp), 'HH:mm:ss')} - GPS: {evento.ubicacionOrigen[0].toFixed(6)}, {evento.ubicacionOrigen[1].toFixed(6)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm">
-                          <Bike className="h-4 w-4 mr-2 text-blue-500" />
-                          Ver Supervisor en Maps
+                          <MapPin className="h-4 w-4 mr-2 text-blue-500" />
+                          Ver en Google Maps
                         </Button>
                         <Navigation className="h-5 w-5 text-primary" />
                       </div>
@@ -321,25 +241,22 @@ const ReporteUbicacion = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                  Supervisores Conectados
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  Supervisores con GPS Activo
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {supervisoresOnline.length === 0 ? (
                     <p className="text-muted-foreground text-center py-4">
-                      No hay supervisores conectados
+                      No hay supervisores con GPS activo
                     </p>
                   ) : (
                     supervisoresOnline.map((supervisor) => (
                       <div
                         key={supervisor.id}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                        onClick={() => {
-                          const ubicacion = `${supervisor.position[0]},${supervisor.position[1]}`;
-                          window.open(`https://www.google.com/maps?q=${ubicacion}`, '_blank');
-                        }}
+                        onClick={() => abrirUbicacionSupervisor(supervisor)}
                       >
                         <div>
                           <div className="flex items-center gap-2 mb-1">
@@ -349,6 +266,7 @@ const ReporteUbicacion = () => {
                                 : 'bg-green-500'
                             }`}></div>
                             <p className="font-medium">{supervisor.name}</p>
+                            <span className="text-xs text-muted-foreground">({supervisor.email})</span>
                           </div>
                           {supervisor.destino && (
                             <p className="text-sm text-muted-foreground">
@@ -356,8 +274,14 @@ const ReporteUbicacion = () => {
                             </p>
                           )}
                           <p className="text-xs text-muted-foreground">
-                            Última actualización: {format(new Date(supervisor.ultimaActualizacion), 'HH:mm:ss')}
+                            GPS: {format(new Date(supervisor.ultimaActualizacion), 'dd/MM HH:mm:ss')}
+                            {supervisor.precision && ` • Precisión: ${supervisor.precision}m`}
                           </p>
+                          {supervisor.position && (
+                            <p className="text-xs text-green-600 font-mono">
+                              {supervisor.position[0].toFixed(6)}, {supervisor.position[1].toFixed(6)}
+                            </p>
+                          )}
                         </div>
                         <Badge variant={getStatusColor(supervisor.status, supervisor.isOnline)}>
                           {getStatusText(supervisor.status, supervisor.isOnline)}
@@ -374,14 +298,14 @@ const ReporteUbicacion = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  Supervisores Desconectados
+                  Sin GPS / Desconectados
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {supervisoresOffline.length === 0 ? (
                     <p className="text-muted-foreground text-center py-4">
-                      ✅ Todos los supervisores están conectados
+                      ✅ Todos los supervisores tienen GPS activo
                     </p>
                   ) : (
                     supervisoresOffline.map((supervisor) => (
@@ -393,13 +317,17 @@ const ReporteUbicacion = () => {
                           <div className="flex items-center gap-2 mb-1">
                             <div className="w-3 h-3 rounded-full bg-red-500"></div>
                             <p className="font-medium">{supervisor.name}</p>
+                            <span className="text-xs text-muted-foreground">({supervisor.email})</span>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Última conexión: {format(new Date(supervisor.ultimaActualizacion), 'HH:mm:ss')}
+                            {supervisor.position 
+                              ? `Sin GPS reciente: ${format(new Date(supervisor.ultimaActualizacion), 'dd/MM HH:mm')}`
+                              : 'Sin datos GPS registrados'
+                            }
                           </p>
                         </div>
                         <Badge variant="destructive">
-                          Desconectado
+                          {supervisor.position ? 'GPS Inactivo' : 'Sin GPS'}
                         </Badge>
                       </div>
                     ))
@@ -420,7 +348,10 @@ const ReporteUbicacion = () => {
             </CardHeader>
             <CardContent>
               <SupervisorMap 
-                supervisores={supervisoresUbicacion}
+                supervisores={supervisoresStatus.filter(s => s.position).map(s => ({
+                  ...s,
+                  position: s.position!
+                }))}
                 onSupervisorClick={(supervisor) => {
                   // Mostrar más información del supervisor
                   console.log('Supervisor seleccionado:', supervisor);
