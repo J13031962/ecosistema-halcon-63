@@ -725,55 +725,42 @@ const PatrullasActivas = () => {
               <>
                  {/* Alarmas activas */}
                  {alarmasActivas.map((alarma) => (
-                   <CronometroAlarma
-                     key={alarma.id}
-                     alarmaId={alarma.id}
-                     tipo={alarma.tipo}
-                     cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
-                     direccion={alarma.direccion}
-                     municipio={alarma.municipio}
-                     telefono={alarma.clientes?.telefono}
-                     prioridad={alarma.prioridad}
-                     estado={alarma.estado as any}
-                     created_at={alarma.created_at}
-                     attended_at={alarma.attended_at || undefined}
-                     tiempo_toma_despachador={alarma.tiempo_toma_despachador || undefined}
-                     tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
-                     tiempo_aceptacion_supervisor={alarma.tiempo_aceptacion_supervisor || undefined}
-                     tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
-                     tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
-                     supervisor={alarma.supervisor || undefined}
-                     supervisor_id={alarma.supervisor_id || undefined}
-                     patrulla_asignada={alarma.patrulla_asignada || undefined}
-                     resolved_at={alarma.resolved_at || undefined}
-                     showCancelButton={true}
-                     onCancel={() => handleCancelAlarma(alarma.id)}
-                     onSupervisorAccept={handleSupervisorAccept}
-                     onSupervisorArrive={handleSupervisorArrive}
+                    <CronometroAlarma
+                      key={alarma.id}
+                      alarmaId={alarma.id}
+                      tipo={alarma.tipo}
+                      cliente={alarma.clientes?.nombre || 'Cliente no especificado'}
+                      direccion={alarma.direccion}
+                      municipio={alarma.municipio}
+                      telefono={alarma.clientes?.telefono}
+                      prioridad={alarma.prioridad}
+                      estado={alarma.estado as any}
+                      created_at={alarma.created_at}
+                      attended_at={alarma.attended_at || undefined}
+                      tiempo_toma_despachador={alarma.tiempo_toma_despachador || undefined}
+                      tiempo_asignacion_supervisor={alarma.tiempo_asignacion_supervisor || undefined}
+                      tiempo_aceptacion_supervisor={alarma.tiempo_aceptacion_supervisor || undefined}
+                      tiempo_primera_lectura_qr={alarma.tiempo_primera_lectura_qr || undefined}
+                      tiempo_segunda_lectura_qr={alarma.tiempo_segunda_lectura_qr || undefined}
+                      supervisor={alarma.supervisor || undefined}
+                      supervisor_id={alarma.supervisor_id || undefined}
+                      patrulla_asignada={alarma.patrulla_asignada || undefined}
+                      resolved_at={alarma.resolved_at || undefined}
+                      showCancelButton={true}
+                      onCancel={() => handleCancelAlarma(alarma.id)}
+                      onSupervisorAccept={handleSupervisorAccept}
+                      onSupervisorArrive={handleSupervisorArrive}
                       onSupervisorLeave={handleSupervisorLeave}
-                      userRole={userRole}
-                      currentUserId={consolidatedUser?.id}
-                      currentUserName={consolidatedUser?.email}
-                   />
-                ))}
-
-                {/* Real-time GPS buttons for active services */}
-                {alarmasActivas.filter(a => a.estado === 'en_proceso' && a.supervisor_id).map((alarma) => (
-                  <div key={`gps-${alarma.id}`} className="mt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
+                      onViewGPS={(alarmaId, supervisorId, supervisorName) => {
                         setSelectedAlarmaForRealTimeGPS(alarma);
                         setRealTimeGpsModalOpen(true);
                       }}
-                      className="text-orange-600 border-orange-600 hover:bg-orange-50"
-                    >
-                      <MapPin className="h-4 w-4 mr-1" />
-                      Ver Ubicación de {alarma.supervisor}
-                    </Button>
-                  </div>
-                ))}
+                      userRole={userRole}
+                      currentUserId={consolidatedUser?.id}
+                      currentUserName={consolidatedUser?.email}
+                    />
+                 ))}
+
                 
                 {/* Servicios técnicos activos */}
                 {serviciosActivos.map((servicio) => (
@@ -792,12 +779,12 @@ const PatrullasActivas = () => {
                     tiempo_asignacion_supervisor={servicio.fecha_aceptacion || undefined}
                     tiempo_primera_lectura_qr={servicio.fecha_inicio || undefined}
                     tiempo_segunda_lectura_qr={servicio.fecha_finalizacion || undefined}
-                     supervisor="Supervisor asignado"
-                     patrulla_asignada="Servicio técnico"
-                     showCancelButton={false}
-                     userRole={userRole}
-                     currentUserId={consolidatedUser?.id}
-                     currentUserName={consolidatedUser?.email}
+                    supervisor="Supervisor asignado"
+                    patrulla_asignada="Servicio técnico"
+                    showCancelButton={false}
+                    userRole={userRole}
+                    currentUserId={consolidatedUser?.id}
+                    currentUserName={consolidatedUser?.email}
                   />
                 ))}
               </>

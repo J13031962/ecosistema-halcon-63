@@ -38,6 +38,9 @@ interface CronometroAlarmaProps {
   userRole?: string;
   currentUserId?: string;
   currentUserName?: string;
+  onViewGPS?: (alarmaId: string, supervisorId: string, supervisorName: string) => void;
+  latitud?: number;
+  longitud?: number;
 }
 
 // Interfaces moved to useOptimizedCronometer hook
@@ -72,7 +75,10 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
   showAssignButton,
   userRole,
   currentUserId,
-  currentUserName
+  currentUserName,
+  onViewGPS,
+  latitud,
+  longitud
 }) => {
   const [parpadeo, setParpadeo] = useState(false);
 
@@ -216,6 +222,21 @@ const CronometroAlarma: React.FC<CronometroAlarmaProps> = ({
             <Badge variant={styleHelpers.getPriorityColor(prioridad)} className="text-xs px-1 py-0">
               {prioridad}
             </Badge>
+            {/* Botón Ver Ubicación Actual */}
+            {supervisor_id && estado === 'en_proceso' && onViewGPS && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewGPS(alarmaId, supervisor_id, supervisor || 'Supervisor');
+                }}
+                className="h-6 px-2 text-xs ml-auto"
+              >
+                <MapPin className="h-3 w-3 mr-1" />
+                Ver Ubicación
+              </Button>
+            )}
           </div>
           {/* Contadores de tiempo */}
           <div className="text-right space-y-1">
