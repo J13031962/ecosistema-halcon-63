@@ -330,36 +330,46 @@ export function GeneradorTurnosAvanzado() {
     }
 
     try {
-      for (const turno of turnosGenerados) {
-        if (turno.turno !== 'descanso') {
-          // Mapear 'dia' a 'diurno' y 'noche' a 'nocturno' para la BD
-          const turnoMapeado = turno.turno === 'dia' ? 'diurno' : 
-                              turno.turno === 'noche' ? 'nocturno' : turno.turno;
-          
-          await addTurnoOperador({
-            fecha: turno.fecha,
-            turno: turnoMapeado,
-            operador_id: turno.operador_id,
-            operador_nombre: turno.operador_nombre,
-            horario_inicio: turno.horario_inicio,
-            horario_fin: turno.horario_fin
-          });
-        }
-      }
+      setIsGenerating(true);
+      
+      // Filtrar turnos que no sean descanso
+      const turnosParaGuardar = turnosGenerados.filter(turno => turno.turno !== 'descanso');
+      
+      console.log('Turnos a guardar:', turnosParaGuardar);
+      
+      // Usar Promise.all para mejor manejo de errores
+      const promesas = turnosParaGuardar.map(turno => {
+        const turnoMapeado = turno.turno === 'dia' ? 'diurno' : 
+                            turno.turno === 'noche' ? 'nocturno' : turno.turno;
+        
+        return addTurnoOperador({
+          fecha: turno.fecha,
+          turno: turnoMapeado,
+          operador_id: turno.operador_id,
+          operador_nombre: turno.operador_nombre,
+          horario_inicio: turno.horario_inicio,
+          horario_fin: turno.horario_fin
+        });
+      });
+      
+      await Promise.all(promesas);
       
       toast({
         title: "Turnos guardados exitosamente",
-        description: "Los turnos han sido guardados en la base de datos",
+        description: `Se guardaron ${turnosParaGuardar.length} turnos en la base de datos`,
       });
       
       await refetch();
       
     } catch (error) {
+      console.error('Error al guardar turnos:', error);
       toast({
-        title: "Error",
-        description: "No se pudieron guardar algunos turnos",
+        title: "Error al guardar turnos",
+        description: error.message || "No se pudieron guardar algunos turnos",
         variant: "destructive"
       });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -496,9 +506,9 @@ export function GeneradorTurnosAvanzado() {
               <Download className="h-4 w-4 mr-2" />
               Exportar
             </Button>
-            <Button onClick={guardarTurnos} size="sm">
+            <Button onClick={guardarTurnos} size="sm" disabled={isGenerating}>
               <Save className="h-4 w-4 mr-2" />
-              Guardar en BD
+              {isGenerating ? "Guardando..." : "Guardar Turnos"}
             </Button>
           </div>
         )}
