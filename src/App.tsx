@@ -71,6 +71,7 @@ import CambioContrasenaDirector from "./pages/CambioContrasenaDirector";
 import CambioContrasenaOperador from "./pages/CambioContrasenaOperador";
 import CambioContrasenaDespachador from "./pages/CambioContrasenaDespachador";
 import CambioContrasenaSupervisor from "./pages/CambioContrasenaSupervisor";
+import RegistroSupervisores from "./pages/RegistroSupervisores";
 
 const queryClient = new QueryClient();
 
@@ -287,6 +288,14 @@ const AppContent = () => {
         <ProtectedRoute>
           <MainLayout>
             <Asignaciones />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/registro-supervisores" element={
+        <ProtectedRoute requiredRoles={['despachador_patrullas']}>
+          <MainLayout>
+            <RegistroSupervisores />
           </MainLayout>
         </ProtectedRoute>
       } />

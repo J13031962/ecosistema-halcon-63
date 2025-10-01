@@ -287,6 +287,12 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           ]
         },
         { 
+          category: "👥 Gestión Personal", 
+          items: [
+            { title: "Registro de Supervisores", url: "/registro-supervisores", icon: UserPlus },
+          ]
+        },
+        { 
           category: "🌐 Enlaces Externos", 
           items: [
             { title: "WhatsApp Web", url: "https://web.whatsapp.com/", icon: MessageCircle, external: true },

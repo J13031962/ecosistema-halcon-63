@@ -1632,6 +1632,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_dispatcher: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       user_has_role: {
         Args: { check_role: string; check_user_id: string }
         Returns: boolean
