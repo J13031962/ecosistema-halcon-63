@@ -48,6 +48,7 @@ export const useSupabaseClientes = () => {
       const { data, error } = await supabase
         .from('clientes')
         .select('*')
+        .eq('estado', 'activo') // Solo clientes activos
         .order('created_at', { ascending: false });
 
       console.log('📊 Datos recibidos de Supabase:', data);
@@ -205,34 +206,24 @@ export const useSupabaseClientes = () => {
 
   const deleteCliente = async (id: string) => {
     try {
-      console.log('🗑️ Intentando eliminar cliente:', id);
-      
+      // Eliminación lógica: cambiar estado a 'inactivo'
       const { error } = await supabase
         .from('clientes')
-        .delete()
+        .update({ estado: 'inactivo' })
         .eq('id', id);
 
-      if (error) {
-        console.error('❌ Error al eliminar cliente:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log('✅ Cliente eliminado exitosamente');
+      // Remover de la lista local (ya que solo mostramos activos)
       setClientes(prev => prev.filter(cliente => cliente.id !== id));
       toast({
-        title: "Cliente eliminado",
-        description: "El cliente ha sido eliminado del sistema"
+        title: "Cliente desactivado",
+        description: "El cliente ha sido desactivado. Se mantiene en el historial."
       });
     } catch (err: any) {
-      console.error('❌ Error completo al eliminar:', err);
       toast({
-        title: "Error al eliminar",
-        description: err.message || 'No se pudo eliminar el cliente',
+        title: "Error al desactivar",
+        description: err.message || 'No se pudo desactivar el cliente',
         variant: "destructive"
       });
       throw err;

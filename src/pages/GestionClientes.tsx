@@ -185,16 +185,8 @@ const GestionClientes = () => {
   const handleDelete = async (clienteId: string) => {
     try {
       await deleteCliente(clienteId);
-      toast({
-        title: "Cliente eliminado",
-        description: "El cliente se ha eliminado correctamente",
-      });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el cliente",
-        variant: "destructive"
-      });
+      // El error ya se maneja en el hook
     }
   };
 
@@ -605,10 +597,10 @@ const GestionClientes = () => {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
+                        <AlertDialogTitle>¿Desactivar cliente?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Esta acción no se puede deshacer. Se eliminará permanentemente 
-                          la información del cliente.
+                          El cliente será desactivado y no aparecerá en las operaciones activas.
+                          Se mantendrá en el historial de alarmas y reportes.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -617,7 +609,7 @@ const GestionClientes = () => {
                           onClick={() => handleDelete(cliente.id)}
                           className="bg-destructive hover:bg-destructive/90"
                         >
-                          Eliminar
+                          Desactivar
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
