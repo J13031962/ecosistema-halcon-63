@@ -82,23 +82,39 @@ export const useSupabaseAlarmasEnhanced = () => {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
+      // Fetch alarmas
+      const { data: alarmasData, error: alarmasError } = await supabase
         .from('alarmas')
-        .select(`
-          *,
-          clientes (
-            nombre,
-            telefono,
-            numero_cuenta,
-            latitud,
-            longitud,
-            direccion
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setAlarmas(data || []);
+      if (alarmasError) throw alarmasError;
+
+      // Get unique client IDs
+      const clienteIds = [...new Set(alarmasData?.map(a => a.cliente_id).filter(Boolean))];
+
+      // Fetch clients data separately
+      let clientesMap = new Map();
+      if (clienteIds.length > 0) {
+        const { data: clientesData, error: clientesError } = await supabase
+          .from('clientes')
+          .select('id, nombre, telefono, numero_cuenta, latitud, longitud, direccion')
+          .in('id', clienteIds);
+
+        if (!clientesError && clientesData) {
+          clientesData.forEach(cliente => {
+            clientesMap.set(cliente.id, cliente);
+          });
+        }
+      }
+
+      // Merge alarmas with their client data
+      const alarmasWithClientes = alarmasData?.map(alarma => ({
+        ...alarma,
+        clientes: alarma.cliente_id ? clientesMap.get(alarma.cliente_id) || null : null
+      })) || [];
+
+      setAlarmas(alarmasWithClientes);
     } catch (error: any) {
       console.error('Error fetching alarmas:', error);
       setError(error.message);
@@ -383,13 +399,8 @@ export const useSupabaseAlarmasEnhanced = () => {
                 return prev;
               });
             } else if (payload.eventType === 'UPDATE') {
-              setAlarmas(prev => 
-                prev.map(alarma => 
-                  alarma.id === payload.new.id 
-                    ? { ...alarma, ...payload.new }
-                    : alarma
-                )
-              );
+              // Refetch to get complete data with relations
+              fetchAlarmas();
             } else if (payload.eventType === 'DELETE') {
               setAlarmas(prev => 
                 prev.filter(alarma => alarma.id !== payload.old.id)
