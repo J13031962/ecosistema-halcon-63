@@ -41,7 +41,7 @@ const Index = () => {
           >CON</span>
         </h1>
         <p className="text-lg text-gray-300 mb-6">
-          Sistema integral administrativo de Teleguardia.com
+          
         </p>
         <p className="text-xl text-gray-200 max-w-2xl mx-auto mb-8">
           Sistema integral de despacho y monitoreo de patrullas de seguridad
