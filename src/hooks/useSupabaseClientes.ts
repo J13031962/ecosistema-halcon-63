@@ -205,22 +205,34 @@ export const useSupabaseClientes = () => {
 
   const deleteCliente = async (id: string) => {
     try {
+      console.log('🗑️ Intentando eliminar cliente:', id);
+      
       const { error } = await supabase
         .from('clientes')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error al eliminar cliente:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
       
+      console.log('✅ Cliente eliminado exitosamente');
       setClientes(prev => prev.filter(cliente => cliente.id !== id));
       toast({
         title: "Cliente eliminado",
         description: "El cliente ha sido eliminado del sistema"
       });
     } catch (err: any) {
+      console.error('❌ Error completo al eliminar:', err);
       toast({
-        title: "Error",
-        description: err.message,
+        title: "Error al eliminar",
+        description: err.message || 'No se pudo eliminar el cliente',
         variant: "destructive"
       });
       throw err;
