@@ -107,43 +107,8 @@ const MisAsignaciones = () => {
     return () => clearInterval(interval);
   }, [misAsignaciones]);
 
-  // GPS tracking for active assignments - vinculado con alarma específica
-  const [trackingAlarmaId, setTrackingAlarmaId] = useState<string | null>(null);
-  
-  // Auto-start GPS tracking for en_proceso alarms con alarma_id específico
-  useEffect(() => {
-    if (!user?.id) return;
-    
-    const activeAlarm = misAsignaciones.find(alarma => 
-      alarma.estado === 'en_proceso' && 
-      alarma.supervisor_id === user.id && 
-      !alarma.tiempo_segunda_lectura_qr
-    );
-    
-    if (activeAlarm && trackingAlarmaId !== activeAlarm.id) {
-      console.log('🛰️ Auto-starting GPS tracking for alarm:', activeAlarm.id);
-      console.log('📍 GPS positions will be saved with alarma_id:', activeAlarm.id);
-      setTrackingAlarmaId(activeAlarm.id);
-    } else if (!activeAlarm && trackingAlarmaId) {
-      console.log('🛑 Stopping GPS tracking - no active alarm');
-      setTrackingAlarmaId(null);
-    }
-  }, [misAsignaciones, user?.id, trackingAlarmaId]);
-
-  // Initialize GPS tracking with specific alarma_id
-  const { updateGPSPosition, isTracking } = useRealTimeGPS({
-    alarmaId: trackingAlarmaId || undefined,
-    supervisorId: user?.id,
-    isActive: Boolean(trackingAlarmaId && user?.id),
-    updateInterval: 180000 // 3 minutos
-  });
-
-  // Log GPS tracking status
-  useEffect(() => {
-    if (trackingAlarmaId && isTracking) {
-      console.log('✅ GPS tracking activo para alarma:', trackingAlarmaId);
-    }
-  }, [trackingAlarmaId, isTracking]);
+  // Nota: El GPS tracking ahora se maneja globalmente en SupervisorGPSProvider
+  // Se elimina el tracking local para evitar duplicados
 
   // Función para aceptar servicio (nueva lógica según el flujo del usuario)
   const handleAceptarServicio = async (alarmaId: string) => {
@@ -182,14 +147,7 @@ const MisAsignaciones = () => {
       const result = await aceptarServicio(alarmaId, user?.id || '');
       if (result.success) {
         console.log('✅ Servicio aceptado exitosamente, estado: asignada -> en_proceso');
-        
-        // Upload initial GPS position immediately
-        try {
-          await updateGPSPosition(false);
-          console.log('📍 Initial GPS position uploaded');
-        } catch (gpsError) {
-          console.warn('⚠️ Could not upload initial GPS position:', gpsError);
-        }
+        console.log('📍 GPS tracking se iniciará automáticamente via SupervisorGPSProvider');
         
         toast({
           title: "Servicio Aceptado",

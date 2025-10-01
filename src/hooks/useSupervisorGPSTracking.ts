@@ -11,6 +11,7 @@ interface GPSPosition {
 
 interface SupervisorGPSTrackingOptions {
   supervisorId: string;
+  alarmaId?: string; // ID de la alarma activa (opcional)
   isActive?: boolean;
   updateInterval?: number; // in milliseconds, default 180000 (3 minutes)
 }
@@ -28,6 +29,7 @@ export const useSupervisorGPSTracking = (options: SupervisorGPSTrackingOptions) 
   
   const {
     supervisorId,
+    alarmaId,
     isActive = false,
     updateInterval = 180000 // 3 minutos por defecto
   } = options;
@@ -115,18 +117,25 @@ export const useSupervisorGPSTracking = (options: SupervisorGPSTrackingOptions) 
     });
   }, []);
 
-  // Save GPS position to database (general tracking, no specific alarm)
+  // Save GPS position to database (with specific alarm ID when in service)
   const saveGPSPosition = useCallback(async (position: GPSPosition) => {
+    if (!supervisorId) {
+      console.warn('⚠️ No se puede guardar GPS sin supervisor_id');
+      return;
+    }
+
+    // Solo guardar si hay alarmaId (modo servicio activo)
+    if (!alarmaId) {
+      console.log('⏸️ GPS no guardado - esperando alarma activa');
+      return;
+    }
+
     try {
-      // For general tracking, we'll use a placeholder alarm_id or create a system for general tracking
-      // For now, we'll use '00000000-0000-0000-0000-000000000000' as a placeholder for general tracking
-      const generalTrackingAlarmId = '00000000-0000-0000-0000-000000000000';
-      
       const { error } = await supabase
         .from('supervisor_ubicaciones_tiempo_real')
         .insert({
           supervisor_id: supervisorId,
-          alarma_id: generalTrackingAlarmId,
+          alarma_id: alarmaId,
           latitude: position.latitude,
           longitude: position.longitude,
           precision_meters: position.precision ? Math.round(position.precision) : null
@@ -156,12 +165,17 @@ export const useSupervisorGPSTracking = (options: SupervisorGPSTrackingOptions) 
       } else {
         setLastUpdate(new Date());
         setError(null); // Clear any previous errors
-        console.log('📍 Ubicación GPS guardada para supervisor:', supervisorId);
+        console.log('✅ Ubicación GPS guardada:', {
+          supervisor_id: supervisorId,
+          alarma_id: alarmaId,
+          lat: position.latitude.toFixed(6),
+          lng: position.longitude.toFixed(6)
+        });
       }
     } catch (err) {
       console.error('❌ Error inesperado guardando GPS:', err);
     }
-  }, [supervisorId, toast]);
+  }, [supervisorId, alarmaId, toast]);
 
   // Update GPS position
   const updateGPSPosition = useCallback(async (showToast = false) => {
