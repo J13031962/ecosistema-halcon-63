@@ -56,6 +56,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSupabaseMinutaOperaciones } from "@/hooks/useSupabaseMinutaOperaciones";
 import { ClienteServiciosDisplay } from "@/components/alarmas/ClienteServiciosDisplay";
 import OptimizedQuickBar from "@/components/layout/OptimizedQuickBar";
+import { RealTimeGPSModal } from "@/components/ui/real-time-gps-modal";
 
 interface ClienteFormData {
   id_numerico: string;
@@ -158,6 +159,10 @@ useEffect(() => {
   const [tipoEntradaMinuta, setTipoEntradaMinuta] = useState<'general' | 'cambio_turno' | 'consigna' | 'incidente' | 'mantenimiento'>('general');
   const [mostrarGenerarAlarma, setMostrarGenerarAlarma] = useState(true);
   
+  // Estados para el modal de GPS en tiempo real
+  const [realTimeGpsModalOpen, setRealTimeGpsModalOpen] = useState(false);
+  const [selectedAlarmaForRealTimeGPS, setSelectedAlarmaForRealTimeGPS] = useState<any>(null);
+  
   // Cargar turnos desde la base de datos
   const { turnosOperador, turnosSupervisor, loading: turnosSupabaseLoading } = useSupabaseTurnos();
 
@@ -247,6 +252,12 @@ useEffect(() => {
 
   // Import the optimized actions hook
   const supervisorActions = useOptimizedActions();
+
+  // Función para abrir modal GPS en tiempo real
+  const handleViewGPS = useCallback((alarma: any) => {
+    setSelectedAlarmaForRealTimeGPS(alarma);
+    setRealTimeGpsModalOpen(true);
+  }, []);
 
   // Optimized supervisor functions with throttling and error handling
   const handleSupervisorAccept = useCallback(async (alarmaId: string) => {
@@ -1257,6 +1268,7 @@ useEffect(() => {
                   onSupervisorAccept={handleSupervisorAccept}
                   onSupervisorArrive={handleSupervisorArrive}
                   onSupervisorLeave={handleSupervisorLeave}
+                  onViewGPS={() => handleViewGPS(alarma)}
                   userRole={user?.role}
                   currentUserId={user?.id}
                   currentUserName={user?.email}
@@ -1564,6 +1576,24 @@ useEffect(() => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de GPS en tiempo real */}
+      <RealTimeGPSModal
+        isOpen={realTimeGpsModalOpen}
+        onClose={() => {
+          setRealTimeGpsModalOpen(false);
+          setSelectedAlarmaForRealTimeGPS(null);
+        }}
+        supervisorId={selectedAlarmaForRealTimeGPS?.supervisor_id}
+        supervisorNombre={selectedAlarmaForRealTimeGPS?.supervisor}
+        alarmaId={selectedAlarmaForRealTimeGPS?.id}
+        clienteData={selectedAlarmaForRealTimeGPS?.clientes ? {
+          nombre: selectedAlarmaForRealTimeGPS.clientes.nombre,
+          direccion: selectedAlarmaForRealTimeGPS.direccion,
+          latitud: selectedAlarmaForRealTimeGPS.clientes.latitud,
+          longitud: selectedAlarmaForRealTimeGPS.clientes.longitud
+        } : undefined}
+      />
 
       </div>
     </OperationalThemeWrapper>
