@@ -290,6 +290,7 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           category: "👥 Gestión Personal", 
           items: [
             { title: "Registro de Supervisores", url: "/registro-supervisores", icon: UserPlus },
+            { title: "Turnos Supervisores", url: "/turnos-supervisor", icon: Clock },
           ]
         },
         { 
@@ -317,6 +318,12 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
             { title: "Rutas Asignadas", url: "/rutas-asignadas", icon: MapPin },
             { title: "Registro Incidentes", url: "/registro-incidentes", icon: AlertTriangle },
             { title: "Registro Actividades", url: "/registro-actividades", icon: Clock },
+          ]
+        },
+        { 
+          category: "📅 Turnos", 
+          items: [
+            { title: "Mis Turnos", url: "/mis-turnos-supervisor", icon: Clock },
           ]
         },
         { 

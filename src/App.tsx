@@ -72,6 +72,8 @@ import CambioContrasenaOperador from "./pages/CambioContrasenaOperador";
 import CambioContrasenaDespachador from "./pages/CambioContrasenaDespachador";
 import CambioContrasenaSupervisor from "./pages/CambioContrasenaSupervisor";
 import RegistroSupervisores from "./pages/RegistroSupervisores";
+import TurnosSupervisor from "./pages/TurnosSupervisor";
+import MisTurnosSupervisor from "./pages/MisTurnosSupervisor";
 
 const queryClient = new QueryClient();
 
@@ -300,11 +302,27 @@ const AppContent = () => {
         </ProtectedRoute>
       } />
       
+      <Route path="/turnos-supervisor" element={
+        <ProtectedRoute requiredRoles={['despachador_patrullas']}>
+          <MainLayout>
+            <TurnosSupervisor />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+      
       {/* Supervisor routes */}
       <Route path="/mi-patrulla" element={
         <ProtectedRoute>
           <MainLayout>
             <MiPatrullaSupervisor />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/mis-turnos-supervisor" element={
+        <ProtectedRoute requiredRoles={['supervisor_motorizado']}>
+          <MainLayout>
+            <MisTurnosSupervisor />
           </MainLayout>
         </ProtectedRoute>
       } />
