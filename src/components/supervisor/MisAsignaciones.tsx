@@ -107,10 +107,10 @@ const MisAsignaciones = () => {
     return () => clearInterval(interval);
   }, [misAsignaciones]);
 
-  // GPS tracking for active assignments
+  // GPS tracking for active assignments - vinculado con alarma específica
   const [trackingAlarmaId, setTrackingAlarmaId] = useState<string | null>(null);
   
-  // Auto-start GPS tracking for en_proceso alarms
+  // Auto-start GPS tracking for en_proceso alarms con alarma_id específico
   useEffect(() => {
     if (!user?.id) return;
     
@@ -122,6 +122,7 @@ const MisAsignaciones = () => {
     
     if (activeAlarm && trackingAlarmaId !== activeAlarm.id) {
       console.log('🛰️ Auto-starting GPS tracking for alarm:', activeAlarm.id);
+      console.log('📍 GPS positions will be saved with alarma_id:', activeAlarm.id);
       setTrackingAlarmaId(activeAlarm.id);
     } else if (!activeAlarm && trackingAlarmaId) {
       console.log('🛑 Stopping GPS tracking - no active alarm');
@@ -129,13 +130,20 @@ const MisAsignaciones = () => {
     }
   }, [misAsignaciones, user?.id, trackingAlarmaId]);
 
-  // Initialize GPS tracking
-  const { updateGPSPosition } = useRealTimeGPS({
+  // Initialize GPS tracking with specific alarma_id
+  const { updateGPSPosition, isTracking } = useRealTimeGPS({
     alarmaId: trackingAlarmaId || undefined,
     supervisorId: user?.id,
-    isActive: Boolean(trackingAlarmaId),
-    updateInterval: 60000 // 1 minute
+    isActive: Boolean(trackingAlarmaId && user?.id),
+    updateInterval: 180000 // 3 minutos
   });
+
+  // Log GPS tracking status
+  useEffect(() => {
+    if (trackingAlarmaId && isTracking) {
+      console.log('✅ GPS tracking activo para alarma:', trackingAlarmaId);
+    }
+  }, [trackingAlarmaId, isTracking]);
 
   // Función para aceptar servicio (nueva lógica según el flujo del usuario)
   const handleAceptarServicio = async (alarmaId: string) => {
