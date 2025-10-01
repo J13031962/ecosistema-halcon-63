@@ -31,18 +31,38 @@ export const useSupabaseUsuariosEnhanced = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // 1) Obtener IDs de usuarios con rol supervisor_motorizado evitando joins anidados
+      const { data: supervisorRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .eq('role', 'supervisor_motorizado');
+
+      if (rolesError) throw rolesError;
+
+      const supervisorIds = (supervisorRoles || []).map((r: any) => r.user_id);
+
+      // Si no hay supervisores, retornar lista vacía sin error
+      if (supervisorIds.length === 0) {
+        setUsers([]);
+        return;
+      }
+
+      // 2) Cargar perfiles únicamente de esos IDs (sin relación anidada)
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          user_roles (
-            role
-          )
-        `)
+        .select('*')
+        .in('id', supervisorIds)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setUsers((data as any) || []);
+      if (profilesError) throw profilesError;
+
+      // 3) Adjuntar user_roles compatible para la UI
+      const usersWithRoles = (profiles as any[]).map((p) => ({
+        ...p,
+        user_roles: [{ role: 'supervisor_motorizado' }],
+      }));
+
+      setUsers(usersWithRoles || []);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Error al cargar usuarios');
