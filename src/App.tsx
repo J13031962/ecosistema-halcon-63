@@ -68,6 +68,9 @@ import ElementosCotizables from "./pages/ElementosCotizables";
 import ReporteUbicacion from "./pages/ReporteUbicacion";
 import MinutaOperador from "./pages/MinutaOperador";
 import CambioContrasenaDirector from "./pages/CambioContrasenaDirector";
+import CambioContrasenaOperador from "./pages/CambioContrasenaOperador";
+import CambioContrasenaDespachador from "./pages/CambioContrasenaDespachador";
+import CambioContrasenaSupervisor from "./pages/CambioContrasenaSupervisor";
 
 const queryClient = new QueryClient();
 
@@ -135,6 +138,30 @@ const AppContent = () => {
         <ProtectedRoute requiredRoles={['director']}>
           <MainLayout>
             <CambioContrasenaDirector />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/cambio-contrasena-operador" element={
+        <ProtectedRoute requiredRoles={['operador_alarmas']}>
+          <MainLayout>
+            <CambioContrasenaOperador />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/cambio-contrasena-despachador" element={
+        <ProtectedRoute requiredRoles={['despachador_patrullas']}>
+          <MainLayout>
+            <CambioContrasenaDespachador />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/cambio-contrasena-supervisor" element={
+        <ProtectedRoute requiredRoles={['supervisor_motorizado']}>
+          <MainLayout>
+            <CambioContrasenaSupervisor />
           </MainLayout>
         </ProtectedRoute>
       } />

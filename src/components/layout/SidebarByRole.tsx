@@ -265,6 +265,12 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
             { title: "Registro Actividades", url: "/registro-actividades", icon: Clock },
             { title: "Historial Patrullas", url: "/historial-patrullas-operador", icon: Clock },
           ]
+        },
+        { 
+          category: "👤 Mi Cuenta", 
+          items: [
+            { title: "Cambio de Contraseña", url: "/cambio-contrasena-operador", icon: Key },
+          ]
         }
       ];
 
@@ -288,6 +294,12 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
             { title: "Plataforma GPS FullTrack", url: "https://fultrack.com", icon: Navigation, external: true },
             { title: "Plataforma GPS ProTrack", url: "https://www.protrack365.com/?lang=es-es", icon: Navigation, external: true },
           ]
+        },
+        { 
+          category: "👤 Mi Cuenta", 
+          items: [
+            { title: "Cambio de Contraseña", url: "/cambio-contrasena-despachador", icon: Key },
+          ]
         }
       ];
 
@@ -305,6 +317,12 @@ const getMenuByRole = (role: UserRole): MenuCategory[] => {
           category: "📊 Reportes", 
           items: [
             { title: "Reportes Supervisor", url: "/reportes-supervisor", icon: FileText },
+          ]
+        },
+        { 
+          category: "👤 Mi Cuenta", 
+          items: [
+            { title: "Cambio de Contraseña", url: "/cambio-contrasena-supervisor", icon: Key },
           ]
         }
       ];
