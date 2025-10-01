@@ -19,7 +19,6 @@ export function MainLayout({ children }: MainLayoutProps) {
             <SidebarTrigger className="mr-4" />
             <div className="flex flex-col">
               <h1 className="text-lg font-bold">ECOSISTEMA HALCON</h1>
-              <p className="text-xs text-muted-foreground">Sistema integral administrativo de Teleguardia.com</p>
             </div>
           </header>
           <div className="p-6">

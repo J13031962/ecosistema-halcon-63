@@ -156,20 +156,6 @@ const Login = () => {
               {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </Button>
           </form>
-
-          <div className="mt-6 text-sm text-white/90 drop-shadow-lg">
-            <p className="text-center mb-2 font-semibold">Credenciales de prueba:</p>
-            <div className="space-y-1 text-xs bg-black/10 rounded-lg p-3 backdrop-blur-sm">
-              <p>• admin@empresa.com / admin123 (Administrador)</p>
-              <p>• director@empresa.com / director123 (Director)</p>
-              <p>• operador@empresa.com / operador123 (Operador)</p>
-              <p>• despachador@empresa.com / despachador123 (Despachador)</p>
-              <p>• supervisor@empresa.com / supervisor123 (Supervisor)</p>
-              <p>• tecnico@empresa.com / tecnico123 (Técnico)</p>
-              <p>• jefe.tecnico@empresa.com / jefe123 (Jefe Técnicos)</p>
-              <p>• ventas@empresa.com / ventas123 (Asesor Ventas)</p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

@@ -262,61 +262,6 @@ const Auth = () => {
               )}
             </div>
           </form>
-
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={toggleMode}
-              className="auth-toggle-button text-sm"
-            >
-              {isSignUp 
-                ? '¿Ya tienes cuenta? Inicia sesión' 
-                : '¿No tienes cuenta? Regístrate'
-              }
-            </button>
-          </div>
-
-          {!isSignUp && (
-            <div className="mt-6 p-4 rounded-lg space-y-3" style={{
-              backgroundColor: 'hsl(var(--auth-bg) / 0.7)',
-              border: '1px solid hsl(var(--auth-accent) / 0.2)'
-            }}>
-              <p className="text-sm font-medium mb-2" style={{ color: 'hsl(var(--auth-accent))' }}>
-                Credenciales de prueba disponibles:
-              </p>
-              
-              <div className="grid grid-cols-1 gap-2 text-xs" style={{ color: 'hsl(var(--auth-accent) / 0.8)' }}>
-                <div>
-                  <strong>Administrador:</strong><br />
-                  admin@teleguardia.com / Tele2025*
-                </div>
-                <div>
-                  <strong>Director Técnico:</strong><br />
-                  directortec@teleguardia.com / Dirtecnico2025*
-                </div>
-                <div>
-                  <strong>Director Central:</strong><br />
-                  directorcentral@teleguardia.com / Dircentral2025*
-                </div>
-                <div>
-                  <strong>Operador:</strong><br />
-                  operador@teleguardia.com / Operador2025*
-                </div>
-                <div>
-                  <strong>Despachador:</strong><br />
-                  despachador@teleguardia.com / Despachador2025*
-                </div>
-                <div>
-                  <strong>Supervisor:</strong><br />
-                  supervisor@teleguardia.com / Supervisor2025*
-                </div>
-                <div>
-                  <strong>Técnico:</strong><br />
-                  tecnico@teleguardia.com / Tecnico2025*
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="text-center text-sm text-white/70">
