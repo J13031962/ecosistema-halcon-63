@@ -96,7 +96,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Otherwise, proceed with user creation
     const { email, password, fullName, role, numeroDocumento, fotoUrl }: CreateUserRequest = body;
-    console.log('🚀 Creando usuario con Admin API:', { email, role });
+    const requestingUserId = req.headers.get('x-user-id'); // ID del usuario que crea (despachador)
+    console.log('🚀 Creando usuario con Admin API:', { email, role, requestingUserId });
 
     // Create Supabase Admin client
     const supabaseAdmin = createClient(
@@ -131,6 +132,21 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('✅ Usuario creado en Auth:', authData.user.id);
 
+    // Si es un supervisor y hay un usuario creador, heredar su empresa
+    let empresaContratadaId = null;
+    if (role === 'supervisor_motorizado' && requestingUserId) {
+      const { data: creadorData } = await supabaseAdmin
+        .from('profiles')
+        .select('empresa_contratada_id')
+        .eq('id', requestingUserId)
+        .single();
+      
+      if (creadorData?.empresa_contratada_id) {
+        empresaContratadaId = creadorData.empresa_contratada_id;
+        console.log('✅ Heredando empresa del despachador:', empresaContratadaId);
+      }
+    }
+
     // Create profile
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -141,14 +157,15 @@ const handler = async (req: Request): Promise<Response> => {
         full_name: fullName,
         numero_documento: numeroDocumento,
         foto_url: fotoUrl,
-        active: true
+        active: true,
+        empresa_contratada_id: empresaContratadaId
       });
 
     if (profileError) {
       console.error('❌ Error creating profile:', profileError);
       // Don't throw here, try to assign role anyway
     } else {
-      console.log('✅ Perfil creado exitosamente');
+      console.log('✅ Perfil creado exitosamente con empresa:', empresaContratadaId);
     }
 
     // Assign role using the safe function

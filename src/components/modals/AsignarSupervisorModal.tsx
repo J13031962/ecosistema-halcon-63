@@ -34,8 +34,19 @@ export function AsignarSupervisorModal({
   const [isAssigning, setIsAssigning] = useState(false);
   const [selectedSupervisor, setSelectedSupervisor] = useState<string | null>(null);
 
+  // Filtrar supervisores por empresa de la alarma
+  const supervisoresFiltrados = supervisores.filter(sup => {
+    // Si la alarma tiene empresa asignada, solo mostrar supervisores de esa empresa
+    if ((alarma as any)?.empresa_contratada_id) {
+      return (sup as any).empresa_contratada_id === (alarma as any).empresa_contratada_id;
+    }
+    // Si no tiene empresa, mostrar todos
+    return true;
+  });
+
   console.log('🔍 Supervisores en modal:', supervisores);
-  console.log('🔍 Loading en modal:', loading);
+  console.log('🔍 Supervisores filtrados:', supervisoresFiltrados);
+  console.log('🔍 Empresa de alarma:', (alarma as any)?.empresa_contratada_id);
 
   const getPriorityColor = (prioridad: string) => {
     switch (prioridad) {
@@ -136,13 +147,18 @@ export function AsignarSupervisorModal({
                 <div key={i} className="h-16 bg-muted rounded animate-pulse" />
               ))}
             </div>
-          ) : supervisores.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No hay supervisores disponibles en este momento
+          ) : supervisoresFiltrados.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No hay supervisores disponibles para esta empresa</p>
+              {(alarma as any)?.empresa_contratada_id && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Asegúrate de haber asignado supervisores a esta empresa en la configuración
+                </p>
+              )}
             </div>
           ) : (
             <div className="space-y-2 max-h-60 overflow-y-auto">
-              {supervisores.map((supervisor) => (
+              {supervisoresFiltrados.map((supervisor) => (
                 <Card 
                   key={supervisor.id} 
                   className={`cursor-pointer transition-colors hover:bg-accent/50 ${

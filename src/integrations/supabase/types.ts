@@ -926,6 +926,7 @@ export type Database = {
           active: boolean | null
           created_at: string | null
           email: string
+          empresa_contratada_id: string | null
           foto_url: string | null
           full_name: string | null
           id: string
@@ -938,6 +939,7 @@ export type Database = {
           active?: boolean | null
           created_at?: string | null
           email: string
+          empresa_contratada_id?: string | null
           foto_url?: string | null
           full_name?: string | null
           id: string
@@ -950,6 +952,7 @@ export type Database = {
           active?: boolean | null
           created_at?: string | null
           email?: string
+          empresa_contratada_id?: string | null
           foto_url?: string | null
           full_name?: string | null
           id?: string
@@ -958,7 +961,15 @@ export type Database = {
           user_id?: string | null
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_empresa_contratada_id_fkey"
+            columns: ["empresa_contratada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_contratadas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       servicios_tecnicos: {
         Row: {
@@ -1601,6 +1612,10 @@ export type Database = {
           total_alarmas: number
           total_servicios: number
         }[]
+      }
+      get_user_empresa: {
+        Args: { user_id_param: string }
+        Returns: string
       }
       get_user_roles: {
         Args: { target_user_id: string }

@@ -14,6 +14,10 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useEmpresaUsuarios } from '@/hooks/useEmpresaUsuarios';
+import { Checkbox } from '@/components/ui/checkbox';
+import { UserCheck } from 'lucide-react';
+import { CardDescription } from '@/components/ui/card';
 
 export default function PatrullasCorazaConfig() {
   const { empresaId } = useParams<{ empresaId: string }>();
@@ -32,6 +36,14 @@ export default function PatrullasCorazaConfig() {
     updateConfiguracion,
     deleteConfiguracion
   } = useConfiguracionEmpresa(empresaId || '');
+
+  const {
+    despachadores,
+    supervisores,
+    loading: loadingUsuarios,
+    asignarUsuarioAEmpresa,
+    desasignarUsuarioDeEmpresa
+  } = useEmpresaUsuarios(empresaId);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -548,6 +560,123 @@ export default function PatrullasCorazaConfig() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Sección de Personal Asignado */}
+      <div className="grid md:grid-cols-2 gap-6 mt-6">
+        {/* Despachadores */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Despachadores Asignados
+            </CardTitle>
+            <CardDescription>
+              Selecciona los despachadores que pertenecen a esta empresa
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingUsuarios ? (
+              <p className="text-sm text-muted-foreground">Cargando despachadores...</p>
+            ) : despachadores.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No hay despachadores disponibles</p>
+            ) : (
+              <div className="space-y-3">
+                {despachadores.map((despachador) => {
+                  const isAsignado = despachador.empresa_contratada_id === empresaId;
+                  const perteneceOtraEmpresa = despachador.empresa_contratada_id && despachador.empresa_contratada_id !== empresaId;
+                  
+                  return (
+                    <div key={despachador.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-accent">
+                      <Checkbox
+                        id={`desp-${despachador.id}`}
+                        checked={isAsignado}
+                        disabled={perteneceOtraEmpresa}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            asignarUsuarioAEmpresa(despachador.id, empresaId!);
+                          } else {
+                            desasignarUsuarioDeEmpresa(despachador.id);
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={`desp-${despachador.id}`}
+                        className={`flex-1 text-sm cursor-pointer ${perteneceOtraEmpresa ? 'text-muted-foreground' : ''}`}
+                      >
+                        <div className="font-medium">{despachador.full_name}</div>
+                        <div className="text-xs text-muted-foreground">{despachador.email}</div>
+                        {perteneceOtraEmpresa && (
+                          <div className="text-xs text-amber-600 mt-1">Asignado a otra empresa</div>
+                        )}
+                      </label>
+                      {isAsignado && (
+                        <UserCheck className="h-4 w-4 text-green-600" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Supervisores */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Supervisores Asignados
+            </CardTitle>
+            <CardDescription>
+              Selecciona los supervisores que pertenecen a esta empresa
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingUsuarios ? (
+              <p className="text-sm text-muted-foreground">Cargando supervisores...</p>
+            ) : supervisores.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No hay supervisores disponibles</p>
+            ) : (
+              <div className="space-y-3">
+                {supervisores.map((supervisor) => {
+                  const isAsignado = supervisor.empresa_contratada_id === empresaId;
+                  const perteneceOtraEmpresa = supervisor.empresa_contratada_id && supervisor.empresa_contratada_id !== empresaId;
+                  
+                  return (
+                    <div key={supervisor.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-accent">
+                      <Checkbox
+                        id={`sup-${supervisor.id}`}
+                        checked={isAsignado}
+                        disabled={perteneceOtraEmpresa}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            asignarUsuarioAEmpresa(supervisor.id, empresaId!);
+                          } else {
+                            desasignarUsuarioDeEmpresa(supervisor.id);
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={`sup-${supervisor.id}`}
+                        className={`flex-1 text-sm cursor-pointer ${perteneceOtraEmpresa ? 'text-muted-foreground' : ''}`}
+                      >
+                        <div className="font-medium">{supervisor.full_name}</div>
+                        <div className="text-xs text-muted-foreground">{supervisor.email}</div>
+                        {perteneceOtraEmpresa && (
+                          <div className="text-xs text-amber-600 mt-1">Asignado a otra empresa</div>
+                        )}
+                      </label>
+                      {isAsignado && (
+                        <UserCheck className="h-4 w-4 text-green-600" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
