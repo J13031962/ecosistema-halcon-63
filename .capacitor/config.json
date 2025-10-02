@@ -1,0 +1,6 @@
+{
+  "appId": "com.teleguardia.halcon",
+  "appName": "Halcón Teleguardia",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
