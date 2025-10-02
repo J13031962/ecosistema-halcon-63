@@ -55,6 +55,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSupabaseMinutaOperaciones } from "@/hooks/useSupabaseMinutaOperaciones";
 import { ClienteServiciosDisplay } from "@/components/alarmas/ClienteServiciosDisplay";
+import { EmpresaServiciosSelector } from "@/components/alarmas/EmpresaServiciosSelector";
 import OptimizedQuickBar from "@/components/layout/OptimizedQuickBar";
 import { RealTimeGPSModal } from "@/components/ui/real-time-gps-modal";
 
@@ -96,6 +97,7 @@ const CentralAlarmasOperador = () => {
   const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false);
   const [selectedClienteForAlarm, setSelectedClienteForAlarm] = useState<any>(null);
   const [selectedAlarmType, setSelectedAlarmType] = useState<string>("");
+  const [selectedEmpresa, setSelectedEmpresa] = useState<string>("");
   const [showClienteForm, setShowClienteForm] = useState(false);
   
   // Estados para información de zonas (para alarmas tipo Fuego y Alarma)
@@ -415,6 +417,7 @@ useEffect(() => {
       setSelectedClienteForAlarm(null);
     }
     setSelectedAlarmType("");
+    setSelectedEmpresa("");
     // Reset zone fields
     setNumeroZona("");
     setNombreZona("");
@@ -476,6 +479,15 @@ useEffect(() => {
       return;
     }
 
+    if (!selectedEmpresa) {
+      toast({
+        title: "Falta seleccionar empresa",
+        description: "Debes seleccionar la empresa contratada que atenderá este servicio.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Validar campos de zona para tipos Fuego y Alarma
     if ((selectedAlarmType === 'Fuego' || selectedAlarmType === 'Alarma') && 
         (!numeroZona || !nombreZona || !tipoSensor)) {
@@ -494,7 +506,8 @@ useEffect(() => {
         prioridad: 'alta',
         direccion: selectedClienteForAlarm.direccion,
         municipio: selectedClienteForAlarm.municipio,
-        descripcion: `Alarma generada para ${selectedClienteForAlarm.nombre}`
+        descripcion: `Alarma generada para ${selectedClienteForAlarm.nombre}`,
+        empresa_contratada_id: selectedEmpresa
       };
 
       // Agregar información de zona si es necesaria
@@ -537,6 +550,7 @@ useEffect(() => {
       setIsAlarmModalOpen(false);
       setSelectedClienteForAlarm(null);
       setSelectedAlarmType("");
+      setSelectedEmpresa("");
       // Limpiar campos de zona
       setNumeroZona("");
       setNombreZona("");
@@ -1369,6 +1383,16 @@ useEffect(() => {
                   </Select>
                 </div>
 
+                {/* Selector de Empresa Contratada - después de seleccionar tipo */}
+                {selectedAlarmType && (
+                  <EmpresaServiciosSelector 
+                    selectedEmpresa={selectedEmpresa}
+                    onEmpresaChange={setSelectedEmpresa}
+                    tipoAlarma={selectedAlarmType}
+                    className="mb-4"
+                  />
+                )}
+
                 {/* Campos de zona para alarmas tipo Fuego y Alarma */}
                 {mostrarCamposZona && (
                   <Card className="bg-amber-50 border-amber-200">
@@ -1440,7 +1464,7 @@ useEffect(() => {
                 <div className="flex gap-2">
                   <Button 
                     onClick={generateAlarm}
-                    disabled={!selectedAlarmType}
+                    disabled={!selectedAlarmType || !selectedEmpresa}
                     className="flex items-center gap-2"
                   >
                     <Siren className="h-4 w-4" />
