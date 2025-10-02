@@ -14,6 +14,7 @@ import { useSupabaseAlarmas } from "@/hooks/useSupabaseAlarmas";
 import { useSupabaseLlamadas } from "@/hooks/useSupabaseLlamadas";
 import { useAuthConsolidatedContext } from "@/contexts/AuthContextConsolidated";
 import { ClienteServiciosDisplay } from "@/components/alarmas/ClienteServiciosDisplay";
+import { EmpresaServiciosSelector } from "@/components/alarmas/EmpresaServiciosSelector";
 import { accountNumbersMatch } from '@/lib/utils';
 
 interface ClienteFormData {
@@ -42,6 +43,7 @@ const GenerarAlarma = () => {
   const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false);
   const [selectedClienteForAlarm, setSelectedClienteForAlarm] = useState<any>(null);
   const [selectedAlarmType, setSelectedAlarmType] = useState<string>("");
+  const [selectedEmpresa, setSelectedEmpresa] = useState<string>("");
   const [showClienteForm, setShowClienteForm] = useState(false);
   
   // Estados para información de zona
@@ -133,6 +135,7 @@ const GenerarAlarma = () => {
       setSelectedClienteForAlarm(null);
     }
     setSelectedAlarmType("");
+    setSelectedEmpresa("");
     setIsAlarmModalOpen(true);
   };
 
@@ -180,11 +183,11 @@ const GenerarAlarma = () => {
   };
 
   const generateAlarm = async () => {
-    if (!selectedClienteForAlarm || !selectedAlarmType) {
-      console.error('Datos faltantes:', { selectedClienteForAlarm, selectedAlarmType });
+    if (!selectedClienteForAlarm || !selectedAlarmType || !selectedEmpresa) {
+      console.error('Datos faltantes:', { selectedClienteForAlarm, selectedAlarmType, selectedEmpresa });
       toast({
         title: "Error",
-        description: "Debe seleccionar un cliente y tipo de alarma",
+        description: "Debe seleccionar un cliente, tipo de alarma y empresa contratada",
         variant: "destructive"
       });
       return;
@@ -206,7 +209,8 @@ const GenerarAlarma = () => {
         prioridad: 'alta',
         direccion: selectedClienteForAlarm.direccion,
         municipio: selectedClienteForAlarm.municipio,
-        descripcion: `Alarma generada para ${selectedClienteForAlarm.nombre}`
+        descripcion: `Alarma generada para ${selectedClienteForAlarm.nombre}`,
+        empresa_contratada_id: selectedEmpresa
       };
       
       // Agregar información de zona para tipos específicos
@@ -254,6 +258,7 @@ const GenerarAlarma = () => {
       setIsAlarmModalOpen(false);
       setSelectedClienteForAlarm(null);
       setSelectedAlarmType("");
+      setSelectedEmpresa("");
       setZoneInfo({ numero_zona: '', nombre_zona: '', tipo_sensor: '' });
       // Limpiar búsqueda
       setClienteId("");
@@ -817,6 +822,13 @@ const GenerarAlarma = () => {
                 </div>
               </div>
 
+              <EmpresaServiciosSelector 
+                selectedEmpresa={selectedEmpresa}
+                onEmpresaChange={setSelectedEmpresa}
+                tipoAlarma={selectedAlarmType}
+                className="mb-4"
+              />
+
               <div className="grid grid-cols-1 gap-3">
                 <Label htmlFor="alarm-type">Tipo de Alarma</Label>
                 <Select value={selectedAlarmType} onValueChange={(value) => {
@@ -929,7 +941,7 @@ const GenerarAlarma = () => {
           )}
 
           <div className="flex gap-4 pt-4">
-            {selectedClienteForAlarm && selectedAlarmType ? (
+            {selectedClienteForAlarm && selectedAlarmType && selectedEmpresa ? (
               <Button 
                 onClick={generateAlarm} 
                 disabled={

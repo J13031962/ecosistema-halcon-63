@@ -65,6 +65,7 @@ export type Database = {
           despachador_nombre: string | null
           direccion: string | null
           duracion_sitio_segundos: number | null
+          empresa_contratada_id: string | null
           estado: string | null
           id: string
           municipio: string | null
@@ -108,6 +109,7 @@ export type Database = {
           despachador_nombre?: string | null
           direccion?: string | null
           duracion_sitio_segundos?: number | null
+          empresa_contratada_id?: string | null
           estado?: string | null
           id?: string
           municipio?: string | null
@@ -151,6 +153,7 @@ export type Database = {
           despachador_nombre?: string | null
           direccion?: string | null
           duracion_sitio_segundos?: number | null
+          empresa_contratada_id?: string | null
           estado?: string | null
           id?: string
           municipio?: string | null
@@ -191,6 +194,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alarmas_empresa_contratada_id_fkey"
+            columns: ["empresa_contratada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_contratadas"
             referencedColumns: ["id"]
           },
         ]
