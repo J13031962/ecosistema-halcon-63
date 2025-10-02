@@ -35,7 +35,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard');
+      navigate('/');
     } else {
       // Crear usuarios de prueba si no existen
       const hasCreatedUsers = localStorage.getItem('testUsersCreated');
@@ -104,7 +104,7 @@ const Auth = () => {
         // Handle login
         const success = await login(formData.email, formData.password);
         if (success) {
-          navigate('/dashboard');
+          navigate('/');
         } else {
           setError('Credenciales incorrectas. Por favor, verifica tu email y contraseña.');
         }

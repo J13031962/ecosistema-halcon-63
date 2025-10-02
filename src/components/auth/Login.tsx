@@ -39,7 +39,7 @@ const Login = () => {
       const success = await login(formData.email, formData.password);
       
       if (success) {
-        navigate('/dashboard');
+        navigate('/');
       } else {
         setError('Usuario o contraseña incorrectos');
       }
