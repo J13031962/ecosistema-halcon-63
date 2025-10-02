@@ -822,13 +822,6 @@ const GenerarAlarma = () => {
                 </div>
               </div>
 
-              <EmpresaServiciosSelector 
-                selectedEmpresa={selectedEmpresa}
-                onEmpresaChange={setSelectedEmpresa}
-                tipoAlarma={selectedAlarmType}
-                className="mb-4"
-              />
-
               <div className="grid grid-cols-1 gap-3">
                 <Label htmlFor="alarm-type">Tipo de Alarma</Label>
                 <Select value={selectedAlarmType} onValueChange={(value) => {
@@ -891,6 +884,16 @@ const GenerarAlarma = () => {
                 </div>
               )}
               
+              {/* Selector de Empresa Contratada - después de seleccionar tipo */}
+              {selectedAlarmType && (
+                <EmpresaServiciosSelector 
+                  selectedEmpresa={selectedEmpresa}
+                  onEmpresaChange={setSelectedEmpresa}
+                  tipoAlarma={selectedAlarmType}
+                  className="mb-4"
+                />
+              )}
+
               {/* Campos de zona para Fuego y Alarma */}
               {(selectedAlarmType === 'Fuego' || selectedAlarmType === 'Alarma') && (
                 <div className="space-y-4 p-4 border rounded-lg bg-muted/30">

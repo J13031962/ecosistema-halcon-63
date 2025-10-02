@@ -35,6 +35,14 @@ export const EmpresaServiciosSelector = ({
   const [servicios, setServicios] = useState<ServiciosDisponibles | null>(null);
   const [loadingServicios, setLoadingServicios] = useState(false);
 
+  // Debug logging para verificar renderizado
+  console.log('[EmpresaServiciosSelector] Renderizando:', {
+    selectedEmpresa,
+    tipoAlarma,
+    empresasCount: empresas.length,
+    empresas: empresas.map(e => ({ id: e.id, nombre: e.nombre }))
+  });
+
   useEffect(() => {
     const fetchServicios = async () => {
       if (!selectedEmpresa) {
